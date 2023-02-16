@@ -1,0 +1,23 @@
+#include <opencl_new>
+
+class B{
+public:
+	B(int num = 24)
+	: x(num) {}
+	
+	int get() {return x;}
+private:
+	int x;
+};
+
+void foo(B **b){
+	*b = new (buffer) B;
+}
+
+__kernel void bar(__global int * ptr) {
+	int id = get_global_id(0);
+	
+	B* b = new B(6);
+	
+	ptr[id] = b->get();
+}
