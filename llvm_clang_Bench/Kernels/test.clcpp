@@ -14,10 +14,11 @@ private:
 	*b = new (buffer) B;
 }*/
 
-__kernel void bar(__global int * ptr) {
+__kernel void bar(__global int * ptr,
+				  __local void* data) {
 	int id = get_global_id(0);
 	
-	B* b = new B(6);
+	B* b = new (data) B(6);
 	
 	ptr[id] = b->get();
 }
