@@ -1,4 +1,4 @@
-#include <opencl_new>
+#include "opencl_new"
 
 class B{
 public:
@@ -10,9 +10,9 @@ private:
 	int x;
 };
 
-void foo(B **b){
+/*void foo(B **b){
 	*b = new (buffer) B;
-}
+}*/
 
 __kernel void bar(__global int * ptr) {
 	int id = get_global_id(0);
