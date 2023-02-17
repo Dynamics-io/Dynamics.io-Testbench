@@ -27,11 +27,10 @@ private:
 	*b = new (buffer) B;
 }*/
 
-__kernel void bar(__global int * ptr,
-				  __local void* data) {
+__kernel void bar(__global int * ptr) {
 	size_t id = get_global_id(0);
 	
-	B* b = new (data) B(6);
+	B b(6);
 	
-	ptr[id] = b->get();
+	ptr[id] = b.get();
 }
