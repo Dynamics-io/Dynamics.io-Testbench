@@ -173,9 +173,21 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </ProjectReference>
+    <ProjectReference Include="C:\Users\jdrurka1\source\repos\Dynamics-io\Dynamics.io-Testbench\CPP_Bench\build\source\library\Compute\Compute.vcxproj">
+      <Project>{F63B97F1-F536-36D1-9330-860D17EBB56D}</Project>
+      <Name>Compute</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\jdrurka1\source\repos\Dynamics-io\Dynamics.io-Testbench\CPP_Bench\build\source\library\Dynamics_IO_Testbench.vcxproj">
+      <Project>{4DA1323D-A995-39AC-999C-1E52069E22DA}</Project>
+      <Name>Dynamics_IO_Testbench</Name>
+    </ProjectReference>
     <ProjectReference Include="C:\Users\jdrurka1\source\repos\Dynamics-io\Dynamics.io-Testbench\CPP_Bench\build\source\executable\Dynamics_io_tester.vcxproj">
       <Project>{3C551DA5-51ED-301C-B4FE-23D99EFD6B54}</Project>
       <Name>Dynamics_io_tester</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\jdrurka1\source\repos\Dynamics-io\Dynamics.io-Testbench\CPP_Bench\build\source\library\utils\Utils.vcxproj">
+      <Project>{FAD867A8-FFF7-3431-8B54-190643A517BB}</Project>
+      <Name>Utils</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

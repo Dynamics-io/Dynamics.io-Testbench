@@ -1,0 +1,42 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="C:\Users\jdrurka1\source\repos\Dynamics-io\Dynamics.io-Testbench\CPP_Bench\source\library\Compute\ComputeEngine.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\jdrurka1\source\repos\Dynamics-io\Dynamics.io-Testbench\CPP_Bench\source\library\Compute\ProgramBuilder.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\jdrurka1\source\repos\Dynamics-io\Dynamics.io-Testbench\CPP_Bench\source\library\Compute\ComputeController.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\jdrurka1\source\repos\Dynamics-io\Dynamics.io-Testbench\CPP_Bench\source\library\Compute\ShaderDepository.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="C:\Users\jdrurka1\source\repos\Dynamics-io\Dynamics.io-Testbench\CPP_Bench\source\library\Compute\ComputeEngine.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\jdrurka1\source\repos\Dynamics-io\Dynamics.io-Testbench\CPP_Bench\source\library\Compute\ProgramBuilder.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\jdrurka1\source\repos\Dynamics-io\Dynamics.io-Testbench\CPP_Bench\source\library\Compute\ComputeController.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\jdrurka1\source\repos\Dynamics-io\Dynamics.io-Testbench\CPP_Bench\source\library\Compute\ShaderDepository.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\jdrurka1\source\repos\Dynamics-io\Dynamics.io-Testbench\CPP_Bench\source\library\Compute\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{67BBDD5E-EC4F-3F97-9071-F5A541248E86}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4CD94FD4-296F-3FEE-80FF-363EF0EC4A49}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

@@ -183,13 +183,13 @@ CMAKE_STATIC_LINKER_FLAGS_RELWITHDEBINFO:STRING=
 CMAKE_VERBOSE_MAKEFILE:BOOL=FALSE
 
 //Value Computed by CMake
-Dynamics_IO_Testbench_BINARY_DIR:STATIC=C:/Users/jdrurka1/source/repos/Dynamics-io/Dynamics.io-Testbench/CPP_Bench/build
+Dynamics_IO_Testbench_BINARY_DIR:STATIC=C:/Users/jdrurka1/source/repos/Dynamics-io/Dynamics.io-Testbench/CPP_Bench/build/source/library
 
 //Value Computed by CMake
-Dynamics_IO_Testbench_IS_TOP_LEVEL:STATIC=ON
+Dynamics_IO_Testbench_IS_TOP_LEVEL:STATIC=OFF
 
 //Value Computed by CMake
-Dynamics_IO_Testbench_SOURCE_DIR:STATIC=C:/Users/jdrurka1/source/repos/Dynamics-io/Dynamics.io-Testbench/CPP_Bench
+Dynamics_IO_Testbench_SOURCE_DIR:STATIC=C:/Users/jdrurka1/source/repos/Dynamics-io/Dynamics.io-Testbench/CPP_Bench/source/library
 
 //Value Computed by CMake
 Dynamics_io_tester_BINARY_DIR:STATIC=C:/Users/jdrurka1/source/repos/Dynamics-io/Dynamics.io-Testbench/CPP_Bench/build/source/executable
@@ -291,7 +291,7 @@ CMAKE_MODULE_LINKER_FLAGS_RELWITHDEBINFO-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CMAKE_MT
 CMAKE_MT-ADVANCED:INTERNAL=1
 //number of local generators
-CMAKE_NUMBER_OF_MAKEFILES:INTERNAL=3
+CMAKE_NUMBER_OF_MAKEFILES:INTERNAL=6
 //Platform information initialized
 CMAKE_PLATFORM_INFO_INITIALIZED:INTERNAL=1
 //noop for ranlib

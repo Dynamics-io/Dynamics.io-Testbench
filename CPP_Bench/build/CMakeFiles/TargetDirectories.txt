@@ -1,4 +1,7 @@
 C:/Users/jdrurka1/source/repos/Dynamics-io/Dynamics.io-Testbench/CPP_Bench/build/CMakeFiles/ALL_BUILD.dir
 C:/Users/jdrurka1/source/repos/Dynamics-io/Dynamics.io-Testbench/CPP_Bench/build/CMakeFiles/ZERO_CHECK.dir
+C:/Users/jdrurka1/source/repos/Dynamics-io/Dynamics.io-Testbench/CPP_Bench/build/source/library/CMakeFiles/Dynamics_IO_Testbench.dir
+C:/Users/jdrurka1/source/repos/Dynamics-io/Dynamics.io-Testbench/CPP_Bench/build/source/library/utils/CMakeFiles/Utils.dir
+C:/Users/jdrurka1/source/repos/Dynamics-io/Dynamics.io-Testbench/CPP_Bench/build/source/library/Compute/CMakeFiles/Compute.dir
 C:/Users/jdrurka1/source/repos/Dynamics-io/Dynamics.io-Testbench/CPP_Bench/build/source/executable/CMakeFiles/Dynamics_io_tester.dir
 C:/Users/jdrurka1/source/repos/Dynamics-io/Dynamics.io-Testbench/CPP_Bench/build/source/executable/CMakeFiles/ALL_BUILD.dir
