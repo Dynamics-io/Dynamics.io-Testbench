@@ -16,45 +16,62 @@ const char* KernelSource =
 "}\n"\
 "\n";
 
-char error_str[ERROR_SIZE];
-
 
 int main()
 {
-	std::vector<ComputeEngine::Platform> platforms = ComputeEngine::GetSupportedPlatforms();
+	std::vector<Platform> platforms = ComputeInterface::GetSupportedPlatforms();
 
 	for (const auto p : platforms)
 	{
 		printf("Platform %s:\n", p.name);
 
-		std::vector<ComputeEngine::Device> devices = ComputeEngine::GetSupportedDevices(p);
+		std::vector<Device> devices = ComputeInterface::GetSupportedDevices(p);
 		for (auto d : devices)
 		{
 			printf("\t%s - %s: Frequency: %u, threads: %u, Memory: %lu, Work Size: %u \n", d.vendor, d.name, d.clock_frequency, d.num_compute_units * d.group_size, d.mem_size, d.max_work_size);
 		}
 	}
 
-	ComputeEngine::Platform platf = platforms[0];
-	ComputeEngine::Device dev = ComputeEngine::GetSupportedDevices(platf)[0];
+	Platform platf = platforms[1];
+	Device dev = ComputeInterface::GetSupportedDevices(platf)[0];
 
-	ComputeController* controller = new ComputeController(platf, dev, "");
+	ComputeInterface::ControllerInfo controllerInfo;
+	controllerInfo.platform = platf;
+	controllerInfo.device = dev;
+	controllerInfo.program_dir = "C:/Users/jdrurka1/source/repos/Dynamics-io/Dynamics.io-Testbench/llvm_clang_Bench/Kernels/llvm_binaries/spirv_binaries";
 
-	std::vector<std::string> kernels;
-	kernels.push_back("bar");
+	IComputeController* controller = ComputeInterface::GetComputeController(ComputeInterface::OpenCL, controllerInfo);
 
-	std::string file_path = "";
+	IComputeProgram::ProgramInfo p_info("test2");
+	p_info.AddKernel("bar");
 
+	IComputeProgram* program = controller->AddProgram(p_info);
 
-	controller->BuildProgramFromBinary(file_path, kernels);
-
-	if (controller->GetState() == ComputeController::ComputeState::BuildError)
+	if (program->GetState() == IComputeProgram::ProgramBuildState::BuildError)
 	{
 		//printf("%s\n\n -------------- \n\n", controller->GetProgramBuilder()->GetFullSource().c_str());
-		printf("BUILD ERROR: %s\n", controller->GetProgramBuilder()->GetError().c_str());
+		//printf("BUILD ERROR: %s\n", controller->GetProgramBuilder()->GetError().c_str());
+		printf("Build failed: %i\n", program->GetBuildResultCode());
 		return -1;
 	}
 
 	printf("Program built successfully!!!");
+
+	int Data[DATA_SIZE] = { 0 };
+
+	IComputeBuffer* compBuffer = controller->NewReadWriteBuffer(DATA_SIZE * sizeof(int));
+
+	program->KernelAddBuffer("bar", compBuffer);
+
+	program->RunKernel("bar", DATA_SIZE, 0, 0);
+
+	compBuffer->GetData(Data);
+
+	for (int i = 0; i < DATA_SIZE; i++)
+	{
+		printf("res '%i': %i\n", i, Data[i]);
+	}
+
 
 	return 0;
 }

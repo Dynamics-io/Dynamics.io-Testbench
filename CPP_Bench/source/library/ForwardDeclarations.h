@@ -10,7 +10,32 @@ struct C_Quat;
 namespace Dynamics_IO_Testbench {
 
 
+	namespace Compute {
+		
+		struct Platform;
+		struct Device;
 
+		class IComputeBuffer;
+		class IComputeProgram;
+		class IComputeController;
+		class ComputeInterface;
+
+		namespace OCL {
+
+			class ComputeContext;
+			class ComputeEngine;
+			class ComputeKernel;
+			class ComputeBuffer;
+
+			class ProgramBuilder;
+			class ShaderDepository;
+
+			class ComputeBuffer_OCL;
+			class ComputeProgram_OCL;
+			class ComputeController_OCL;
+
+		}
+	}
 	
 	
 

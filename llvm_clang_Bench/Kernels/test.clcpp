@@ -35,5 +35,5 @@ __kernel void bar(__global int * ptr) {
 	
 	B b(6);
 	
-	ptr[id] = b.get();
+	ptr[id] = 7;//b.get();
 }

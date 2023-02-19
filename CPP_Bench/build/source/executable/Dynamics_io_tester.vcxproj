@@ -114,8 +114,8 @@
       <ProxyFileName>%(Filename)_p.c</ProxyFileName>
     </Midl>
     <Link>
-      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib;Dynamics_IO_Testbench.lib;Compute.lib;Utils.lib</AdditionalDependencies>
-      <AdditionalLibraryDirectories>C:\Users\jdrurka1\source\repos\Dynamics-io\Dynamics.io-Testbench\CPP_Bench\build\lib;C:/Users/jdrurka1/source/repos/Dynamics-io/Dynamics.io-Testbench/CPP_Bench/build/bin;C:/Users/jdrurka1/.conan/data/spdlog/1.8.0/_/_/package/5f068d3b65ebc5bb906d7ad2d998a4a2f8ad5db4/lib;C:/Users/jdrurka1/.conan/data/spdlog/1.8.0/_/_/package/5f068d3b65ebc5bb906d7ad2d998a4a2f8ad5db4/lib/$(Configuration);C:/.conan/586916/1/lib;C:/.conan/586916/1/lib/$(Configuration);C:/Users/jdrurka1/.conan/data/fmt/7.1.3/_/_/package/2be90237c5e294c2f30bf6b043d047624b893db3/lib;C:/Users/jdrurka1/.conan/data/fmt/7.1.3/_/_/package/2be90237c5e294c2f30bf6b043d047624b893db3/lib/$(Configuration);C:/Users/jdrurka1/.conan/data/zlib/1.2.11/_/_/package/3fb49604f9c2f729b85ba3115852006824e72cab/lib;C:/Users/jdrurka1/.conan/data/zlib/1.2.11/_/_/package/3fb49604f9c2f729b85ba3115852006824e72cab/lib/$(Configuration);C:/Users/jdrurka1/.conan/data/bzip2/1.0.8/_/_/package/d16a91eadaaf5829b928b12d2f836ff7680d3df5/lib;C:/Users/jdrurka1/.conan/data/bzip2/1.0.8/_/_/package/d16a91eadaaf5829b928b12d2f836ff7680d3df5/lib/$(Configuration);C:/Users/jdrurka1/source/repos/Dynamics-io/Dynamics.io-Testbench/CPP_Bench/lib/nvidia_OpenCL/x64;C:/Users/jdrurka1/source/repos/Dynamics-io/Dynamics.io-Testbench/CPP_Bench/lib/nvidia_OpenCL/x64/$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>..\..\lib\lib_Dynamics_IO_Testbench.lib;..\..\lib\Utils.lib;..\..\lib\Compute_Interface.lib;..\..\lib\Compute_CUDA.lib;..\..\lib\Compute_OCL.lib;OpenCL.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>C:/Users/jdrurka1/.conan/data/spdlog/1.8.0/_/_/package/5f068d3b65ebc5bb906d7ad2d998a4a2f8ad5db4/lib;C:/Users/jdrurka1/.conan/data/spdlog/1.8.0/_/_/package/5f068d3b65ebc5bb906d7ad2d998a4a2f8ad5db4/lib/$(Configuration);C:/.conan/586916/1/lib;C:/.conan/586916/1/lib/$(Configuration);C:/Users/jdrurka1/.conan/data/fmt/7.1.3/_/_/package/2be90237c5e294c2f30bf6b043d047624b893db3/lib;C:/Users/jdrurka1/.conan/data/fmt/7.1.3/_/_/package/2be90237c5e294c2f30bf6b043d047624b893db3/lib/$(Configuration);C:/Users/jdrurka1/.conan/data/zlib/1.2.11/_/_/package/3fb49604f9c2f729b85ba3115852006824e72cab/lib;C:/Users/jdrurka1/.conan/data/zlib/1.2.11/_/_/package/3fb49604f9c2f729b85ba3115852006824e72cab/lib/$(Configuration);C:/Users/jdrurka1/.conan/data/bzip2/1.0.8/_/_/package/d16a91eadaaf5829b928b12d2f836ff7680d3df5/lib;C:/Users/jdrurka1/.conan/data/bzip2/1.0.8/_/_/package/d16a91eadaaf5829b928b12d2f836ff7680d3df5/lib/$(Configuration);C:/Users/jdrurka1/source/repos/Dynamics-io/Dynamics.io-Testbench/CPP_Bench/lib/nvidia_OpenCL/x64;C:/Users/jdrurka1/source/repos/Dynamics-io/Dynamics.io-Testbench/CPP_Bench/lib/nvidia_OpenCL/x64/$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
@@ -124,7 +124,7 @@
       <SubSystem>Console</SubSystem>
     </Link>
     <ProjectReference>
-      <LinkLibraryDependencies>true</LinkLibraryDependencies>
+      <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -157,8 +157,8 @@
       <ProxyFileName>%(Filename)_p.c</ProxyFileName>
     </Midl>
     <Link>
-      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib;Dynamics_IO_Testbench.lib;Compute.lib;Utils.lib</AdditionalDependencies>
-      <AdditionalLibraryDirectories>C:\Users\jdrurka1\source\repos\Dynamics-io\Dynamics.io-Testbench\CPP_Bench\build\lib;C:/Users/jdrurka1/source/repos/Dynamics-io/Dynamics.io-Testbench/CPP_Bench/build/bin;C:/Users/jdrurka1/.conan/data/spdlog/1.8.0/_/_/package/5f068d3b65ebc5bb906d7ad2d998a4a2f8ad5db4/lib;C:/Users/jdrurka1/.conan/data/spdlog/1.8.0/_/_/package/5f068d3b65ebc5bb906d7ad2d998a4a2f8ad5db4/lib/$(Configuration);C:/.conan/586916/1/lib;C:/.conan/586916/1/lib/$(Configuration);C:/Users/jdrurka1/.conan/data/fmt/7.1.3/_/_/package/2be90237c5e294c2f30bf6b043d047624b893db3/lib;C:/Users/jdrurka1/.conan/data/fmt/7.1.3/_/_/package/2be90237c5e294c2f30bf6b043d047624b893db3/lib/$(Configuration);C:/Users/jdrurka1/.conan/data/zlib/1.2.11/_/_/package/3fb49604f9c2f729b85ba3115852006824e72cab/lib;C:/Users/jdrurka1/.conan/data/zlib/1.2.11/_/_/package/3fb49604f9c2f729b85ba3115852006824e72cab/lib/$(Configuration);C:/Users/jdrurka1/.conan/data/bzip2/1.0.8/_/_/package/d16a91eadaaf5829b928b12d2f836ff7680d3df5/lib;C:/Users/jdrurka1/.conan/data/bzip2/1.0.8/_/_/package/d16a91eadaaf5829b928b12d2f836ff7680d3df5/lib/$(Configuration);C:/Users/jdrurka1/source/repos/Dynamics-io/Dynamics.io-Testbench/CPP_Bench/lib/nvidia_OpenCL/x64;C:/Users/jdrurka1/source/repos/Dynamics-io/Dynamics.io-Testbench/CPP_Bench/lib/nvidia_OpenCL/x64/$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>..\..\lib\lib_Dynamics_IO_Testbench.lib;..\..\lib\Utils.lib;..\..\lib\Compute_Interface.lib;..\..\lib\Compute_CUDA.lib;..\..\lib\Compute_OCL.lib;OpenCL.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>C:/Users/jdrurka1/.conan/data/spdlog/1.8.0/_/_/package/5f068d3b65ebc5bb906d7ad2d998a4a2f8ad5db4/lib;C:/Users/jdrurka1/.conan/data/spdlog/1.8.0/_/_/package/5f068d3b65ebc5bb906d7ad2d998a4a2f8ad5db4/lib/$(Configuration);C:/.conan/586916/1/lib;C:/.conan/586916/1/lib/$(Configuration);C:/Users/jdrurka1/.conan/data/fmt/7.1.3/_/_/package/2be90237c5e294c2f30bf6b043d047624b893db3/lib;C:/Users/jdrurka1/.conan/data/fmt/7.1.3/_/_/package/2be90237c5e294c2f30bf6b043d047624b893db3/lib/$(Configuration);C:/Users/jdrurka1/.conan/data/zlib/1.2.11/_/_/package/3fb49604f9c2f729b85ba3115852006824e72cab/lib;C:/Users/jdrurka1/.conan/data/zlib/1.2.11/_/_/package/3fb49604f9c2f729b85ba3115852006824e72cab/lib/$(Configuration);C:/Users/jdrurka1/.conan/data/bzip2/1.0.8/_/_/package/d16a91eadaaf5829b928b12d2f836ff7680d3df5/lib;C:/Users/jdrurka1/.conan/data/bzip2/1.0.8/_/_/package/d16a91eadaaf5829b928b12d2f836ff7680d3df5/lib/$(Configuration);C:/Users/jdrurka1/source/repos/Dynamics-io/Dynamics.io-Testbench/CPP_Bench/lib/nvidia_OpenCL/x64;C:/Users/jdrurka1/source/repos/Dynamics-io/Dynamics.io-Testbench/CPP_Bench/lib/nvidia_OpenCL/x64/$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
       <GenerateDebugInformation>false</GenerateDebugInformation>
       <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
@@ -167,7 +167,7 @@
       <SubSystem>Console</SubSystem>
     </Link>
     <ProjectReference>
-      <LinkLibraryDependencies>true</LinkLibraryDependencies>
+      <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">
@@ -200,8 +200,8 @@
       <ProxyFileName>%(Filename)_p.c</ProxyFileName>
     </Midl>
     <Link>
-      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib;Dynamics_IO_Testbench.lib;Compute.lib;Utils.lib</AdditionalDependencies>
-      <AdditionalLibraryDirectories>C:\Users\jdrurka1\source\repos\Dynamics-io\Dynamics.io-Testbench\CPP_Bench\build\lib;C:/Users/jdrurka1/source/repos/Dynamics-io/Dynamics.io-Testbench/CPP_Bench/build/bin;C:/Users/jdrurka1/.conan/data/spdlog/1.8.0/_/_/package/5f068d3b65ebc5bb906d7ad2d998a4a2f8ad5db4/lib;C:/Users/jdrurka1/.conan/data/spdlog/1.8.0/_/_/package/5f068d3b65ebc5bb906d7ad2d998a4a2f8ad5db4/lib/$(Configuration);C:/.conan/586916/1/lib;C:/.conan/586916/1/lib/$(Configuration);C:/Users/jdrurka1/.conan/data/fmt/7.1.3/_/_/package/2be90237c5e294c2f30bf6b043d047624b893db3/lib;C:/Users/jdrurka1/.conan/data/fmt/7.1.3/_/_/package/2be90237c5e294c2f30bf6b043d047624b893db3/lib/$(Configuration);C:/Users/jdrurka1/.conan/data/zlib/1.2.11/_/_/package/3fb49604f9c2f729b85ba3115852006824e72cab/lib;C:/Users/jdrurka1/.conan/data/zlib/1.2.11/_/_/package/3fb49604f9c2f729b85ba3115852006824e72cab/lib/$(Configuration);C:/Users/jdrurka1/.conan/data/bzip2/1.0.8/_/_/package/d16a91eadaaf5829b928b12d2f836ff7680d3df5/lib;C:/Users/jdrurka1/.conan/data/bzip2/1.0.8/_/_/package/d16a91eadaaf5829b928b12d2f836ff7680d3df5/lib/$(Configuration);C:/Users/jdrurka1/source/repos/Dynamics-io/Dynamics.io-Testbench/CPP_Bench/lib/nvidia_OpenCL/x64;C:/Users/jdrurka1/source/repos/Dynamics-io/Dynamics.io-Testbench/CPP_Bench/lib/nvidia_OpenCL/x64/$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>..\..\lib\lib_Dynamics_IO_Testbench.lib;..\..\lib\Utils.lib;..\..\lib\Compute_Interface.lib;..\..\lib\Compute_CUDA.lib;..\..\lib\Compute_OCL.lib;OpenCL.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>C:/Users/jdrurka1/.conan/data/spdlog/1.8.0/_/_/package/5f068d3b65ebc5bb906d7ad2d998a4a2f8ad5db4/lib;C:/Users/jdrurka1/.conan/data/spdlog/1.8.0/_/_/package/5f068d3b65ebc5bb906d7ad2d998a4a2f8ad5db4/lib/$(Configuration);C:/.conan/586916/1/lib;C:/.conan/586916/1/lib/$(Configuration);C:/Users/jdrurka1/.conan/data/fmt/7.1.3/_/_/package/2be90237c5e294c2f30bf6b043d047624b893db3/lib;C:/Users/jdrurka1/.conan/data/fmt/7.1.3/_/_/package/2be90237c5e294c2f30bf6b043d047624b893db3/lib/$(Configuration);C:/Users/jdrurka1/.conan/data/zlib/1.2.11/_/_/package/3fb49604f9c2f729b85ba3115852006824e72cab/lib;C:/Users/jdrurka1/.conan/data/zlib/1.2.11/_/_/package/3fb49604f9c2f729b85ba3115852006824e72cab/lib/$(Configuration);C:/Users/jdrurka1/.conan/data/bzip2/1.0.8/_/_/package/d16a91eadaaf5829b928b12d2f836ff7680d3df5/lib;C:/Users/jdrurka1/.conan/data/bzip2/1.0.8/_/_/package/d16a91eadaaf5829b928b12d2f836ff7680d3df5/lib/$(Configuration);C:/Users/jdrurka1/source/repos/Dynamics-io/Dynamics.io-Testbench/CPP_Bench/lib/nvidia_OpenCL/x64;C:/Users/jdrurka1/source/repos/Dynamics-io/Dynamics.io-Testbench/CPP_Bench/lib/nvidia_OpenCL/x64/$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
       <GenerateDebugInformation>false</GenerateDebugInformation>
       <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
@@ -210,7 +210,7 @@
       <SubSystem>Console</SubSystem>
     </Link>
     <ProjectReference>
-      <LinkLibraryDependencies>true</LinkLibraryDependencies>
+      <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">
@@ -242,8 +242,8 @@
       <ProxyFileName>%(Filename)_p.c</ProxyFileName>
     </Midl>
     <Link>
-      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib;Dynamics_IO_Testbench.lib;Compute.lib;Utils.lib</AdditionalDependencies>
-      <AdditionalLibraryDirectories>C:\Users\jdrurka1\source\repos\Dynamics-io\Dynamics.io-Testbench\CPP_Bench\build\lib;C:/Users/jdrurka1/source/repos/Dynamics-io/Dynamics.io-Testbench/CPP_Bench/build/bin;C:/Users/jdrurka1/.conan/data/spdlog/1.8.0/_/_/package/5f068d3b65ebc5bb906d7ad2d998a4a2f8ad5db4/lib;C:/Users/jdrurka1/.conan/data/spdlog/1.8.0/_/_/package/5f068d3b65ebc5bb906d7ad2d998a4a2f8ad5db4/lib/$(Configuration);C:/.conan/586916/1/lib;C:/.conan/586916/1/lib/$(Configuration);C:/Users/jdrurka1/.conan/data/fmt/7.1.3/_/_/package/2be90237c5e294c2f30bf6b043d047624b893db3/lib;C:/Users/jdrurka1/.conan/data/fmt/7.1.3/_/_/package/2be90237c5e294c2f30bf6b043d047624b893db3/lib/$(Configuration);C:/Users/jdrurka1/.conan/data/zlib/1.2.11/_/_/package/3fb49604f9c2f729b85ba3115852006824e72cab/lib;C:/Users/jdrurka1/.conan/data/zlib/1.2.11/_/_/package/3fb49604f9c2f729b85ba3115852006824e72cab/lib/$(Configuration);C:/Users/jdrurka1/.conan/data/bzip2/1.0.8/_/_/package/d16a91eadaaf5829b928b12d2f836ff7680d3df5/lib;C:/Users/jdrurka1/.conan/data/bzip2/1.0.8/_/_/package/d16a91eadaaf5829b928b12d2f836ff7680d3df5/lib/$(Configuration);C:/Users/jdrurka1/source/repos/Dynamics-io/Dynamics.io-Testbench/CPP_Bench/lib/nvidia_OpenCL/x64;C:/Users/jdrurka1/source/repos/Dynamics-io/Dynamics.io-Testbench/CPP_Bench/lib/nvidia_OpenCL/x64/$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>..\..\lib\lib_Dynamics_IO_Testbench.lib;..\..\lib\Utils.lib;..\..\lib\Compute_Interface.lib;..\..\lib\Compute_CUDA.lib;..\..\lib\Compute_OCL.lib;OpenCL.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>C:/Users/jdrurka1/.conan/data/spdlog/1.8.0/_/_/package/5f068d3b65ebc5bb906d7ad2d998a4a2f8ad5db4/lib;C:/Users/jdrurka1/.conan/data/spdlog/1.8.0/_/_/package/5f068d3b65ebc5bb906d7ad2d998a4a2f8ad5db4/lib/$(Configuration);C:/.conan/586916/1/lib;C:/.conan/586916/1/lib/$(Configuration);C:/Users/jdrurka1/.conan/data/fmt/7.1.3/_/_/package/2be90237c5e294c2f30bf6b043d047624b893db3/lib;C:/Users/jdrurka1/.conan/data/fmt/7.1.3/_/_/package/2be90237c5e294c2f30bf6b043d047624b893db3/lib/$(Configuration);C:/Users/jdrurka1/.conan/data/zlib/1.2.11/_/_/package/3fb49604f9c2f729b85ba3115852006824e72cab/lib;C:/Users/jdrurka1/.conan/data/zlib/1.2.11/_/_/package/3fb49604f9c2f729b85ba3115852006824e72cab/lib/$(Configuration);C:/Users/jdrurka1/.conan/data/bzip2/1.0.8/_/_/package/d16a91eadaaf5829b928b12d2f836ff7680d3df5/lib;C:/Users/jdrurka1/.conan/data/bzip2/1.0.8/_/_/package/d16a91eadaaf5829b928b12d2f836ff7680d3df5/lib/$(Configuration);C:/Users/jdrurka1/source/repos/Dynamics-io/Dynamics.io-Testbench/CPP_Bench/lib/nvidia_OpenCL/x64;C:/Users/jdrurka1/source/repos/Dynamics-io/Dynamics.io-Testbench/CPP_Bench/lib/nvidia_OpenCL/x64/$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
@@ -252,7 +252,7 @@
       <SubSystem>Console</SubSystem>
     </Link>
     <ProjectReference>
-      <LinkLibraryDependencies>true</LinkLibraryDependencies>
+      <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -321,6 +321,26 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
       <Name>ZERO_CHECK</Name>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\jdrurka1\source\repos\Dynamics-io\Dynamics.io-Testbench\CPP_Bench\build\source\library\Compute_CUDA\Compute_CUDA.vcxproj">
+      <Project>{6608152C-1197-3C66-956A-B285BB02CC1E}</Project>
+      <Name>Compute_CUDA</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\jdrurka1\source\repos\Dynamics-io\Dynamics.io-Testbench\CPP_Bench\build\source\library\Compute_Interface\Compute_Interface.vcxproj">
+      <Project>{36D3ABBD-0C7E-3543-AAD2-7B4E740C0D18}</Project>
+      <Name>Compute_Interface</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\jdrurka1\source\repos\Dynamics-io\Dynamics.io-Testbench\CPP_Bench\build\source\library\Compute_OCL\Compute_OCL.vcxproj">
+      <Project>{041EBF6C-96F6-3978-B3CC-6B4F91A7ACEE}</Project>
+      <Name>Compute_OCL</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\jdrurka1\source\repos\Dynamics-io\Dynamics.io-Testbench\CPP_Bench\build\source\library\utils\Utils.vcxproj">
+      <Project>{FAD867A8-FFF7-3431-8B54-190643A517BB}</Project>
+      <Name>Utils</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\jdrurka1\source\repos\Dynamics-io\Dynamics.io-Testbench\CPP_Bench\build\source\library\lib_Dynamics_IO_Testbench.vcxproj">
+      <Project>{E76F9B80-06DA-3E49-9C47-F4878015CCB7}</Project>
+      <Name>lib_Dynamics_IO_Testbench</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

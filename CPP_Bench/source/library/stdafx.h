@@ -4,6 +4,8 @@
 
 #define NOMINMAX
 
+#define CL_TARGET_OPENCL_VERSION 300
+
 #include <cstdio>
 #include <memory>
 #include <mutex>

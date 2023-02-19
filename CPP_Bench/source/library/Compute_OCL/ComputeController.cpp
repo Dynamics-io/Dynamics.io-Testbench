@@ -1,8 +1,10 @@
 #include "ComputeController.h"
+//#include "CudaTestRun.h"
 
-using namespace Dynamics_IO_Testbench::Compute;
 
-ComputeController::ComputeController(ComputeEngine::Platform pltform, ComputeEngine::Device device, std::string inc_dir)
+using namespace Dynamics_IO_Testbench::Compute::OCL;
+
+ComputeController::ComputeController(cl_platform_id pltform, cl_device_id device, std::string inc_dir)
 {
 	ComputeEngine::Init(pltform, device, inc_dir);
 
@@ -15,7 +17,12 @@ ComputeController::ComputeController(ComputeEngine::Platform pltform, ComputeEng
 	m_cur_state = ComputeState::Inited;
 }
 
-Dynamics_IO_Testbench::Compute::ComputeController::ComputeState Dynamics_IO_Testbench::Compute::ComputeController::ConstructSourceProgram()
+void ComputeController::TestCuda()
+{
+	//RunCudaTest();
+}
+
+ComputeController::ComputeState ComputeController::ConstructSourceProgram()
 {
 	if (m_cur_state == ComputeState::Inited)
 	{
@@ -53,14 +60,14 @@ Dynamics_IO_Testbench::Compute::ComputeController::ComputeState Dynamics_IO_Test
 	return m_cur_state;
 }
 
-Dynamics_IO_Testbench::Compute::ComputeController::ComputeState Dynamics_IO_Testbench::Compute::ComputeController::BuildProgramFromBinary(std::string file_path, std::vector<std::string> kernels)
+ComputeController::ComputeState ComputeController::BuildProgramFromBinary(std::string file_path, std::vector<std::string> kernels)
 {
 
 	m_builder->AddKernels(kernels);
 
-	int buildres = m_builder->BuildFromBinary(file_path);
+	m_cl_build_res = m_builder->BuildFromBinary(file_path);
 
-	if (buildres == 0)
+	if (m_cl_build_res == 0)
 	{
 		printf("Program Built successfully!\n");
 
@@ -74,19 +81,20 @@ Dynamics_IO_Testbench::Compute::ComputeController::ComputeState Dynamics_IO_Test
 	{
 		m_cur_state = ComputeState::BuildError;
 		m_build_error = m_builder->GetError();
+		printf("Got non-zero result from BuildFromBinary: %i\n", m_cl_build_res);
 		//printf("Build Error: %s\n", m_builder->GetError().c_str());
 	}
 
 	return m_cur_state;
 }
 
-Dynamics_IO_Testbench::Compute::ComputeController::ComputeState Dynamics_IO_Testbench::Compute::ComputeController::BuildProgramFromBinary(const void* binary, size_t length, std::vector<std::string> kernels)
+ComputeController::ComputeState ComputeController::BuildProgramFromBinary(const void* binary, size_t length, std::vector<std::string> kernels)
 {
 	m_builder->AddKernels(kernels);
 
-	int buildres = m_builder->BuildFromBinary(binary, length);
+	m_cl_build_res = m_builder->BuildFromBinary(binary, length);
 
-	if (buildres == 0)
+	if (m_cl_build_res == 0)
 	{
 		printf("Program Built successfully!\n");
 
@@ -100,19 +108,20 @@ Dynamics_IO_Testbench::Compute::ComputeController::ComputeState Dynamics_IO_Test
 	{
 		m_cur_state = ComputeState::BuildError;
 		m_build_error = m_builder->GetError();
+		printf("Got non-zero result from BuildFromBinary: %i\n", m_cl_build_res);
 		//printf("Build Error: %s\n", m_builder->GetError().c_str());
 	}
 
 	return m_cur_state;
 }
 
-Dynamics_IO_Testbench::Compute::ComputeController::ComputeState ComputeController::BuildProgramFromSource()
+ComputeController::ComputeState ComputeController::BuildProgramFromSource()
 {
 	if (m_cur_state == ComputeState::Constructed)
 	{
-		int buildres = m_builder->BuildFromSource();
+		m_cl_build_res = m_builder->BuildFromSource();
 
-		if (buildres == 0)
+		if (m_cl_build_res == 0)
 		{
 			printf("Program Built successfully!\n");
 			
@@ -127,6 +136,7 @@ Dynamics_IO_Testbench::Compute::ComputeController::ComputeState ComputeControlle
 		{
 			m_cur_state = ComputeState::BuildError;
 			m_build_error = m_builder->GetError();
+			printf("Got non-zero result from BuildFromBinary: %i\n", m_cl_build_res);
 			//printf("Build Error: %s\n", m_builder->GetError().c_str());
 		}
 	}

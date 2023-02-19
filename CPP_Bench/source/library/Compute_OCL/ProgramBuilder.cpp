@@ -1,6 +1,6 @@
 #include "ProgramBuilder.h"
 
-using namespace Dynamics_IO_Testbench::Compute;
+using namespace Dynamics_IO_Testbench::Compute::OCL;
 
 
 ProgramBuilder::ProgramBuilder(ComputeContext* c_context, std::string name)
@@ -64,9 +64,22 @@ int ProgramBuilder::BuildFromSource()
 int ProgramBuilder::BuildFromBinary(std::string file_path)
 {
 	char errorstr[ERROR_SIZE];
-	m_program->Set_Binary_File(file_path);
+	int set_b_res = m_program->Set_Binary_File(file_path);
+
+	if (set_b_res != 0)
+	{
+		printf("BuildFromBinary(file) Failed at m_program->Set_Binary: %i\n", set_b_res);
+		return set_b_res;
+	}
+
 	int status = m_program->Build(errorstr, ERROR_SIZE);
 	m_error_msg = errorstr;
+
+	if (status != 0)
+	{
+		printf("BuildFromBinary(file) Failed at m_program->Build: %i\n", status);
+		return status;
+	}
 
 	for (int i = 0; i < m_kernels.size(); i++)
 	{
@@ -79,9 +92,22 @@ int ProgramBuilder::BuildFromBinary(std::string file_path)
 int ProgramBuilder::BuildFromBinary(const void* binary, size_t length)
 {
 	char errorstr[ERROR_SIZE];
-	m_program->Set_Binary(binary, length);
+	int set_b_res = m_program->Set_Binary(binary, length);
+
+	if (set_b_res != 0)
+	{
+		printf("BuildFromBinary(bin) Failed at m_program->Set_Binary: %i\n", set_b_res);
+		return set_b_res;
+	}
+
 	int status = m_program->Build(errorstr, ERROR_SIZE);
 	m_error_msg = errorstr;
+
+	if (status != 0)
+	{
+		printf("BuildFromBinary(bin) Failed at m_program->Build: %i\n", status);
+		return status;
+	}
 
 	for (int i = 0; i < m_kernels.size(); i++)
 	{

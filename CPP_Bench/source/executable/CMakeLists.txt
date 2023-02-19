@@ -10,4 +10,4 @@ set(${PROJECT_NAME}_sources
 #add_executable(${PROJECT_NAME} STATIC ${${PROJECT_NAME}_headers} ${${PROJECT_NAME}_sources}
 add_executable(${PROJECT_NAME} ${${PROJECT_NAME}_sources})
 
-#target_link_libraries(${PROJECT_NAME} FlexRigLib)
+target_link_libraries(${PROJECT_NAME} lib_Dynamics_IO_Testbench)

@@ -183,13 +183,22 @@ CMAKE_STATIC_LINKER_FLAGS_RELWITHDEBINFO:STRING=
 CMAKE_VERBOSE_MAKEFILE:BOOL=FALSE
 
 //Value Computed by CMake
-Dynamics_IO_Testbench_BINARY_DIR:STATIC=C:/Users/jdrurka1/source/repos/Dynamics-io/Dynamics.io-Testbench/CPP_Bench/build/source/library
+Dynamics_IO_Testbench_BINARY_DIR:STATIC=C:/Users/jdrurka1/source/repos/Dynamics-io/Dynamics.io-Testbench/CPP_Bench/build
 
 //Value Computed by CMake
-Dynamics_IO_Testbench_IS_TOP_LEVEL:STATIC=OFF
+Dynamics_IO_Testbench_IS_TOP_LEVEL:STATIC=ON
 
 //Value Computed by CMake
-Dynamics_IO_Testbench_SOURCE_DIR:STATIC=C:/Users/jdrurka1/source/repos/Dynamics-io/Dynamics.io-Testbench/CPP_Bench/source/library
+Dynamics_IO_Testbench_SOURCE_DIR:STATIC=C:/Users/jdrurka1/source/repos/Dynamics-io/Dynamics.io-Testbench/CPP_Bench
+
+//Value Computed by CMake
+Dynamics_IO_Testbench_lib_BINARY_DIR:STATIC=C:/Users/jdrurka1/source/repos/Dynamics-io/Dynamics.io-Testbench/CPP_Bench/build/source/library
+
+//Value Computed by CMake
+Dynamics_IO_Testbench_lib_IS_TOP_LEVEL:STATIC=OFF
+
+//Value Computed by CMake
+Dynamics_IO_Testbench_lib_SOURCE_DIR:STATIC=C:/Users/jdrurka1/source/repos/Dynamics-io/Dynamics.io-Testbench/CPP_Bench/source/library
 
 //Value Computed by CMake
 Dynamics_io_tester_BINARY_DIR:STATIC=C:/Users/jdrurka1/source/repos/Dynamics-io/Dynamics.io-Testbench/CPP_Bench/build/source/executable
@@ -205,6 +214,15 @@ OpenCL_INCLUDE_DIR:PATH=C:/Users/jdrurka1/.conan/data/opencl-headers/2020.06.16/
 
 //Path to a library.
 OpenCL_LIBRARY:FILEPATH=C:/Users/jdrurka1/source/repos/Dynamics-io/Dynamics.io-Testbench/CPP_Bench/lib/nvidia_OpenCL/x64
+
+//Value Computed by CMake
+lib_Dynamics_IO_Testbench_BINARY_DIR:STATIC=C:/Users/jdrurka1/source/repos/Dynamics-io/Dynamics.io-Testbench/CPP_Bench/build/source/library
+
+//Value Computed by CMake
+lib_Dynamics_IO_Testbench_IS_TOP_LEVEL:STATIC=OFF
+
+//Value Computed by CMake
+lib_Dynamics_IO_Testbench_SOURCE_DIR:STATIC=C:/Users/jdrurka1/source/repos/Dynamics-io/Dynamics.io-Testbench/CPP_Bench/source/library
 
 
 ########################
@@ -291,7 +309,7 @@ CMAKE_MODULE_LINKER_FLAGS_RELWITHDEBINFO-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CMAKE_MT
 CMAKE_MT-ADVANCED:INTERNAL=1
 //number of local generators
-CMAKE_NUMBER_OF_MAKEFILES:INTERNAL=6
+CMAKE_NUMBER_OF_MAKEFILES:INTERNAL=8
 //Platform information initialized
 CMAKE_PLATFORM_INFO_INITIALIZED:INTERNAL=1
 //noop for ranlib

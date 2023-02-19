@@ -4,13 +4,13 @@
 //#include "resources/resources.h"
 //#include "terrain/terrain.h"
 #include "utils/utils.h"
-#include "Compute/ComputeEngine.h"
-#include "Compute/ProgramBuilder.h"
-#include "Compute/ComputeController.h"
+#include "Compute_Interface/InterfaceIncludes.h"
 #include "Logger.h"
 //#include "SimContext.h"
 
 using namespace Dynamics_IO_Testbench::Compute;
+
+/*
 
 EXPORTED int ComputeEngine_Platforms_Init();
 
@@ -67,3 +67,5 @@ EXPORTED void ComputeBuffer_Dispose(void* handle);
 EXPORTED void* ComputeBuffer_Get_CL_Mem(void* handle);
 
 EXPORTED unsigned long ComputeBuffer_GetSize(void* handle);
+
+*/

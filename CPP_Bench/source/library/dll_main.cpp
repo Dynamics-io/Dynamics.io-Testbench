@@ -1,9 +1,11 @@
 #include "dll_main.h"
-#include "Compute/ComputeEngine.h"
+#include "Compute_OCL/ComputeEngine.h"
 
 
 
 #define PHYSICS_DT 0.0005f // fixed dt of 0.5 ms
+
+/*
 
 using namespace Dynamics_IO_Testbench::Compute;
 
@@ -177,3 +179,4 @@ EXPORTED unsigned long ComputeBuffer_GetSize(void* handle)
 
 
 
+*/

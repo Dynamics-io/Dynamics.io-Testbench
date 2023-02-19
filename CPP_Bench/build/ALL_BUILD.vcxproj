@@ -173,13 +173,17 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </ProjectReference>
-    <ProjectReference Include="C:\Users\jdrurka1\source\repos\Dynamics-io\Dynamics.io-Testbench\CPP_Bench\build\source\library\Compute\Compute.vcxproj">
-      <Project>{F63B97F1-F536-36D1-9330-860D17EBB56D}</Project>
-      <Name>Compute</Name>
+    <ProjectReference Include="C:\Users\jdrurka1\source\repos\Dynamics-io\Dynamics.io-Testbench\CPP_Bench\build\source\library\Compute_CUDA\Compute_CUDA.vcxproj">
+      <Project>{6608152C-1197-3C66-956A-B285BB02CC1E}</Project>
+      <Name>Compute_CUDA</Name>
     </ProjectReference>
-    <ProjectReference Include="C:\Users\jdrurka1\source\repos\Dynamics-io\Dynamics.io-Testbench\CPP_Bench\build\source\library\Dynamics_IO_Testbench.vcxproj">
-      <Project>{4DA1323D-A995-39AC-999C-1E52069E22DA}</Project>
-      <Name>Dynamics_IO_Testbench</Name>
+    <ProjectReference Include="C:\Users\jdrurka1\source\repos\Dynamics-io\Dynamics.io-Testbench\CPP_Bench\build\source\library\Compute_Interface\Compute_Interface.vcxproj">
+      <Project>{36D3ABBD-0C7E-3543-AAD2-7B4E740C0D18}</Project>
+      <Name>Compute_Interface</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\jdrurka1\source\repos\Dynamics-io\Dynamics.io-Testbench\CPP_Bench\build\source\library\Compute_OCL\Compute_OCL.vcxproj">
+      <Project>{041EBF6C-96F6-3978-B3CC-6B4F91A7ACEE}</Project>
+      <Name>Compute_OCL</Name>
     </ProjectReference>
     <ProjectReference Include="C:\Users\jdrurka1\source\repos\Dynamics-io\Dynamics.io-Testbench\CPP_Bench\build\source\executable\Dynamics_io_tester.vcxproj">
       <Project>{3C551DA5-51ED-301C-B4FE-23D99EFD6B54}</Project>
@@ -188,6 +192,10 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     <ProjectReference Include="C:\Users\jdrurka1\source\repos\Dynamics-io\Dynamics.io-Testbench\CPP_Bench\build\source\library\utils\Utils.vcxproj">
       <Project>{FAD867A8-FFF7-3431-8B54-190643A517BB}</Project>
       <Name>Utils</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\jdrurka1\source\repos\Dynamics-io\Dynamics.io-Testbench\CPP_Bench\build\source\library\lib_Dynamics_IO_Testbench.vcxproj">
+      <Project>{E76F9B80-06DA-3E49-9C47-F4878015CCB7}</Project>
+      <Name>lib_Dynamics_IO_Testbench</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

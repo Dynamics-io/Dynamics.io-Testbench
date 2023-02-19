@@ -1,6 +1,6 @@
 #include "ComputeEngine.h"
 
-using namespace Dynamics_IO_Testbench::Compute;
+using namespace Dynamics_IO_Testbench::Compute::OCL;
 
 #pragma comment(lib, "OpenCL.lib")
 
@@ -12,7 +12,7 @@ cl_device_id ComputeEngine::cur_device_id = 0;
 cl_uint ComputeEngine::num_of_devices = 0;
 std::string  ComputeEngine::app_dir;
 
-std::vector<ComputeEngine::Platform> ComputeEngine::GetSupportedPlatforms()
+/*std::vector<ComputeEngine::Platform> ComputeEngine::GetSupportedPlatforms()
 {
     std::vector<ComputeEngine::Platform> res;
 
@@ -58,7 +58,7 @@ std::vector<ComputeEngine::Platform> ComputeEngine::GetSupportedPlatforms()
     return res;
 }
 
-std::vector<ComputeEngine::Device> Dynamics_IO_Testbench::Compute::ComputeEngine::GetSupportedDevices(Platform pltfrm)
+std::vector<ComputeEngine::Device> ComputeEngine::GetSupportedDevices(Platform pltfrm)
 {
     std::vector<Device> res;
 
@@ -132,13 +132,13 @@ std::vector<ComputeEngine::Device> Dynamics_IO_Testbench::Compute::ComputeEngine
     }
     
     return res;
-}
+}*/
 
-int ComputeEngine::Init(Platform pltform, Device device, std::string dir)
+int ComputeEngine::Init(cl_platform_id pltform, cl_device_id device, std::string dir)
 {
    
-    platform_id = pltform.platform;
-    cur_device_id = device.device;
+    platform_id = pltform;
+    cur_device_id = device;
    
 
    // context properties list - must be terminated with 0
@@ -155,7 +155,7 @@ ComputeContext* ComputeEngine::GetNewContext() {
    return new ComputeContext(properties, device_ids);
 }
 
-std::string Dynamics_IO_Testbench::Compute::ComputeEngine::Get_CL_Version()
+std::string ComputeEngine::Get_CL_Version()
 {
     char platformInfo[1000];
     size_t size = 0;
@@ -285,8 +285,8 @@ int ComputeProgram::Set_Binary(const void* binary, size_t length)
 int ComputeProgram::Set_Binary_File(std::string file_path)
 {
     //open file
-    std::ifstream infile(file_path);
-    std::vector<char> buffer;
+    std::ifstream infile(file_path, std::ios::binary);
+    std::vector<cl_uchar> buffer;
 
     //get length of file
     infile.seekg(0, infile.end);
@@ -296,7 +296,8 @@ int ComputeProgram::Set_Binary_File(std::string file_path)
     //read file
     if (length > 0) {
         buffer.resize(length);
-        infile.read(&buffer[0], length);
+        buffer.insert(buffer.begin(), std::istreambuf_iterator<char>(infile), std::istreambuf_iterator<char>());
+        //infile.read(&buffer[0], length);
     }
 
     const void* binary = static_cast<void*>(buffer.data());
@@ -336,7 +337,7 @@ ComputeKernel* ComputeProgram::GetKernel(std::string k_name)
    return new_kern;
 }
 
-void Dynamics_IO_Testbench::Compute::ComputeProgram::Dispose()
+void ComputeProgram::Dispose()
 {
     for (const auto& [key, value] : kernels) {
         value->Dispose();
@@ -370,7 +371,7 @@ ComputeBuffer* ComputeContext::GetBuffer(ComputeBuffer::Buffer_Type type, size_t
    return new ComputeBuffer(context, command_queue, numContexts, flags, size);
 }
 
-void Dynamics_IO_Testbench::Compute::ComputeContext::Dispose()
+void ComputeContext::Dispose()
 {
     for (const auto& [key, value] : programs) {
         value->Dispose();
@@ -416,7 +417,7 @@ int ComputeKernel::Execute(int device, cl_uint work_dim, size_t* global_work_siz
    return res;
 }
 
-void Dynamics_IO_Testbench::Compute::ComputeKernel::Dispose()
+void ComputeKernel::Dispose()
 {
     clReleaseKernel(kernel);
 }
@@ -452,7 +453,7 @@ int ComputeBuffer::GetData(void* outData)
    return res;
 }
 
-void Dynamics_IO_Testbench::Compute::ComputeBuffer::Dispose()
+void ComputeBuffer::Dispose()
 {
     clReleaseMemObject(buffer);
 }

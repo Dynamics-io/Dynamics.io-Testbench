@@ -1,7 +1,7 @@
 
 #include "ShaderDepository.h"
 
-using namespace Dynamics_IO_Testbench::Compute;
+using namespace Dynamics_IO_Testbench::Compute::OCL;
 
 void ShaderDepository::Load()
 {
