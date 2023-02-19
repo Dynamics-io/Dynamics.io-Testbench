@@ -43,9 +43,9 @@ namespace Dynamics_IO_Testbench {
 				std::string GetFullSource() { return m_source; }
 
 			private:
-				std::string m_name;
-				std::string m_source;
-				std::string m_error_msg;
+				std::string m_name = "";
+				std::string m_source = "";
+				std::string m_error_msg = "";
 				ComputeContext* m_context{ nullptr };
 				ComputeProgram* m_program{ nullptr };
 				std::vector<std::string> m_kernels;

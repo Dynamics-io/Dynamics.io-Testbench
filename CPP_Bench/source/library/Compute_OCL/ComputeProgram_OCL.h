@@ -69,7 +69,7 @@ namespace Dynamics_IO_Testbench {
 
 				int BindKernel(ComputeBuffer* buffer, ComputeKernel* kernel, int arg);
 
-				void InitKernelEntries();
+				int InitKernelEntries();
 
 				std::string m_program_name;
 
@@ -77,7 +77,7 @@ namespace Dynamics_IO_Testbench {
 				ProgramBuilder* m_builder{ nullptr };
 				ProgramBuildState m_cur_state{ ProgramBuildState::None };
 
-				std::string m_build_error;
+				std::string m_build_error = "";
 				int m_cl_build_res = { 0 };
 
 				ShaderDepository default_shaders;

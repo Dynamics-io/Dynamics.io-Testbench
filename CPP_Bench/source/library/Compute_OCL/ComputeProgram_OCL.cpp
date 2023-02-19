@@ -142,10 +142,15 @@ IComputeProgram::ProgramBuildState ComputeProgram_OCL::BuildProgramFromBinary(st
 		printf("Program Built successfully!\n");
 
 		// get kernels
-		InitKernelEntries();
+		int kernel_res = InitKernelEntries();
 
-		m_builder->Clear();
-		m_cur_state = ProgramBuildState::Built;
+		if (kernel_res == 0)
+			m_cur_state = ProgramBuildState::Built;
+		else
+		{
+			m_cur_state = ProgramBuildState::BuildError;
+			m_build_error = "Kernel Error " + std::to_string(kernel_res);
+		}
 	}
 	else
 	{
@@ -154,6 +159,8 @@ IComputeProgram::ProgramBuildState ComputeProgram_OCL::BuildProgramFromBinary(st
 		printf("Got non-zero result from BuildFromBinary: %i\n", m_cl_build_res);
 		//printf("Build Error: %s\n", m_builder->GetError().c_str());
 	}
+
+	m_builder->Clear();
 
 	return m_cur_state;
 }
@@ -169,10 +176,15 @@ IComputeProgram::ProgramBuildState ComputeProgram_OCL::BuildProgramFromBinary(co
 		printf("Program Built successfully!\n");
 
 		// get kernels
-		InitKernelEntries();
+		int kernel_res = InitKernelEntries();
 
-		m_builder->Clear();
-		m_cur_state = ProgramBuildState::Built;
+		if (kernel_res == 0)
+			m_cur_state = ProgramBuildState::Built;
+		else
+		{
+			m_cur_state = ProgramBuildState::BuildError;
+			m_build_error = "Kernel Error " + std::to_string(kernel_res);
+		}
 	}
 	else
 	{
@@ -181,6 +193,8 @@ IComputeProgram::ProgramBuildState ComputeProgram_OCL::BuildProgramFromBinary(co
 		printf("Got non-zero result from BuildFromBinary: %i\n", m_cl_build_res);
 		//printf("Build Error: %s\n", m_builder->GetError().c_str());
 	}
+
+	m_builder->Clear();
 
 	return m_cur_state;
 }
@@ -197,11 +211,15 @@ IComputeProgram::ProgramBuildState ComputeProgram_OCL::BuildProgramFromSource(st
 		printf("Program Built successfully!\n");
 
 		// get kernels
-		InitKernelEntries();
+		int kernel_res = InitKernelEntries();
 
-
-		m_builder->Clear();
-		m_cur_state = ProgramBuildState::Built;
+		if (kernel_res == 0)
+			m_cur_state = ProgramBuildState::Built;
+		else
+		{
+			m_cur_state = ProgramBuildState::BuildError;
+			m_build_error = "Kernel Error " + std::to_string(kernel_res);
+		}
 	}
 	else
 	{
@@ -210,6 +228,8 @@ IComputeProgram::ProgramBuildState ComputeProgram_OCL::BuildProgramFromSource(st
 		printf("Got non-zero result from BuildFromBinary: %i\n", m_cl_build_res);
 		//printf("Build Error: %s\n", m_builder->GetError().c_str());
 	}
+
+	m_builder->Clear();
 
 	return m_cur_state;
 }
@@ -245,11 +265,15 @@ IComputeProgram::ProgramBuildState ComputeProgram_OCL::BuildProgramFromSourceFil
 		printf("Program Built successfully!\n");
 
 		// get kernels
-		InitKernelEntries();
+		int kernel_res = InitKernelEntries();
 
-
-		m_builder->Clear();
-		m_cur_state = ProgramBuildState::Built;
+		if (kernel_res == 0)
+			m_cur_state = ProgramBuildState::Built;
+		else
+		{
+			m_cur_state = ProgramBuildState::BuildError;
+			m_build_error = "Kernel Error " + std::to_string(kernel_res);
+		}
 	}
 	else
 	{
@@ -258,6 +282,8 @@ IComputeProgram::ProgramBuildState ComputeProgram_OCL::BuildProgramFromSourceFil
 		printf("Got non-zero result from BuildFromBinary: %i\n", m_cl_build_res);
 		//printf("Build Error: %s\n", m_builder->GetError().c_str());
 	}
+
+	m_builder->Clear();
 
 	return m_cur_state;
 }
@@ -273,11 +299,15 @@ IComputeProgram::ProgramBuildState ComputeProgram_OCL::BuildProgramFromInternalD
 			printf("Program Built successfully!\n");
 
 			// get kernels
-			InitKernelEntries();
+			int kernel_res = InitKernelEntries();
 
-
-			m_builder->Clear();
-			m_cur_state = ProgramBuildState::Built;
+			if (kernel_res == 0)
+				m_cur_state = ProgramBuildState::Built;
+			else
+			{
+				m_cur_state = ProgramBuildState::BuildError;
+				m_build_error = "Kernel Error " + std::to_string(kernel_res);
+			}
 		}
 		else
 		{
@@ -286,6 +316,8 @@ IComputeProgram::ProgramBuildState ComputeProgram_OCL::BuildProgramFromInternalD
 			printf("Got non-zero result from BuildFromBinary: %i\n", m_cl_build_res);
 			//printf("Build Error: %s\n", m_builder->GetError().c_str());
 		}
+
+		m_builder->Clear();
 	}
 
 	return m_cur_state;
@@ -301,7 +333,7 @@ int ComputeProgram_OCL::BindKernel(ComputeBuffer* buffer, ComputeKernel* kernel,
 	return kernel->SetBuffer(0, buffer, arg);
 }
 
-void ComputeProgram_OCL::InitKernelEntries()
+int ComputeProgram_OCL::InitKernelEntries()
 {
 	std::vector<std::string> kernls = m_builder->GetKernels();
 
@@ -321,10 +353,20 @@ void ComputeProgram_OCL::InitKernelEntries()
 		k_ent.kernel = m_builder->GetKernel(k_name);
 		k_ent.args = 0;
 
+		int k_status = k_ent.kernel->GetStatus();
+
+		if (k_status != 0)
+		{
+			printf("Kernel '%s' failed with Code %i.\n", k_ent.name.c_str(), k_status);
+			return k_status;
+		}
+
 		m_kernel_name_to_id[k_ent.name] = i;
 		m_kernel_entries[i] = k_ent;
 	}
 
 	// established kernels.
 	// someKnownKernel = m_kernel_entries["coolKernel"];
+
+	return 0;
 }

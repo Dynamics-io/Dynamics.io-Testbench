@@ -51,7 +51,10 @@ int ProgramBuilder::BuildFromSource()
 	char errorstr[ERROR_SIZE];
 	m_program->Set_Source(m_source.c_str());
 	int status = m_program->Build(errorstr, ERROR_SIZE);
-	m_error_msg = errorstr;
+
+	m_error_msg = status != 0 ? errorstr : "Program Built Successfully";
+
+
 
 	for (int i = 0; i < m_kernels.size(); i++)
 	{

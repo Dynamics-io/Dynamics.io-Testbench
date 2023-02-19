@@ -55,10 +55,14 @@ namespace Dynamics_IO_Testbench {
                 cl_program m_program;
                 cl_kernel kernel;
                 cl_command_queue command_queue[MAX_DEVICES];
-                int numKernels;
+                int status;
+
+                //int numKernels;
 
             public:
                 ComputeKernel(char* name, cl_command_queue command_queue[MAX_DEVICES], cl_program program, int numPrograms);
+
+                int GetStatus() { return status; }
 
                 int SetBuffer(int device, ComputeBuffer* buffer, int arg);
 

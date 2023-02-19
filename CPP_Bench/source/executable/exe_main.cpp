@@ -42,7 +42,7 @@ int main()
 
 	IComputeController* controller = ComputeInterface::GetComputeController(ComputeInterface::OpenCL, controllerInfo);
 
-	IComputeProgram::ProgramInfo p_info("test_source.cl");
+	IComputeProgram::ProgramInfo p_info("test_cl_llvm.spv");
 	p_info.AddKernel("bar");
 
 	IComputeProgram* program = controller->AddProgram(p_info);
@@ -50,13 +50,19 @@ int main()
 
 	if (program->GetState() == IComputeProgram::ProgramBuildState::BuildError)
 	{
+		if (program->GetBuildResultCode() != 0)
+		{
+			printf("Build failed: %i\n", program->GetBuildResultCode());
+			return -1;
+		}
+
 		//printf("%s\n\n -------------- \n\n", controller->GetProgramBuilder()->GetFullSource().c_str());
-		//printf("BUILD ERROR: %s\n", controller->GetProgramBuilder()->GetError().c_str());
-		printf("Build failed: %i\n", program->GetBuildResultCode());
+		printf("BUILD ERROR: %s\n", program->GetBuildErrorMessage().c_str());
+		
 		return -1;
 	}
 
-	printf("Program built successfully!!!");
+	printf("Finished building program '%s'.\n", p_info.Name().c_str());
 
 	int Data[DATA_SIZE] = { 0 };
 

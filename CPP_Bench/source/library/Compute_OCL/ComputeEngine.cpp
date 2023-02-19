@@ -284,9 +284,10 @@ int ComputeProgram::Set_Binary(const void* binary, size_t length)
 
 int ComputeProgram::Set_Binary_File(std::string file_path)
 {
+    int res = -1;
     //open file
     std::ifstream infile(file_path, std::ios::binary);
-    std::vector<cl_uchar> buffer;
+    char* buffer;
 
     //get length of file
     infile.seekg(0, infile.end);
@@ -295,14 +296,27 @@ int ComputeProgram::Set_Binary_File(std::string file_path)
 
     //read file
     if (length > 0) {
-        buffer.resize(length);
-        buffer.insert(buffer.begin(), std::istreambuf_iterator<char>(infile), std::istreambuf_iterator<char>());
+
+        buffer = new char[length];
+        infile.read(buffer, length);
+
+        //buffer.resize(length);
+        //buffer.insert(buffer.begin(), std::istreambuf_iterator<char>(infile), std::istreambuf_iterator<char>());
         //infile.read(&buffer[0], length);
+        //const void* binary = static_cast<void*>(buffer.data());
+
+        printf("ComputeProgram.Set_Binary_File: Reading binary file of length %i\n", (int)length);
+        res =Set_Binary(buffer, length);
+    }
+    else
+    {
+        printf("ComputeProgram.Set_Binary_File: File has length of zero.");
+        res = -2;
     }
 
-    const void* binary = static_cast<void*>(buffer.data());
+    
 
-    return Set_Binary(binary, length);
+    return res;
 }
 
 void ComputeProgram::AddConstant(std::string name, std::string value)
@@ -388,7 +402,7 @@ void ComputeContext::Dispose()
 ComputeKernel::ComputeKernel(char* name, cl_command_queue queue[MAX_DEVICES], cl_program program, int numPrograms)
 {
    cl_int err;
-   numKernels = numPrograms;
+   //numKernels = numPrograms;
    m_program = program;
 
    //kernels = new cl_kernel[numKernels];
@@ -399,7 +413,16 @@ ComputeKernel::ComputeKernel(char* name, cl_command_queue queue[MAX_DEVICES], cl
       command_queue[i] = queue[i];
    }
    
+   printf("ComputeKernel(): Create kernel %s\n", name);
    kernel = clCreateKernel(m_program, name, &err);
+
+   if (err != 0)
+   {
+       printf("ComputeKernel(): Failed to create kernel: %i\n", err);
+
+   }
+
+   status = err;
 
 }
 
@@ -413,7 +436,19 @@ int ComputeKernel::Execute(int device, cl_uint work_dim, size_t* global_work_siz
 {
    cl_command_queue c_q = command_queue[device];
    int res = clEnqueueNDRangeKernel(c_q, kernel, work_dim, NULL, global_work_size, NULL, 0, NULL, NULL);
+
+   if (res != 0)
+   {
+       printf("ComputeKernel.Execute: Failed to enqueue Kernel: %i\n", res);
+   }
+
    res = clFinish(command_queue[device]);
+
+   if (res != 0)
+   {
+       printf("ComputeKernel.Execute: clFinish failed after kernel enqueue: %i\n", res);
+   }
+
    return res;
 }
 
