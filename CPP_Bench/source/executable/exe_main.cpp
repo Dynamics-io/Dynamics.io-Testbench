@@ -38,12 +38,14 @@ int main()
 	ComputeInterface::ControllerInfo controllerInfo;
 	controllerInfo.platform = platf;
 	controllerInfo.device = dev;
-	controllerInfo.program_dir = "C:/Users/jdrurka1/source/repos/Dynamics-io/Dynamics.io-Testbench/llvm_clang_Bench/Kernels/llvm_binaries/spirv_binaries";
+	controllerInfo.program_dir = "C:/Users/jdrurka1/source/repos/Dynamics-io/Dynamics.io-Testbench/llvm_clang_Bench/Kernels";
 
 	IComputeController* controller = ComputeInterface::GetComputeController(ComputeInterface::OpenCL, controllerInfo);
 
-	IComputeProgram::ProgramInfo p_info("test_cl_llvm.spv");
-	p_info.AddKernel("bar");
+	std::string kernel_name = "work";
+
+	IComputeProgram::ProgramInfo p_info("test_cpp_opt.spv");
+	p_info.AddKernel(kernel_name);
 
 	IComputeProgram* program = controller->AddProgram(p_info);
 
@@ -68,9 +70,9 @@ int main()
 
 	IComputeBuffer* compBuffer = controller->NewReadWriteBuffer(DATA_SIZE * sizeof(int));
 
-	program->KernelAddBuffer("bar", compBuffer);
+	program->KernelAddBuffer(kernel_name, compBuffer);
 
-	program->RunKernel("bar", DATA_SIZE, 0, 0);
+	program->RunKernel(kernel_name, DATA_SIZE, 0, 0);
 
 	compBuffer->GetData(Data);
 
