@@ -185,7 +185,84 @@ IComputeProgram::ProgramBuildState ComputeProgram_OCL::BuildProgramFromBinary(co
 	return m_cur_state;
 }
 
-IComputeProgram::ProgramBuildState ComputeProgram_OCL::BuildProgramFromSource()
+IComputeProgram::ProgramBuildState ComputeProgram_OCL::BuildProgramFromSource(std::string content, std::vector<std::string> kernels)
+{
+	m_builder->AddKernels(kernels);
+	m_builder->AppendSource(content);
+
+	m_cl_build_res = m_builder->BuildFromSource();
+
+	if (m_cl_build_res == 0)
+	{
+		printf("Program Built successfully!\n");
+
+		// get kernels
+		InitKernelEntries();
+
+
+		m_builder->Clear();
+		m_cur_state = ProgramBuildState::Built;
+	}
+	else
+	{
+		m_cur_state = ProgramBuildState::BuildError;
+		m_build_error = m_builder->GetError();
+		printf("Got non-zero result from BuildFromBinary: %i\n", m_cl_build_res);
+		//printf("Build Error: %s\n", m_builder->GetError().c_str());
+	}
+
+	return m_cur_state;
+}
+
+IComputeProgram::ProgramBuildState ComputeProgram_OCL::BuildProgramFromSourceFile(std::string file_path, std::vector<std::string> kernels)
+{
+	m_builder->AddKernels(kernels);
+
+	//open file
+	std::ifstream infile(file_path);
+	std::vector<char> buffer;
+
+	//get length of file
+	infile.seekg(0, infile.end);
+	size_t length = infile.tellg();
+	infile.seekg(0, infile.beg);
+
+	//read file
+	if (length > 0) {
+		buffer.resize(length);
+		//buffer.insert(buffer.begin(), std::istreambuf_iterator<char>(infile), std::istreambuf_iterator<char>());
+		infile.read(&buffer[0], length);
+	}
+
+	std::string file_res(buffer.begin(), buffer.end());
+
+	m_builder->AppendSource(file_res);
+
+	m_cl_build_res = m_builder->BuildFromSource();
+
+	if (m_cl_build_res == 0)
+	{
+		printf("Program Built successfully!\n");
+
+		// get kernels
+		InitKernelEntries();
+
+
+		m_builder->Clear();
+		m_cur_state = ProgramBuildState::Built;
+	}
+	else
+	{
+		m_cur_state = ProgramBuildState::BuildError;
+		m_build_error = m_builder->GetError();
+		printf("Got non-zero result from BuildFromBinary: %i\n", m_cl_build_res);
+		//printf("Build Error: %s\n", m_builder->GetError().c_str());
+	}
+
+	return m_cur_state;
+}
+
+IComputeProgram::ProgramBuildState ComputeProgram_OCL::BuildProgramFromInternalDepo()
 {
 	if (m_cur_state == ProgramBuildState::Constructed)
 	{

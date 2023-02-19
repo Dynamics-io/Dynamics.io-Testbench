@@ -42,10 +42,11 @@ int main()
 
 	IComputeController* controller = ComputeInterface::GetComputeController(ComputeInterface::OpenCL, controllerInfo);
 
-	IComputeProgram::ProgramInfo p_info("test2");
+	IComputeProgram::ProgramInfo p_info("test_source.cl");
 	p_info.AddKernel("bar");
 
 	IComputeProgram* program = controller->AddProgram(p_info);
+
 
 	if (program->GetState() == IComputeProgram::ProgramBuildState::BuildError)
 	{

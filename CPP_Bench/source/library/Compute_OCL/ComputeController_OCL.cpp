@@ -2,6 +2,8 @@
 
 #include "ComputeBuffer_OCL.h"
 
+#include <boost/algorithm/string.hpp>
+
 using namespace Dynamics_IO_Testbench::Compute;
 using namespace Dynamics_IO_Testbench::Compute::OCL;
 
@@ -25,12 +27,29 @@ IComputeProgram* ComputeController_OCL::AddProgram(IComputeProgram::ProgramInfo 
 
 	program->Init(name);
 
-	std::string full_file_path = m_directory + name + ".spv";
+	std::string full_file_path = m_directory + name;
+
+	std::vector <std::string> name_parts;
+	boost::split(name_parts, name, boost::is_any_of("."), boost::token_compress_on);
+
+	std::string file_name = name_parts[0];
+	std::string file_type = name_parts[1];
+
 
 	printf("ComputeController_OCL: Reading program from directory: %s\n", m_directory.c_str());
-	printf("ComputeController_OCL: Adding program binary file: %s\n", full_file_path.c_str());
+	
 
-	program->BuildProgramFromBinary(full_file_path, kernels);
+
+	if (file_type == "spv" || file_type == "bin")
+	{
+		printf("ComputeController_OCL: Adding program binary file: %s\n", full_file_path.c_str());
+		program->BuildProgramFromBinary(full_file_path, kernels);
+	}
+	else if (file_type == "cl")
+	{
+		printf("ComputeController_OCL: Adding program source file: %s\n", full_file_path.c_str());
+		program->BuildProgramFromSourceFile(full_file_path, kernels);
+	}
 
 	m_programs[name] = program;
 

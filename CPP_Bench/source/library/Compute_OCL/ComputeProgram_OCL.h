@@ -51,7 +51,11 @@ namespace Dynamics_IO_Testbench {
 
 				ProgramBuildState BuildProgramFromBinary(const void* binary, size_t length, std::vector<std::string> kernels);
 
-				ProgramBuildState BuildProgramFromSource();
+				ProgramBuildState BuildProgramFromSource(std::string content, std::vector<std::string> kernels);
+
+				ProgramBuildState BuildProgramFromSourceFile(std::string file_path, std::vector<std::string> kernels);
+
+				ProgramBuildState BuildProgramFromInternalDepo();
 
 			private:
 
