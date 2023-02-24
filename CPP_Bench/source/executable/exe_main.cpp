@@ -8,6 +8,25 @@
 
 using namespace Dynamics_IO_Testbench::Compute;
 
+int Vulkan_test();
+int OpenCL_test();
+
+
+int main()
+{
+	return Vulkan_test();
+	//return OpenCL_test();
+}
+
+int Vulkan_test()
+{
+	ComputeInterface::ControllerInfo controllerInfo;
+	ComputeInterface::GetComputeController(ComputeInterface::VULKAN, controllerInfo);
+
+	return 0;
+}
+
+
 const char* KernelSource =
 "__kernel void hello(__global float *input, __global float *output)\n"\
 "{\n"\
@@ -17,7 +36,7 @@ const char* KernelSource =
 "\n";
 
 
-int main()
+int OpenCL_test()
 {
 	std::vector<Platform> platforms = ComputeInterface::GetSupportedPlatforms();
 
@@ -44,7 +63,7 @@ int main()
 
 	std::string kernel_name = "work";
 
-	IComputeProgram::ProgramInfo p_info("test_cpp_opt.spv");
+	IComputeProgram::ProgramInfo p_info("test_cl_opt.spv");
 	p_info.AddKernel(kernel_name);
 
 	IComputeProgram* program = controller->AddProgram(p_info);

@@ -13,10 +13,16 @@ if (UNIX)
 endif ()
 
 find_package(OpenCL REQUIRED)
-message(${OpenCL_LIBRARY})
+#message(${OpenCL_LIBRARY})
 message(${OpenCL_LIBRARY}/OpenCL.lib)
-
+#message(${Vulkan_LIBRARY})
+#message(${Vulkan_LIBRARY}/Vulkan-1.lib)
 link_directories(${OpenCL_LIBRARY})
+
+message(${PROJECT_SOURCE_DIR})
+
+set(Vulkan_LIBRARY ${PROJECT_SOURCE_DIR}/lib/vulkan_1.3.239.0/Lib)
+link_directories(${Vulkan_LIBRARY})
 
 add_subdirectory(source)
 

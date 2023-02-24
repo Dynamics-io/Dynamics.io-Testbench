@@ -8,10 +8,12 @@ class Dynamics_IO(ConanFile):
 
     requires = (
         "spdlog/1.8.0",
-        "boost/1.75.0",
-        "glm/0.9.9.8",
+        "boost/1.81.0",
+        "glm/cci.20230113",
         #"vk-bootstrap/0.4",
-        "opencl-headers/2020.06.16"
+        "opencl-headers/2022.09.30",
+        "vulkan-headers/1.3.239.0",
+        "glfw/3.3.8"
     )
 
     settings = "os", "compiler", "build_type", "arch"

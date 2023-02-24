@@ -1,1 +1,0 @@
-cmake .. -DOpenCL_LIBRARY=../lib/nvidia_OpenCL/x64/

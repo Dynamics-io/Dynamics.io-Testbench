@@ -1,3 +1,0 @@
-C:/Users/jdrurka1/source/repos/Dynamics-io/Dynamics.io-Testbench/CPP_Bench/build/source/library/Dynamics_IO_Testbench_lib.dir/RelWithDebInfo/dll_main.obj
-C:/Users/jdrurka1/source/repos/Dynamics-io/Dynamics.io-Testbench/CPP_Bench/build/source/library/Dynamics_IO_Testbench_lib.dir/RelWithDebInfo/C_Variables.obj
-C:/Users/jdrurka1/source/repos/Dynamics-io/Dynamics.io-Testbench/CPP_Bench/build/source/library/Dynamics_IO_Testbench_lib.dir/RelWithDebInfo/Logger.obj

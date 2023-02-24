@@ -2,8 +2,12 @@
 
 #include "Compute_OCL/ComputeController_OCL.h"
 
+#include "Compute_Vulkan/vulkan_test.h"
+
 using namespace Dynamics_IO_Testbench::Compute;
 using namespace Dynamics_IO_Testbench::Compute::OCL;
+using namespace Dynamics_IO_Testbench::Compute::VK;
+
 
 #pragma comment(lib, "OpenCL.lib")
 
@@ -49,6 +53,16 @@ IComputeController* ComputeInterface::GetComputeController_CUDA(ControllerInfo i
 
 IComputeController* ComputeInterface::GetComputeController_Vulkan(ControllerInfo info)
 {
+    Vulkan_test test;
+    
+    try {
+        test.Run();
+    }
+    catch (const std::exception& e) {
+        std::cerr << e.what() << std::endl;
+        return nullptr;
+    }
+
 	return nullptr;
 }
 

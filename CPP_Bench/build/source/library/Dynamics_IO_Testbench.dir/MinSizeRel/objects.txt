@@ -1,3 +1,0 @@
-C:/Users/jdrurka1/source/repos/Dynamics-io/Dynamics.io-Testbench/CPP_Bench/build/source/library/Dynamics_IO_Testbench.dir/MinSizeRel/dll_main.obj
-C:/Users/jdrurka1/source/repos/Dynamics-io/Dynamics.io-Testbench/CPP_Bench/build/source/library/Dynamics_IO_Testbench.dir/MinSizeRel/C_Variables.obj
-C:/Users/jdrurka1/source/repos/Dynamics-io/Dynamics.io-Testbench/CPP_Bench/build/source/library/Dynamics_IO_Testbench.dir/MinSizeRel/Logger.obj

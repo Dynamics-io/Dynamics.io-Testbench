@@ -15,12 +15,16 @@
 #include <list>
 #include <utility>
 #include <cstdlib>
+#include <iostream>
 #include <ostream>
 #include <sstream>
 #include <istream>
 #include <fstream>
 #include <array>
 #include <unordered_map>
+#include <optional>
+#include <set>
+#include <algorithm>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
