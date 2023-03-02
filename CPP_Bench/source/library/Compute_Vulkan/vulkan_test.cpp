@@ -1,41 +1,11 @@
 #include "vulkan_test.h"
 
-#define GLM_FORCE_RADIANS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#include <glm/vec4.hpp>
-#include <glm/mat4x4.hpp>
 
+#include "vulkan_utils.h"
+
+#include <chrono>
 
 using namespace Dynamics_IO_Testbench::Compute::VK;
-
-VkResult CreateDebugUtilsMessengerEXT(
-    VkInstance instance,
-    const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
-    const VkAllocationCallbacks* pAllocator,
-    VkDebugUtilsMessengerEXT* pDebugMessenger)
-{
-    auto func = (PFN_vkCreateDebugUtilsMessengerEXT) vkGetInstanceProcAddr(
-        instance, "vkCreateDebugUtilsMessengerEXT");
-    if (func != nullptr) {
-        return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
-    }
-    else {
-        return VK_ERROR_EXTENSION_NOT_PRESENT;
-    }
-}
-
-void DestroyDebugUtilsMessengerEXT(
-    VkInstance instance,
-    VkDebugUtilsMessengerEXT debugMessenger,
-    const VkAllocationCallbacks* pAllocator)
-{
-    auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
-        instance, "vkDestroyDebugUtilsMessengerEXT");
-    if (func != nullptr) {
-        func(instance, debugMessenger, pAllocator);
-    }
-}
-
 
 void Vulkan_test::DoTest()
 {
@@ -86,9 +56,15 @@ void Dynamics_IO_Testbench::Compute::VK::Vulkan_test::InitVK()
     createSwapChain();
     createImageViews();
     createRenderPass();
+    createDescriptorSetLayout();
     createGraphicsPipeline();
     createFramebuffers();
     createCommandPool();
+    createVertexBuffer();
+    createIndexBuffer();
+    createUniformBuffers();
+    createDescriptorPool();
+    createDescriptorSets();
     createCommandBuffer();
     createSyncObjects();
 }
@@ -99,6 +75,7 @@ void Dynamics_IO_Testbench::Compute::VK::Vulkan_test::MainLoop()
         glfwPollEvents();
         drawFrame();
     }
+    vkDeviceWaitIdle(device);
 }
 
 void Dynamics_IO_Testbench::Compute::VK::Vulkan_test::CleanUp()
@@ -108,6 +85,7 @@ void Dynamics_IO_Testbench::Compute::VK::Vulkan_test::CleanUp()
     vkDestroyFence(device, inFlightFence, nullptr);
 
     vkDestroyCommandPool(device, commandPool, nullptr);
+    vkDestroyCommandPool(device, tramsferCmdPool, nullptr);
 
     for (auto framebuffer : swapChainFrameBuffers) {
         vkDestroyFramebuffer(device, framebuffer, nullptr);
@@ -117,16 +95,32 @@ void Dynamics_IO_Testbench::Compute::VK::Vulkan_test::CleanUp()
     vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
     vkDestroyRenderPass(device, renderPass, nullptr);
 
+    for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+    {
+        vkDestroyBuffer(device, uniformBuffers[i], nullptr);
+        vkFreeMemory(device, uniformBuffersMemory[i], nullptr);
+    }
+
+    vkDestroyDescriptorPool(device, descriptorPool, nullptr);
+
+    vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
+
     for (auto imageView : swapChainImageViews) {
         vkDestroyImageView(device, imageView, nullptr);
     }
 
     vkDestroySwapchainKHR(device, swapChain, nullptr);
 
+    vkDestroyBuffer(device, indexBuffer, nullptr);
+    vkFreeMemory(device, indexBufferMemory, nullptr);
+
+    vkDestroyBuffer(device, vertexBuffer, nullptr);
+    vkFreeMemory(device, vertexBufferMemory, nullptr);
+
     vkDestroyDevice(device, nullptr);
 
     if (enableValidationLayers) {
-        DestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
+        Extensions::DestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
     }
 
     vkDestroySurfaceKHR(instance, surface, nullptr);
@@ -206,23 +200,12 @@ void Dynamics_IO_Testbench::Compute::VK::Vulkan_test::createInstance()
         throw std::runtime_error("validation layers requested, but not available!");
     }
 
-    VkApplicationInfo appInfo{};
-    appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-    appInfo.pApplicationName = "Hello Triangle";
-    appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-    appInfo.pEngineName = "No Engine";
-    appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-    appInfo.apiVersion = VK_API_VERSION_1_3;
+    VkApplicationInfo appInfo = Utilities::getApplicationInfo("Hello Triangle", VK_MAKE_VERSION(1, 0, 0), "No Engine", VK_MAKE_VERSION(1, 0, 0), VK_API_VERSION_1_3);
 
-    VkInstanceCreateInfo createInfo{};
-    createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-    createInfo.pApplicationInfo = &appInfo;
 
-    uint32_t glfwExtCount = 0;
-    auto glfwExtensions = getRequiredExtensions();
+    std::vector<const char*> requiredExtensions = getRequiredExtensions();
+    VkInstanceCreateInfo createInfo = Utilities::getInstanceCreateInfo(appInfo, requiredExtensions);
 
-    createInfo.enabledExtensionCount = static_cast<uint32_t>(glfwExtensions.size());
-    createInfo.ppEnabledExtensionNames = glfwExtensions.data();
 
     VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
     if (enableValidationLayers) {
@@ -239,14 +222,10 @@ void Dynamics_IO_Testbench::Compute::VK::Vulkan_test::createInstance()
 
     // TODO: Add MacOS support
 
-    uint32_t extensionCount = 0;
-    vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
+    std::vector<VkExtensionProperties> extensions = Utilities::EnumerateInstanceExtensionProperties();
 
-    std::vector<VkExtensionProperties> extensions(extensionCount);
 
-    vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, extensions.data());
-
-    std::cout << "Vulkan Extensions: " << extensionCount << "\n";
+    std::cout << "Vulkan Extensions: " << extensions.size() << "\n";
     for (const auto& ext : extensions) {
         std::cout << '\t' << ext.extensionName << '\n';
     }
@@ -264,7 +243,7 @@ void Dynamics_IO_Testbench::Compute::VK::Vulkan_test::setupDebugMessenger()
     VkDebugUtilsMessengerCreateInfoEXT createInfo{};
     populateDebugMessengerCreateInfo(createInfo);
 
-    if (CreateDebugUtilsMessengerEXT(instance, &createInfo, nullptr, &debugMessenger) != VK_SUCCESS)
+    if (Extensions::CreateDebugUtilsMessengerEXT(instance, &createInfo, nullptr, &debugMessenger) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to set up debug messenger!");
     }
@@ -281,15 +260,7 @@ void Dynamics_IO_Testbench::Compute::VK::Vulkan_test::createSurface()
 
 void Dynamics_IO_Testbench::Compute::VK::Vulkan_test::pickPhysicalDevice()
 {
-    uint32_t deviceCount = 0;
-    vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
-
-    if (deviceCount == 0) {
-        throw std::runtime_error("Failed to find GPUs with Vulkan support!");
-    }
-
-    std::vector<VkPhysicalDevice> devices(deviceCount);
-    vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
+    std::vector<VkPhysicalDevice> devices = Utilities::EnumeratePhysicalDevices(instance);
 
     for (const auto& device : devices)
     {
@@ -355,17 +326,33 @@ Vulkan_test::QueueFamilyIndices Dynamics_IO_Testbench::Compute::VK::Vulkan_test:
 {
     QueueFamilyIndices indices;
 
-    uint32_t queueFamilyCount = 0;
-    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
-
-    std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
-    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
+    std::vector<VkQueueFamilyProperties> queueFamilies = Utilities::GetPhysicalDeviceQueueFamilyProperties(device);
     
     int i = 0;
     for (const auto& queueFam : queueFamilies) {
         if (queueFam.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
             indices.graphicsFamily = i;
+            std::cout << "Graphics Family: " << std::to_string(i) << std::endl;
         }
+
+
+
+        // TODO: Find exclusive transfer queue.
+
+        if (!(queueFam.queueFlags & VK_QUEUE_GRAPHICS_BIT))
+        {
+            std::cout << "Found something that is not a graphics queue." << std::endl;
+            if (queueFam.queueFlags & VK_QUEUE_TRANSFER_BIT) {
+                indices.transferFamily = i;
+                std::cout << "Found transfer queue family:." << std::to_string(i) << std::endl;
+            }
+        }
+
+        /*if (queueFam.queueFlags & VK_QUEUE_TRANSFER_BIT) {
+            indices.transferFamily = i;
+            std::cout << "Found transfer queue family." << std::endl;
+            std::cout << "Transfer Family: " << std::to_string(i) << std::endl;
+        }*/
 
         VkBool32 presentSupport = false;
         vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &presentSupport);
@@ -396,34 +383,23 @@ void Dynamics_IO_Testbench::Compute::VK::Vulkan_test::createLogicalDevice()
     //float queuePriority = 1.0f;
     //queueCreateInfo.pQueuePriorities = &queuePriority;
 
-    std::vector< VkDeviceQueueCreateInfo> queueCreateInfos;
+    std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
+
     std::set<uint32_t> uniqueQueueFamilies = {
         indices.graphicsFamily.value(),
-        indices.presentFamily.value()
+        indices.presentFamily.value(),
+        indices.transferFamily.value()
     };
 
     float queuePriority = 1.0f;
     for (uint32_t queueFam : uniqueQueueFamilies) {
-        VkDeviceQueueCreateInfo queueCreateInfo{};
-        queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-        queueCreateInfo.queueFamilyIndex = queueFam;
-        queueCreateInfo.queueCount = 1;
-        queueCreateInfo.pQueuePriorities = &queuePriority;
+        VkDeviceQueueCreateInfo queueCreateInfo = Utilities::getDeviceQueueCreateInfo(queueFam, 1, queuePriority);
         queueCreateInfos.push_back(queueCreateInfo);
     }
 
-    VkPhysicalDeviceFeatures deviceFeatures{};
+    VkPhysicalDeviceFeatures deviceFeatures = Utilities::getPhysicalDeviceFeatures();
     
-    VkDeviceCreateInfo createInfo{};
-    createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-
-    createInfo.pQueueCreateInfos = queueCreateInfos.data();
-    createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
-
-    createInfo.pEnabledFeatures = &deviceFeatures;
-
-    createInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
-    createInfo.ppEnabledExtensionNames = deviceExtensions.data();
+    VkDeviceCreateInfo createInfo = Utilities::getDeviceCreateInfo(queueCreateInfos, deviceFeatures, deviceExtensions);
 
     if (enableValidationLayers) {
         createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
@@ -439,6 +415,7 @@ void Dynamics_IO_Testbench::Compute::VK::Vulkan_test::createLogicalDevice()
 
     vkGetDeviceQueue(device, indices.graphicsFamily.value(), 0, &graphicsQueue);
     vkGetDeviceQueue(device, indices.presentFamily.value(), 0, &presentQueue);
+    vkGetDeviceQueue(device, indices.transferFamily.value(), 0, &transferQueue);
 }
 
 void Dynamics_IO_Testbench::Compute::VK::Vulkan_test::createSwapChain()
@@ -468,18 +445,24 @@ void Dynamics_IO_Testbench::Compute::VK::Vulkan_test::createSwapChain()
     createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
     QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
-    uint32_t queueFamilyIndices[] = { indices.graphicsFamily.value(),
-                                      indices.presentFamily.value()};
+    uint32_t queueFamilyIndices_all[] = { indices.graphicsFamily.value(),
+                                          indices.presentFamily.value(),
+                                          indices.transferFamily.value()};
+
+    uint32_t queueFamilyIndices_trans[] = { indices.graphicsFamily.value(),
+                                            indices.transferFamily.value() };
 
     if (indices.graphicsFamily != indices.presentFamily) {
         createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
-        createInfo.queueFamilyIndexCount = 2;
-        createInfo.pQueueFamilyIndices = queueFamilyIndices;
+        createInfo.queueFamilyIndexCount = 3;
+        createInfo.pQueueFamilyIndices = queueFamilyIndices_all;
+        std::cout << "Graphics family and present family are the same" << std::endl;
     }
     else {
-        createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-        createInfo.queueFamilyIndexCount = 0;
-        createInfo.pQueueFamilyIndices = nullptr;
+        createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
+        createInfo.queueFamilyIndexCount = 2;
+        createInfo.pQueueFamilyIndices = queueFamilyIndices_trans;
+        std::cout << "Graphics family and present family are different" << std::endl;
     }
 
     createInfo.preTransform = swapChainSupport.capabilities.currentTransform;
@@ -646,12 +629,34 @@ void Dynamics_IO_Testbench::Compute::VK::Vulkan_test::createRenderPass()
     }
 }
 
+void Dynamics_IO_Testbench::Compute::VK::Vulkan_test::createDescriptorSetLayout() {
+    std::cout << "Vulkan_test::createDescriptorSetLayout()" << std::endl;
+    
+    VkDescriptorSetLayoutBinding uboLayoutBinding{};
+    uboLayoutBinding.binding = 0;
+    uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    uboLayoutBinding.descriptorCount = 1;
+
+    uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
+    uboLayoutBinding.pImmutableSamplers = nullptr;
+
+    VkDescriptorSetLayoutCreateInfo layoutInfo{};
+    layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    layoutInfo.bindingCount = 1;
+    layoutInfo.pBindings = &uboLayoutBinding;
+
+    if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to create descriptor set layout!");
+    }
+}
+
 void Dynamics_IO_Testbench::Compute::VK::Vulkan_test::createGraphicsPipeline()
 {
     std::string shader_directory = "C:/Users/jdrurka1/source/repos/Dynamics-io/Dynamics.io-Testbench/CPP_Bench/shaders/Vulkan/";
 
-    auto vertShaderBin = readFile(shader_directory + "vert.spv");
-    auto fragShaderBin = readFile(shader_directory + "frag.spv");
+    auto vertShaderBin = Utilities::readFile(shader_directory + "vert.spv");
+    auto fragShaderBin = Utilities::readFile(shader_directory + "frag.spv");
 
     VkShaderModule vertShaderModule = createShaderModule(vertShaderBin);
     VkShaderModule fragShaderModule = createShaderModule(fragShaderBin);
@@ -672,12 +677,15 @@ void Dynamics_IO_Testbench::Compute::VK::Vulkan_test::createGraphicsPipeline()
 
     VkPipelineShaderStageCreateInfo shaderStages[] = { vertShaderStageInfo, fragShaderStageInfo };
 
+    auto bindingDescription = Vertex::getBindingDescription();
+    auto attributeDescriptions = Vertex::getAttributeDescriptions();
+
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
     vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-    vertexInputInfo.vertexBindingDescriptionCount = 0;
-    vertexInputInfo.pVertexBindingDescriptions = nullptr;
-    vertexInputInfo.vertexAttributeDescriptionCount = 0;
-    vertexInputInfo.pVertexAttributeDescriptions = nullptr;
+    vertexInputInfo.vertexBindingDescriptionCount = 1;
+    vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
+    vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
+    vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
 
     std::vector<VkDynamicState> dynamicStates = {
         VK_DYNAMIC_STATE_VIEWPORT,
@@ -689,7 +697,7 @@ void Dynamics_IO_Testbench::Compute::VK::Vulkan_test::createGraphicsPipeline()
     dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
     dynamicState.pDynamicStates = dynamicStates.data();
 
-
+    
 
     VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
     inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -728,7 +736,7 @@ void Dynamics_IO_Testbench::Compute::VK::Vulkan_test::createGraphicsPipeline()
     rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
     rasterizer.lineWidth = 1.0f;
     rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-    rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
+    rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
     rasterizer.depthBiasEnable = VK_FALSE;
     rasterizer.depthBiasConstantFactor = 0.0f;
     rasterizer.depthBiasClamp = 0.0f;
@@ -772,8 +780,8 @@ void Dynamics_IO_Testbench::Compute::VK::Vulkan_test::createGraphicsPipeline()
 
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.setLayoutCount = 0;
-    pipelineLayoutInfo.pSetLayouts = nullptr;
+    pipelineLayoutInfo.setLayoutCount = 1;
+    pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
     pipelineLayoutInfo.pushConstantRangeCount = 0;
     pipelineLayoutInfo.pPushConstantRanges = nullptr;
 
@@ -855,37 +863,252 @@ void Dynamics_IO_Testbench::Compute::VK::Vulkan_test::createFramebuffers()
 void Dynamics_IO_Testbench::Compute::VK::Vulkan_test::createCommandPool()
 {
     QueueFamilyIndices queueFamilyIndices = findQueueFamilies(physicalDevice);
-    VkCommandPoolCreateInfo poolInfo{};
-    poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-    poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-    poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
+
+    VkCommandPoolCreateInfo poolInfo = Utilities::getCommandPoolCreateInfo(
+        VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, 
+        queueFamilyIndices.graphicsFamily.value()
+    );
+
+    VkCommandPoolCreateInfo transferPoolInfo = Utilities::getCommandPoolCreateInfo(
+        VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
+        queueFamilyIndices.transferFamily.value()
+    );
 
     if (vkCreateCommandPool(device, &poolInfo, nullptr, &commandPool) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to create command pool!");
+        throw std::runtime_error("Failed to create graphics command pool!");
     }
+
+    if (vkCreateCommandPool(device, &transferPoolInfo, nullptr, &tramsferCmdPool) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to create transfer command pool!");
+    }
+
+}
+
+void Dynamics_IO_Testbench::Compute::VK::Vulkan_test::createVertexBuffer()
+{
+    QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
+
+    std::vector<uint32_t> indVec(2);
+    indVec[0] = indices.graphicsFamily.value();
+    indVec[1] = indices.transferFamily.value();
+
+
+    VkBuffer stagingBuffer;
+    VkDeviceMemory stagingBufferMemory;
+    VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
+    Utilities::CreateBuffer(
+        physicalDevice,
+        device,
+        bufferSize,
+        VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+        VK_SHARING_MODE_CONCURRENT,
+        0,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+        indVec,
+        stagingBuffer,
+        stagingBufferMemory
+    );
+
+    void* data;
+    vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
+    memcpy(data, vertices.data(), (size_t)bufferSize);
+    vkUnmapMemory(device, stagingBufferMemory);
+
+    Utilities::CreateBuffer(
+        physicalDevice,
+        device,
+        bufferSize,
+        VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+        VK_SHARING_MODE_CONCURRENT,
+        0,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+        indVec,
+        vertexBuffer,
+        vertexBufferMemory
+    );
+
+
+    VkCommandBufferAllocateInfo allocTransferInfo = Utilities::getCommandBufferAllocateInfo(
+        tramsferCmdPool,
+        VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+        1
+    );
+
+    vkAllocateCommandBuffers(device, &allocTransferInfo, &commandTransferBuffer);
+
+    Utilities::CopyBuffer(transferQueue, commandTransferBuffer, stagingBuffer, vertexBuffer, bufferSize);
+
+    vkFreeCommandBuffers(device, tramsferCmdPool, 1, &commandTransferBuffer);
+    vkDestroyBuffer(device, stagingBuffer, nullptr);
+    vkFreeMemory(device, stagingBufferMemory, nullptr);
+}
+
+void Dynamics_IO_Testbench::Compute::VK::Vulkan_test::createIndexBuffer()
+{
+    QueueFamilyIndices q_indices = findQueueFamilies(physicalDevice);
+
+    std::vector<uint32_t> indVec(2);
+    indVec[0] = q_indices.graphicsFamily.value();
+    indVec[1] = q_indices.transferFamily.value();
+
+    VkDeviceSize bufferSize = sizeof(vert_indices[0]) * vert_indices.size();
+
+    VkBuffer stagingBuffer;
+    VkDeviceMemory stagingBufferMemory;
+
+    Utilities::CreateBuffer(
+        physicalDevice,
+        device,
+        bufferSize,
+        VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+        VK_SHARING_MODE_CONCURRENT,
+        0,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+        indVec,
+        stagingBuffer,
+        stagingBufferMemory
+    );
+
+    void* data;
+    vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
+    memcpy(data, vert_indices.data(), (size_t)bufferSize);
+    vkUnmapMemory(device, stagingBufferMemory);
+
+    Utilities::CreateBuffer(
+        physicalDevice,
+        device,
+        bufferSize,
+        VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+        VK_SHARING_MODE_CONCURRENT,
+        0,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+        indVec,
+        indexBuffer,
+        indexBufferMemory
+    );
+
+    VkCommandBufferAllocateInfo allocTransferInfo = Utilities::getCommandBufferAllocateInfo(
+        tramsferCmdPool,
+        VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+        1
+    );
+
+    vkAllocateCommandBuffers(device, &allocTransferInfo, &commandTransferBuffer);
+
+    Utilities::CopyBuffer(transferQueue, commandTransferBuffer, stagingBuffer, indexBuffer, bufferSize);
+
+    vkFreeCommandBuffers(device, tramsferCmdPool, 1, &commandTransferBuffer);
+    vkDestroyBuffer(device, stagingBuffer, nullptr);
+    vkFreeMemory(device, stagingBufferMemory, nullptr);
+}
+
+void Dynamics_IO_Testbench::Compute::VK::Vulkan_test::createUniformBuffers()
+{
+    VkDeviceSize bufferSize = sizeof(UniformBufferObject);
+    
+    uniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+    uniformBuffersMemory.resize(MAX_FRAMES_IN_FLIGHT);
+    uniformBuffersMapped.resize(MAX_FRAMES_IN_FLIGHT);
+
+    for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+        Utilities::CreateBuffer(
+            physicalDevice,
+            device,
+            bufferSize,
+            VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+            VK_SHARING_MODE_EXCLUSIVE,
+            0,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            std::vector<uint32_t>(),
+            uniformBuffers[i],
+            uniformBuffersMemory[i]
+        );
+
+        vkMapMemory(device, uniformBuffersMemory[i], 0, bufferSize, 0, &uniformBuffersMapped[i]);
+    }
+}
+
+void Dynamics_IO_Testbench::Compute::VK::Vulkan_test::createDescriptorPool() {
+    VkDescriptorPoolSize poolSize{};
+    poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    poolSize.descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+    
+    VkDescriptorPoolCreateInfo poolInfo{};
+    poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+    poolInfo.poolSizeCount = 1;
+    poolInfo.pPoolSizes = &poolSize;
+
+    poolInfo.maxSets = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+
+    if (vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to create descriptor pool!");
+    }
+}
+
+void Dynamics_IO_Testbench::Compute::VK::Vulkan_test::createDescriptorSets()
+{
+    std::vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, descriptorSetLayout);
+
+    VkDescriptorSetAllocateInfo allocInfo{};
+    allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    allocInfo.descriptorPool = descriptorPool;
+    allocInfo.descriptorSetCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+    allocInfo.pSetLayouts = layouts.data();
+
+    descriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
+    if (vkAllocateDescriptorSets(device, &allocInfo, descriptorSets.data()) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to allocate descriptor sets!");
+    }
+
+    for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+        VkDescriptorBufferInfo bufferInfo{};
+        bufferInfo.buffer = uniformBuffers[i];
+        bufferInfo.offset = 0;
+        bufferInfo.range = sizeof(UniformBufferObject);
+
+        VkWriteDescriptorSet descriptorWrite{};
+        descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descriptorWrite.dstSet = descriptorSets[i];
+        descriptorWrite.dstBinding = 0;
+        descriptorWrite.dstArrayElement = 0;
+
+        descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        descriptorWrite.descriptorCount = 1;
+
+        descriptorWrite.pBufferInfo = &bufferInfo;
+        descriptorWrite.pImageInfo = nullptr;
+        descriptorWrite.pTexelBufferView = nullptr;
+
+        vkUpdateDescriptorSets(device, 1, &descriptorWrite, 0, nullptr);
+    }
+
+
 }
 
 void Dynamics_IO_Testbench::Compute::VK::Vulkan_test::createCommandBuffer()
 {
-    VkCommandBufferAllocateInfo allocInfo{};
-    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    allocInfo.commandPool = commandPool;
-    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    allocInfo.commandBufferCount = 1;
+    VkCommandBufferAllocateInfo allocInfo = Utilities::getCommandBufferAllocateInfo(
+        commandPool,
+        VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+        1
+    );
+
+    
 
     if (vkAllocateCommandBuffers(device, &allocInfo, &commandBuffer) != VK_SUCCESS) {
         throw std::runtime_error("Failed to allocate command buffers!");
     }
+
+    /*if (vkAllocateCommandBuffers(device, &allocTransferInfo, &commandTransferBuffer) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to allocate command buffers!");
+    }*/
 }
 
 void Dynamics_IO_Testbench::Compute::VK::Vulkan_test::createSyncObjects()
 {
-    VkSemaphoreCreateInfo semaphoreInfo{};
-    semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+    VkSemaphoreCreateInfo semaphoreInfo = Utilities::getSemaphoreCreateInfo();
 
-    VkFenceCreateInfo fenceInfo{};
-    fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-    fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+    VkFenceCreateInfo fenceInfo = Utilities::getFenceCreateInfo(true);
 
     if (vkCreateSemaphore(device, &semaphoreInfo, nullptr, &imageAvailableSemaphore) != VK_SUCCESS ||
         vkCreateSemaphore(device, &semaphoreInfo, nullptr, &renderFinishedSemaphore) != VK_SUCCESS ||
@@ -921,6 +1144,11 @@ void Dynamics_IO_Testbench::Compute::VK::Vulkan_test::recordCommandBuffer(VkComm
 
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
 
+    VkBuffer vertexBuffers[] = { vertexBuffer };
+    VkDeviceSize offsets[] = { 0 };
+    vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+    vkCmdBindIndexBuffer(commandBuffer, indexBuffer, 0, VK_INDEX_TYPE_UINT16);
+
     VkViewport viewport{};
     viewport.x = 0.0f;
     viewport.y = 0.0f;
@@ -935,7 +1163,10 @@ void Dynamics_IO_Testbench::Compute::VK::Vulkan_test::recordCommandBuffer(VkComm
     scissor.extent = swapChainExtent;
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-    vkCmdDraw(commandBuffer, 3, 1, 0, 0);
+    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[currentFrame], 0, nullptr);
+
+    //vkCmdDraw(commandBuffer, static_cast<uint32_t>(vertices.size()), 1, 0, 0);
+    vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(vert_indices.size()), 1, 0, 0, 0);
 
     vkCmdEndRenderPass(commandBuffer);
 
@@ -951,6 +1182,8 @@ void Dynamics_IO_Testbench::Compute::VK::Vulkan_test::drawFrame()
 
     uint32_t imageIndex;
     vkAcquireNextImageKHR(device, swapChain, UINT64_MAX, imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
+
+    updateUniformBuffer(currentFrame);
 
     vkResetCommandBuffer(commandBuffer, 0);
 
@@ -992,6 +1225,38 @@ void Dynamics_IO_Testbench::Compute::VK::Vulkan_test::drawFrame()
 
     vkQueuePresentKHR(presentQueue, &presentInfo);
 
+    currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+
+}
+
+void Dynamics_IO_Testbench::Compute::VK::Vulkan_test::updateUniformBuffer(uint32_t currentImage) {
+    
+    static auto startTime = std::chrono::high_resolution_clock::now();
+
+    auto currentTime = std::chrono::high_resolution_clock::now();
+
+    float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+    std::cout << "Vulkan_test::updateUniformBuffer(): " << std::to_string(time) << "\n";
+    
+    UniformBufferObject ubo{};
+    ubo.model = glm::rotate(
+        glm::mat4(1.0f),
+        time * glm::radians(90.0f),
+        glm::vec3(0.0f, 0.0f, 1.0f));
+
+    ubo.view = glm::lookAt(
+        glm::vec3(2.0f, 2.0f, 2.0f),
+        glm::vec3(0.0f, 0.0f, 0.0f),
+        glm::vec3(0.0f, 0.0f, 1.0f));
+
+    ubo.proj = glm::perspective(
+        glm::radians(45.0f),
+        swapChainExtent.width / (float)swapChainExtent.height, 
+        0.1f, 10.0f);
+
+    ubo.proj[1][1] *= -1;
+
+    memcpy(uniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
 }
 
 VKAPI_ATTR VkBool32 VKAPI_CALL Dynamics_IO_Testbench::Compute::VK::Vulkan_test::debugCallback(
@@ -1005,23 +1270,6 @@ VKAPI_ATTR VkBool32 VKAPI_CALL Dynamics_IO_Testbench::Compute::VK::Vulkan_test::
     return VK_FALSE;
 }
 
-std::vector<char> Dynamics_IO_Testbench::Compute::VK::Vulkan_test::readFile(const std::string& filename)
-{
-    std::ifstream file(filename, std::ios::ate | std::ios::binary);
 
-    if (!file.is_open()) {
-        throw std::runtime_error("Failed to open file!");
-    }
-
-    size_t fileSize = (size_t)file.tellg();
-    std::vector<char> buffer(fileSize);
-
-    file.seekg(0);
-    file.read(buffer.data(), fileSize);
-
-    file.close();
-
-    return buffer;
-}
 
 

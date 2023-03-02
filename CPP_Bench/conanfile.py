@@ -13,6 +13,7 @@ class Dynamics_IO(ConanFile):
         #"vk-bootstrap/0.4",
         "opencl-headers/2022.09.30",
         "vulkan-headers/1.3.239.0",
+        "vulkan-memory-allocator/3.0.1",
         "glfw/3.3.8"
     )
 

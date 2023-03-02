@@ -7,6 +7,7 @@
 
 //#include "vulkan/vulkan.h"
 //#include "vulkan-hpp/vulkan.hpp"
+//#include "glm/glm.hpp"
 
 struct GLFWwindow;
 
@@ -31,10 +32,12 @@ namespace Dynamics_IO_Testbench {
                 struct QueueFamilyIndices {
                     std::optional<uint32_t> graphicsFamily;
                     std::optional<uint32_t> presentFamily;
+                    std::optional<uint32_t> transferFamily;
 
                     bool isComplete() {
                         return graphicsFamily.has_value() &&
-                               presentFamily.has_value();
+                               presentFamily.has_value() &&
+                               transferFamily.has_value();
                     }
                 };
 
@@ -42,6 +45,42 @@ namespace Dynamics_IO_Testbench {
                     VkSurfaceCapabilitiesKHR capabilities;
                     std::vector<VkSurfaceFormatKHR> formats;
                     std::vector<VkPresentModeKHR> presentModes;
+                };
+
+                struct Vertex {
+                    glm::vec2 pos;
+                    glm::vec3 color;
+                    glm::vec2 texCoord;
+
+                    static VkVertexInputBindingDescription getBindingDescription() {
+                        VkVertexInputBindingDescription bindingDescription{};
+                        bindingDescription.binding = 0;
+                        bindingDescription.stride = sizeof(Vertex);
+                        bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+                        return bindingDescription;
+                    }
+
+                    static std::array<VkVertexInputAttributeDescription, 2> getAttributeDescriptions() {
+                        std::array<VkVertexInputAttributeDescription, 2> attributeDescriptions{};
+
+                        attributeDescriptions[0].binding = 0;
+                        attributeDescriptions[0].location = 0;
+                        attributeDescriptions[0].format = VK_FORMAT_R32G32_SFLOAT;
+                        attributeDescriptions[0].offset = offsetof(Vertex, pos);
+
+                        attributeDescriptions[1].binding = 0;
+                        attributeDescriptions[1].location = 1;
+                        attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
+                        attributeDescriptions[1].offset = offsetof(Vertex, color);
+
+                        return attributeDescriptions;
+                    }
+                };
+
+                struct UniformBufferObject {
+                    alignas(16) glm::mat4 model;
+                    alignas(16) glm::mat4 view;
+                    alignas(16) glm::mat4 proj;
                 };
 
                 void InitWindow();
@@ -94,6 +133,9 @@ namespace Dynamics_IO_Testbench {
                 void createRenderPass();
 
 
+                void createDescriptorSetLayout();
+
+
                 void createGraphicsPipeline();
 
                 VkShaderModule createShaderModule(const std::vector<char>& code);
@@ -104,6 +146,18 @@ namespace Dynamics_IO_Testbench {
 
                 void createCommandPool();
 
+                void createVertexBuffer();
+
+                void createIndexBuffer();
+
+                void createUniformBuffers();
+
+                void createDescriptorPool();
+
+                void createDescriptorSets();
+
+                //uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
+
                 void createCommandBuffer();
 
                 void createSyncObjects();
@@ -112,13 +166,16 @@ namespace Dynamics_IO_Testbench {
 
                 void drawFrame();
 
+                void updateUniformBuffer(uint32_t currentImage);
+
+
                 static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
                     VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
                     VkDebugUtilsMessageTypeFlagsEXT messageType,
                     const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
                     void* pUserData);
                 
-                static std::vector<char> readFile(const std::string& filename);
+                
 
                 GLFWwindow* window;
                 VkInstance instance;
@@ -128,30 +185,59 @@ namespace Dynamics_IO_Testbench {
                 VkDevice device;
                 VkQueue graphicsQueue;
                 VkQueue presentQueue;
+                VkQueue transferQueue;
                 VkSwapchainKHR swapChain;
                 std::vector<VkImage> swapChainImages;
                 VkFormat swapChainImageFormat;
                 VkExtent2D swapChainExtent;
                 std::vector<VkImageView> swapChainImageViews;
                 VkRenderPass renderPass;
+                VkDescriptorSetLayout descriptorSetLayout;
                 VkPipelineLayout pipelineLayout;
                 VkPipeline graphicsPipeline;
                 std::vector<VkFramebuffer> swapChainFrameBuffers;
                 VkCommandPool commandPool;
+                VkCommandPool tramsferCmdPool;
                 VkCommandBuffer commandBuffer;
+                VkCommandBuffer commandTransferBuffer;
                 VkSemaphore imageAvailableSemaphore;
                 VkSemaphore renderFinishedSemaphore;
                 VkFence inFlightFence;
+                VkBuffer vertexBuffer;
+                VkDeviceMemory vertexBufferMemory;
+                VkBuffer indexBuffer;
+                VkDeviceMemory indexBufferMemory;
+                VkDescriptorPool descriptorPool;
+                std::vector<VkDescriptorSet> descriptorSets;
 
+                std::vector<VkBuffer> uniformBuffers;
+                std::vector<VkDeviceMemory> uniformBuffersMemory;
+                std::vector<void*> uniformBuffersMapped;
+
+
+                const int MAX_FRAMES_IN_FLIGHT = 2;
                 const uint32_t WIDTH = 800;
                 const uint32_t HEIGHT = 600;
+
+                uint32_t currentFrame = 0;
 
                 const std::vector<const char*> validationLayers = {
                     "VK_LAYER_KHRONOS_validation"
                 };
 
-                const std::vector<const char*> deviceExtensions = {
+                std::vector<const char*> deviceExtensions = {
                     VK_KHR_SWAPCHAIN_EXTENSION_NAME
+                };
+
+                const std::vector<Vertex> vertices = {
+                    {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+                    {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
+                    {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
+                    {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}
+                };
+
+                const std::vector<uint16_t> vert_indices = {
+                    0, 1, 2, 2, 3, 0
                 };
 
 #ifdef NDEBUG
