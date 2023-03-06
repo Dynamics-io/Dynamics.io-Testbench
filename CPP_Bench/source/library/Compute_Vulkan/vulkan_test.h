@@ -48,7 +48,7 @@ namespace Dynamics_IO_Testbench {
                 };
 
                 struct Vertex {
-                    glm::vec2 pos;
+                    glm::vec3 pos;
                     glm::vec3 color;
                     glm::vec2 texCoord;
 
@@ -60,18 +60,23 @@ namespace Dynamics_IO_Testbench {
                         return bindingDescription;
                     }
 
-                    static std::array<VkVertexInputAttributeDescription, 2> getAttributeDescriptions() {
-                        std::array<VkVertexInputAttributeDescription, 2> attributeDescriptions{};
+                    static std::array<VkVertexInputAttributeDescription, 3> getAttributeDescriptions() {
+                        std::array<VkVertexInputAttributeDescription, 3> attributeDescriptions{};
 
                         attributeDescriptions[0].binding = 0;
                         attributeDescriptions[0].location = 0;
-                        attributeDescriptions[0].format = VK_FORMAT_R32G32_SFLOAT;
+                        attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
                         attributeDescriptions[0].offset = offsetof(Vertex, pos);
 
                         attributeDescriptions[1].binding = 0;
                         attributeDescriptions[1].location = 1;
                         attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
                         attributeDescriptions[1].offset = offsetof(Vertex, color);
+
+                        attributeDescriptions[2].binding = 0;
+                        attributeDescriptions[2].location = 2;
+                        attributeDescriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
+                        attributeDescriptions[2].offset = offsetof(Vertex, texCoord);
 
                         return attributeDescriptions;
                     }
@@ -109,8 +114,6 @@ namespace Dynamics_IO_Testbench {
 
                 bool isDeviceSuitable(VkPhysicalDevice device);
 
-                bool checkDeviceExtensionSupport(VkPhysicalDevice device);
-
                 QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
 
                 void createLogicalDevice();
@@ -138,13 +141,26 @@ namespace Dynamics_IO_Testbench {
 
                 void createGraphicsPipeline();
 
-                VkShaderModule createShaderModule(const std::vector<char>& code);
 
 
                 void createFramebuffers();
 
 
                 void createCommandPool();
+
+                void createDepthResources();
+                VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
+                VkFormat findDepthFormat();
+                bool hasStencilComponent(VkFormat format) {
+                    return format == VK_FORMAT_D32_SFLOAT_S8_UINT ||
+                        format == VK_FORMAT_D24_UNORM_S8_UINT;
+                }
+
+                void createTextureImage();
+
+                void createTextureImageView();
+
+                void createTextureSampler();
 
                 void createVertexBuffer();
 
@@ -158,15 +174,20 @@ namespace Dynamics_IO_Testbench {
 
                 //uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 
+                void createCommandTransferBuffer();
+
                 void createCommandBuffer();
 
                 void createSyncObjects();
 
                 void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
 
+
                 void drawFrame();
 
                 void updateUniformBuffer(uint32_t currentImage);
+
+                void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
 
 
                 static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
@@ -209,6 +230,13 @@ namespace Dynamics_IO_Testbench {
                 VkDeviceMemory indexBufferMemory;
                 VkDescriptorPool descriptorPool;
                 std::vector<VkDescriptorSet> descriptorSets;
+                VkImage textureImage;
+                VkDeviceMemory textureImageMemory;
+                VkImageView textureImageView;
+                VkSampler textureSampler;
+                VkImage depthImage;
+                VkDeviceMemory depthImageMemory;
+                VkImageView depthImageView;
 
                 std::vector<VkBuffer> uniformBuffers;
                 std::vector<VkDeviceMemory> uniformBuffersMemory;
@@ -230,14 +258,20 @@ namespace Dynamics_IO_Testbench {
                 };
 
                 const std::vector<Vertex> vertices = {
-                    {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-                    {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
-                    {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
-                    {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}
+                    {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+                    {{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
+                    {{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+                    {{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
+
+                    {{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+                    {{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
+                    {{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+                    {{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}
                 };
 
                 const std::vector<uint16_t> vert_indices = {
-                    0, 1, 2, 2, 3, 0
+                    0, 1, 2, 2, 3, 0,
+                    4, 5, 6, 6, 7, 4
                 };
 
 #ifdef NDEBUG

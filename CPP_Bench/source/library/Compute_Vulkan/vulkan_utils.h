@@ -9,6 +9,16 @@ namespace Dynamics_IO_Testbench {
         namespace VK {
             namespace Utilities {
 
+                // structures
+
+                struct DescriptorBufferInfo {
+                    VkBuffer buffer;
+                    VkDeviceSize size;
+                    int binding;
+                };
+
+
+
                 // non-vulkan functions
 
                 std::vector<char> readFile(const std::string& filename);
@@ -40,16 +50,71 @@ namespace Dynamics_IO_Testbench {
 
                 VkBufferCreateInfo getBufferCreateInfo(VkDeviceSize size, VkBufferUsageFlags usage, VkSharingMode sharingMode, VkBufferCreateFlags flags, std::vector<uint32_t>& queueFamilies);
 
+                VkImageCreateInfo getImageCreateInfo(
+                    VkImageType imageType,
+                    VkImageUsageFlags usage,
+                    VkSharingMode sharingMode,
+                    std::vector<uint32_t>& queueFamilies,
+                    uint32_t width,
+                    uint32_t height,
+                    uint32_t depth,
+                    uint32_t mipLevels,
+                    uint32_t arrayLayers,
+                    VkFormat format,
+                    VkImageTiling tiling,
+                    bool preinitialized);
+
+                VkPipelineShaderStageCreateInfo getPipelineShaderStageCreateInfo(VkShaderModule& smodule, const char* name);
+
+                VkPipelineLayoutCreateInfo getPipelineLayoutCreateInfo(VkDescriptorSetLayout& descriptorSetLayout);
+
+                VkComputePipelineCreateInfo getComputePipelineCreateInfo(VkPipelineLayout& pipelineLayout, VkPipelineShaderStageCreateInfo& shaderStageInfo);
+
+                VkDescriptorSetLayoutBinding getDescriptorSetLayoutBinding_ComputeStorageBuffer(uint32_t binding);
+
+                VkDescriptorSetLayoutCreateInfo getDescriptorSetLayoutCreateInfo(std::vector<VkDescriptorSetLayoutBinding>& layoutBindings);
+                     
+                VkDescriptorPoolSize getDescriptorPoolSize_Storagebuffer(uint32_t descriptorCount);
+
+                VkDescriptorPoolCreateInfo getDescriptorPoolCreateInfo(std::vector<VkDescriptorPoolSize>& poolSizes, uint32_t maxSets);
+
+                VkDescriptorBufferInfo getDescriptorBufferInfo(VkBuffer& buffer, VkDeviceSize offset, VkDeviceSize range);
+
+                VkWriteDescriptorSet getWriteDescriptorSet(VkDescriptorSet& descriptorSet, int binding, VkDescriptorType type, VkDescriptorBufferInfo& bufferInfo);
+
+
+                // Initialization Functions
+
+                bool checkValidationLayerSupport(std::vector<const char*> validationLayers);
+
+
+
                 // Load Enumeration functions
 
                 std::vector<VkExtensionProperties> EnumerateInstanceExtensionProperties();
 
                 std::vector<VkPhysicalDevice> EnumeratePhysicalDevices(VkInstance instance);
 
+                std::vector<VkExtensionProperties> EnumerateDeviceExtensionProperties(VkPhysicalDevice device);
+
                 std::vector<VkQueueFamilyProperties> GetPhysicalDeviceQueueFamilyProperties(VkPhysicalDevice device);
             
+
+                // Device utilities
+
+                bool checkDeviceExtensionSupport(VkPhysicalDevice device, std::vector<const char*> deviceExtensions);
+
+
                 
                 // resource creation abstractions
+
+                VkResult CreateComputeDescriptorSetLayout(VkDevice& device, int numStorageBuffers, VkDescriptorSetLayout& descriptorSetLayout);
+
+                VkResult createDescriptorPool(VkDevice device, int numStorageBuffers, int maxSets, VkDescriptorPool& descriptorPool);
+
+                VkResult AllocateDescriptorSets(VkDevice device, std::vector<VkDescriptorSetLayout>& layouts, VkDescriptorPool& descriptorPool, int descriptorSetCount, VkDescriptorSet& descriptorSet);
+
+                void UpdateDescriptorSets_StorageBuffers(VkDevice& device, VkDescriptorSet& descriptorSet, std::vector<DescriptorBufferInfo>& buffers);
 
                 void CreateBuffer(
                     VkPhysicalDevice& physicalDevice,
@@ -76,14 +141,50 @@ namespace Dynamics_IO_Testbench {
                     VkBuffer& buffer,
                     VkDeviceMemory& bufferMemory);
 
+                void CreateImage(
+                    VkPhysicalDevice& physicalDevice,
+                    VkDevice& device,
+                    uint32_t width, 
+                    uint32_t height,
+                    VkBufferUsageFlags usage,
+                    VkSharingMode sharingMode,
+                    VkFormat format,
+                    VkImageTiling tiling,
+                    bool preinitialized,
+                    std::vector<uint32_t>& queueFamilies,
+                    VkImage& textureImage,
+                    VkDeviceMemory& bufferMemory
+                );
+
                 uint32_t findMemoryType(VkPhysicalDevice& physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags properties);
 
 
                 // Buffer utilities
 
                 void CopyBuffer(VkQueue& queue, VkCommandBuffer& commandBuffer, VkBuffer& srcBuffer, VkBuffer& dstBuffer, VkDeviceSize size);
-            }
 
+                void FlushToBuffer(VkDevice& device, VkDeviceMemory& memory, VkDeviceSize size, void*& data, void* src, bool unmap);
+            
+                void CopyBufferToImage(VkDevice& device, VkQueue& queue, VkCommandPool& cmdPool, VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
+                
+                // Command utilities
+
+                void CreateCommandBuffer(VkCommandPool& cmdPool, VkDevice device, VkCommandBuffer& commandBuffer);
+
+                VkCommandBuffer CreateCommandBuffer(VkCommandPool& cmdPool, VkDevice device);
+
+                void beginSingleTimeCommands(VkCommandBuffer& cmdBuffer);
+
+                VkCommandBuffer beginSingleTimeCommands(VkCommandPool& cmdPool, VkDevice device);
+
+                void endSingleTimeCommands(VkCommandBuffer& cmdBuffer, VkQueue& p_queue);
+            
+
+                // Shader utilities
+
+                VkShaderModule createShaderModule(VkDevice& device, const std::vector<char>& code);
+
+            }
 
             namespace Extensions {
                 // Extension methods

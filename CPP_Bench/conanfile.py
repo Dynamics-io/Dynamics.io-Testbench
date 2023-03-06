@@ -14,6 +14,8 @@ class Dynamics_IO(ConanFile):
         "opencl-headers/2022.09.30",
         "vulkan-headers/1.3.239.0",
         "vulkan-memory-allocator/3.0.1",
+        "stb/cci.20220909",
+        "tinyobjloader/2.0.0-rc10",
         "glfw/3.3.8"
     )
 
