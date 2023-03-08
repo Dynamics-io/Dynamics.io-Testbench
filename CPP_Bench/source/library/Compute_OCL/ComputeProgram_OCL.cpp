@@ -33,12 +33,15 @@ int ComputeProgram_OCL::KernelAddBuffer(std::string k_name, IComputeBuffer* buff
 
 	int K_ID = GetKernelID(k_name);
 
-	int res = KernelSetBuffer(k_name, buffer, m_kernel_entries[K_ID].args);
+	BindIndex ind{}; 
+	ind.ParameterIndex = m_kernel_entries[K_ID].args;
+	int res = KernelSetBuffer(k_name, buffer, ind);
 	m_kernel_entries[K_ID].args++;
+
 	return res;
 }
 
-int ComputeProgram_OCL::KernelSetBuffer(std::string k_name, IComputeBuffer* buffer, int arg)
+int ComputeProgram_OCL::KernelSetBuffer(std::string k_name, IComputeBuffer* buffer, BindIndex arg)
 {
 	if (m_kernel_name_to_id.count(k_name) <= 0) {
 		printf("Kernel not found: %s\n", k_name.c_str());
@@ -50,7 +53,7 @@ int ComputeProgram_OCL::KernelSetBuffer(std::string k_name, IComputeBuffer* buff
 	// TODO: handle setting kernel entry arg if larger.
 
 	ComputeBuffer* bfr = ((ComputeBuffer_OCL*)buffer)->GetBuffer();
-	return BindKernel(bfr, m_kernel_entries[K_ID].kernel, arg);
+	return BindKernel(bfr, m_kernel_entries[K_ID].kernel, arg.ParameterIndex);
 }
 
 int ComputeProgram_OCL::RunKernel(std::string k_name, int size_x, int size_y, int size_z)

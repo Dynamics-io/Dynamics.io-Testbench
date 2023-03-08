@@ -1,29 +1,33 @@
 #pragma once
 
-#include "OCL_forwardDeclarations.h"
 #include "Compute_Interface/InterfaceIncludes.h"
-#include "ComputeEngine.h"
-#include "ProgramBuilder.h"
-#include "ShaderDepository.h"
+
+//#include "ProgramBuilder.h"
 
 namespace Dynamics_IO_Testbench {
 	namespace Compute {
-		namespace OCL {
+		namespace VK {
 
-			class ComputeProgram_OCL : public IComputeProgram {
-				friend class ComputeController_OCL;
+			class ComputeContext;
+			class ComputeEngine;
+			class ComputeKernel;
+			class ComputeBuffer;
+			class ComputeProgram;
+
+			class ComputeBuffer_VK;
+			class ComputeController_VK;
+
+			class ComputeProgram_VK : public IComputeProgram {
+				friend class ComputeController_VK;
 
 			public:
-
 				// Interface methods:
 
 				void Init(std::string name);
 
-				int FinishBuild() { return 0; }
+				int FinishBuild();
 
 				int GetKernelID(std::string name);
-
-				int KernelAddBuffer(std::string k_name, IComputeBuffer* buffer);
 
 				int KernelSetBuffer(std::string k_name, IComputeBuffer* buffer, BindIndex arg);
 
@@ -35,59 +39,55 @@ namespace Dynamics_IO_Testbench {
 
 				ProgramBuildState GetState() { return m_cur_state; }
 
-				int GetBuildResultCode() { return m_cl_build_res; }
+				int GetBuildResultCode() { return m_vk_build_res; }
 
 				std::string GetBuildErrorMessage() { return m_build_error; }
 
 				std::string GetProgramName() { return m_program_name; }
 
-				void Dispose() {}
+				void Dispose();
 
 
 				// Non-interface methods:
-
-				ProgramBuilder* GetProgramBuilder() { return m_builder; }
-
-				ProgramBuildState ConstructSourceProgram();
 
 				ProgramBuildState BuildProgramFromBinary(std::string file_path, std::vector<std::string> kernels);
 
 				ProgramBuildState BuildProgramFromBinary(const void* binary, size_t length, std::vector<std::string> kernels);
 
-				ProgramBuildState BuildProgramFromSource(std::string content, std::vector<std::string> kernels);
 
-				ProgramBuildState BuildProgramFromSourceFile(std::string file_path, std::vector<std::string> kernels);
-
-				ProgramBuildState BuildProgramFromInternalDepo();
+				ComputeProgram_VK(){}
+				~ComputeProgram_VK();
 
 			private:
 
 				struct kernelEnt {
 					std::string name;
 					ComputeKernel* kernel;
-					int args;
+					//int args;
 				};
 
-				ComputeProgram_OCL(ComputeContext* context);
+				ComputeProgram_VK(ComputeContext* context);
 
 				int BindKernel(ComputeBuffer* buffer, ComputeKernel* kernel, int arg);
 
 				int InitKernelEntries();
 
-				std::string m_program_name;
-
 				ComputeContext* m_context{ nullptr };
-				ProgramBuilder* m_builder{ nullptr };
-				ProgramBuildState m_cur_state{ ProgramBuildState::None };
 
-				std::string m_build_error = "";
-				int m_cl_build_res = { 0 };
+				std::string m_program_name{""};
+				ProgramBuildState m_cur_state{ProgramBuildState::None};
+				int m_vk_build_res { 0 };
+				std::string m_build_error{""};
 
-				ShaderDepository default_shaders;
-
-				size_t m_num_kernels;
+				size_t m_num_kernels{ 0 };
 				kernelEnt* m_kernel_entries{ nullptr };
 				std::map<std::string, int> m_kernel_name_to_id;
+
+				// program building
+				std::vector<std::string> m_kernels;
+				ComputeProgram* m_program{ nullptr };
+
+				bool mDestroyed{ false };
 			};
 		}
 	}

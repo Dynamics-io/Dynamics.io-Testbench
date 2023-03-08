@@ -23,6 +23,8 @@ namespace Dynamics_IO_Testbench {
 			virtual IComputeBuffer* NewWriteBuffer(size_t length) = 0;
 
 			virtual IComputeBuffer* NewReadWriteBuffer(size_t length) = 0;
+
+			virtual void Dispose() = 0;
 		};
 
 	}

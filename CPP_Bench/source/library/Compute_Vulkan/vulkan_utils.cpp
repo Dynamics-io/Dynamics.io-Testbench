@@ -298,6 +298,45 @@ bool Utilities::checkValidationLayerSupport(std::vector<const char*> validationL
     return true;
 }
 
+Utilities::QueueFamilyIndices Utilities::findQueueFamilies(VkPhysicalDevice device)
+{
+    QueueFamilyIndices indices;
+    indices.shouldIncludeGraphics = false;
+
+    std::vector<VkQueueFamilyProperties> queueFamilies = Utilities::GetPhysicalDeviceQueueFamilyProperties(device);
+    printf("Searching queue families: %i\n", queueFamilies.size());
+
+    int i = 0;
+    for (const auto& queueFam : queueFamilies) {
+        if ((queueFam.queueFlags & VK_QUEUE_COMPUTE_BIT) &&
+            !(queueFam.queueFlags & VK_QUEUE_TRANSFER_BIT)) {
+            indices.computeFamily = i;
+            printf("Found Seperate compute queue Family: %i\n", i);
+        }
+
+        if (!(queueFam.queueFlags & VK_QUEUE_COMPUTE_BIT) &&
+            (queueFam.queueFlags & VK_QUEUE_TRANSFER_BIT)) {
+            indices.transferFamily = i;
+            printf("Found Seperate transfer queue Family: %i\n", i);
+        }
+    }
+
+    i = 0;
+    if (!indices.computeFamily.has_value() || !indices.transferFamily.has_value()) {
+        for (const auto& queueFam : queueFamilies) {
+            if ((queueFam.queueFlags & VK_QUEUE_TRANSFER_BIT) &&
+                (queueFam.queueFlags & VK_QUEUE_COMPUTE_BIT)) {
+                indices.transferFamily = i;
+                indices.computeFamily = i;
+                printf("Found combined queue Family: %i\n", i);
+                break;
+            }
+        }
+    }
+
+    return indices;
+}
+
 
 // Load functions
 
@@ -360,6 +399,7 @@ bool Utilities::checkDeviceExtensionSupport(VkPhysicalDevice device, std::vector
     std::set<std::string> requiredExtensions(deviceExtensions.begin(), deviceExtensions.end());
 
     for (const auto& ext : availableExtensions) {
+        printf("Available: %s\n", ext.extensionName);
         requiredExtensions.erase(ext.extensionName);
     }
 

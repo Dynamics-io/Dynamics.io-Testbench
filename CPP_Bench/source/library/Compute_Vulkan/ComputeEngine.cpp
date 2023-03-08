@@ -11,7 +11,11 @@ VkInstance ComputeEngine::mInstance;
 VkDebugUtilsMessengerEXT ComputeEngine::mDebugMessenger;
 bool ComputeEngine::mEnableValidationLayers;
 
+bool ComputeEngine::mInitialized = false;
+
 std::string ComputeEngine::mApp_dir = "";
+
+std::vector<ComputeContext> ComputeEngine::mContexts;
 
 const std::vector<const char*> ComputeEngine::validationLayers = {
 	"VK_LAYER_KHRONOS_validation"
@@ -31,8 +35,12 @@ int ComputeEngine::Init(std::string dir)
 
 	VkResult res = createInstance();
 
-	if (res == VK_SUCCESS)
+	if (res == VK_SUCCESS) {
+
 		setupDebugMessenger();
+
+		mInitialized = true;
+	}
 
 	return (int)res;
 }
@@ -129,6 +137,9 @@ void ComputeEngine::populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreate
 
 void ComputeEngine::Dispose()
 {
+	if (!mInitialized)
+		return;
+
 	mContexts.clear();
 
 	if (mEnableValidationLayers) {
@@ -136,6 +147,8 @@ void ComputeEngine::Dispose()
 	}
 
 	vkDestroyInstance(mInstance, nullptr);
+
+	mInitialized = false;
 }
 
 VKAPI_ATTR VkBool32 VKAPI_CALL ComputeEngine::debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData)
@@ -156,7 +169,7 @@ VKAPI_ATTR VkBool32 VKAPI_CALL ComputeEngine::debugCallback(VkDebugUtilsMessageS
 ComputeContext::ComputeContext(VkInstance* instance, VkPhysicalDevice device) {
 	mInstance = instance;
 	mPhysicalDevice = device;
-	mIndices = findQueueFamilies(device);
+	mIndices = Utilities::findQueueFamilies(device);
 
 	VkResult res = createLogicalDevice();
 
@@ -193,9 +206,8 @@ VkCommandBuffer* ComputeContext::GetPreferedTransferCmdBuffer()
 }
 
 ComputeProgram* ComputeContext::Add_Program(std::string name) {
-	ComputeProgram* program = new ComputeProgram(name, this);
-	programs[name] = program;
-	return program;
+	programs[name] = ComputeProgram(name, this);
+	return &programs[name];
 }
 
 ComputeProgram* ComputeContext::Add_Program_Source(std::string name, const char* source) {
@@ -203,8 +215,8 @@ ComputeProgram* ComputeContext::Add_Program_Source(std::string name, const char*
 	{
 		Add_Program(name);
 	}
-	int res = programs[name]->Set_Source(source);
-	return programs[name];
+	int res = programs[name].Set_Source(source);
+	return &programs[name];
 }
 
 ComputeProgram* ComputeContext::Add_Program_SPIRV(std::string name, const void* binary, size_t length) {
@@ -212,8 +224,8 @@ ComputeProgram* ComputeContext::Add_Program_SPIRV(std::string name, const void* 
 	{
 		Add_Program(name);
 	}
-	int res = programs[name]->Set_Binary(binary, length);
-	return programs[name];
+	int res = programs[name].Set_Binary(binary, length);
+	return &programs[name];
 }
 
 ComputeProgram* ComputeContext::Add_Program_SPIRV_File(std::string name, std::string file_path)
@@ -222,49 +234,24 @@ ComputeProgram* ComputeContext::Add_Program_SPIRV_File(std::string name, std::st
 	{
 		Add_Program(name);
 	}
-	int res = programs[name]->Set_Binary_File(file_path);
-	return programs[name];
+	int res = programs[name].Set_Binary_File(file_path);
+	return &programs[name];
 }
 
 ComputeProgram* ComputeContext::Programs(std::string name) {
 	if (programs.count(name) > 0) {
-		return programs[name];
+		return &programs[name];
 	}
 	return nullptr;
 }
 
-ComputeContext::QueueFamilyIndices ComputeContext::findQueueFamilies(VkPhysicalDevice device)
-{
-	QueueFamilyIndices indices;
+ComputeKernel* ComputeContext::GetKernel(std::string p_name, std::string name) {
+	return Programs(p_name)->GetKernel(name);
+}
 
-	std::vector<VkQueueFamilyProperties> queueFamilies = Utilities::GetPhysicalDeviceQueueFamilyProperties(device);
-
-	int i = 0;
-	for (const auto& queueFam : queueFamilies) {
-		if ((queueFam.queueFlags & VK_QUEUE_COMPUTE_BIT) &&
-			!(queueFam.queueFlags & VK_QUEUE_TRANSFER_BIT)) {
-			indices.computeFamily = i;
-		}
-
-		if (!(queueFam.queueFlags & VK_QUEUE_COMPUTE_BIT) &&
-			(queueFam.queueFlags & VK_QUEUE_TRANSFER_BIT)) {
-			indices.transferFamily = i;
-		}
-	}
-
-	int i = 0;
-	if (!indices.computeFamily.has_value() || !indices.computeFamily.has_value()) {
-		for (const auto& queueFam : queueFamilies) {
-			if ((queueFam.queueFlags & VK_QUEUE_TRANSFER_BIT) &&
-				(queueFam.queueFlags & VK_QUEUE_COMPUTE_BIT)) {
-				indices.shouldIncludeGraphics = true;
-				indices.transferFamily = i;
-				indices.computeFamily = i;
-			}
-		}
-	}
-
-	return indices;
+ComputeBuffer* ComputeContext::CreateBuffer(ComputeBuffer::Buffer_Type type, size_t size) {
+	mBuffers.push_back(ComputeBuffer(this, type, size));
+	return &mBuffers[mBuffers.size() - 1];
 }
 
 VkResult ComputeContext::createLogicalDevice()
@@ -363,9 +350,12 @@ void ComputeContext::createCommandBuffers()
 	Utilities::CreateCommandBuffer(mTransferCmdPool, mDevice, mTransferCmdBuffer);
 }
 
-ComputeContext::~ComputeContext() {
+void ComputeContext::Dispose() {
+	if (mDestroyed)
+		return;
 
 	programs.clear();
+	mBuffers.clear();
 
 	if (IncludeGraphics)
 		vkDestroyCommandPool(mDevice, mGraphicsCmdPool, nullptr);
@@ -373,6 +363,12 @@ ComputeContext::~ComputeContext() {
 	vkDestroyCommandPool(mDevice, mTransferCmdPool, nullptr);
 
 	vkDestroyDevice(mDevice, nullptr);
+
+	mDestroyed = true;
+}
+
+ComputeContext::~ComputeContext() {
+	Dispose();
 }
 
 // Compute Program
@@ -410,17 +406,37 @@ int ComputeProgram::Set_Binary_File(std::string file_path) {
 ComputeKernel* ComputeProgram::GetKernel(std::string name) {
 	if (kernels.count(name) > 0)
 	{
-		return kernels[name];
+		return &kernels[name];
 	}
 
-	return nullptr;
+	kernels[name] = ComputeKernel(name, this);
+	return &kernels[name];
 }
 
-ComputeProgram::~ComputeProgram() {
+void ComputeProgram::Dispose() {
+	if (mDestroyed)
+		return;
 
 	kernels.clear();
 
 	vkDestroyShaderModule(*mDevice, mProgramModule, nullptr);
+
+	mDestroyed = true;
+}
+
+int ComputeProgram::Buildkernels() {
+	for (auto& [key, value] : kernels) {
+		VkResult res = value.BuildKernel();
+
+		if (res != VK_SUCCESS)
+			return res;
+	}
+
+	return 0;
+}
+
+ComputeProgram::~ComputeProgram() {
+	Dispose();
 }
 
 
@@ -561,7 +577,7 @@ VkResult ComputeKernel::createDescriptorSets()
 	VkResult res = Utilities::AllocateDescriptorSets(*mDevice, layouts, mDescriptorPool, 1, mComputeDescriptorSet);
 
 	if (res != VK_SUCCESS)
-		return;
+		return res;
 
 	int numBuffers = mBoundBuffers.size();
 
@@ -581,14 +597,24 @@ VkResult ComputeKernel::createDescriptorSets()
 	}
 
 	Utilities::UpdateDescriptorSets_StorageBuffers(*mDevice, mComputeDescriptorSet, descriptorBufferInfo);
+
+	return res;
 }
 
-ComputeKernel::~ComputeKernel() {
+void ComputeKernel::Dispose() {
+	if (mDestroyed)
+		return;
 
 	vkDestroyPipeline(*mDevice, mComputePipeline, nullptr);
 	vkDestroyPipelineLayout(*mDevice, mComputePipelineLayout, nullptr);
 	vkDestroyDescriptorPool(*mDevice, mDescriptorPool, nullptr);
 	vkDestroyDescriptorSetLayout(*mDevice, mComputeDescriptorSetLayout, nullptr);
+
+	mDestroyed = true;
+}
+
+ComputeKernel::~ComputeKernel() {
+	Dispose();
 }
 
 
@@ -638,50 +664,34 @@ ComputeBuffer::ComputeBuffer(ComputeContext* context, Buffer_Type type, VkDevice
 		mBuffer,
 		mBufferMemory
 	);
+
+	Utilities::CreateBuffer(
+		*mPhysicalDevice,
+		*mLogicalDevice,
+		mSize,
+		VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+		VK_SHARING_MODE_CONCURRENT,
+		0,
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+		mAllQueueFamilies,
+		stagingBuffer,
+		stagingBufferMemory
+	);
 }
 
 int ComputeBuffer::SetData(void* src_data) {
 	VkBuffer stagingBuffer;
 	VkDeviceMemory stagingBufferMemory;
 
-	Utilities::CreateBuffer(
-		*mPhysicalDevice,
-		*mLogicalDevice,
-		mSize,
-		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-		VK_SHARING_MODE_CONCURRENT,
-		0,
-		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-		mAllQueueFamilies,
-		stagingBuffer,
-		stagingBufferMemory
-	);
-
 	void* data;
 	Utilities::FlushToBuffer(*mLogicalDevice, stagingBufferMemory, mSize, data, src_data, true);
 
 	Utilities::CopyBuffer(*mTransferQueue, *mTransferCmdBuffer, stagingBuffer, mBuffer, mSize);
 
-	vkDestroyBuffer(*mLogicalDevice, stagingBuffer, nullptr);
-	vkFreeMemory(*mLogicalDevice, stagingBufferMemory, nullptr);
+	return 0;
 }
 
 int ComputeBuffer::GetData(void* outData) {
-	VkBuffer stagingBuffer;
-	VkDeviceMemory stagingBufferMemory;
-
-	Utilities::CreateBuffer(
-		*mPhysicalDevice,
-		*mLogicalDevice,
-		mSize,
-		VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-		VK_SHARING_MODE_CONCURRENT,
-		0,
-		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-		mAllQueueFamilies,
-		stagingBuffer,
-		stagingBufferMemory
-	);
 
 	Utilities::CopyBuffer(*mTransferQueue, *mTransferCmdBuffer, mBuffer, stagingBuffer, mSize);
 
@@ -690,11 +700,10 @@ int ComputeBuffer::GetData(void* outData) {
 	memcpy(outData, maped_data, static_cast<uint32_t>(mSize));
 	vkUnmapMemory(*mLogicalDevice, stagingBufferMemory);
 
-	vkDestroyBuffer(*mLogicalDevice, stagingBuffer, nullptr);
-	vkFreeMemory(*mLogicalDevice, stagingBufferMemory, nullptr);
+	return 0;
 }
 
-void Dynamics_IO_Testbench::Compute::VK::ComputeBuffer::getAllQueueFamilies()
+void ComputeBuffer::getAllQueueFamilies()
 {
 	std::vector<VkQueueFamilyProperties> queueFamilies = Utilities::GetPhysicalDeviceQueueFamilyProperties(*mPhysicalDevice);
 
@@ -702,14 +711,25 @@ void Dynamics_IO_Testbench::Compute::VK::ComputeBuffer::getAllQueueFamilies()
 	for (auto queueFam : queueFamilies) {
 		if ((queueFam.queueFlags & VK_QUEUE_TRANSFER_BIT) ||
 			(queueFam.queueFlags & VK_QUEUE_COMPUTE_BIT) ||
-			(queueFam.queueFlags & VK_QUEUE_COMPUTE_BIT)) {
+			(queueFam.queueFlags & VK_QUEUE_GRAPHICS_BIT)) {
 			
 			mAllQueueFamilies.push_back(i);
 		}
 	}
 }
 
-ComputeBuffer::~ComputeBuffer() {
+void ComputeBuffer::Dispose() {
+	if (mDestroyed)
+		return;
+
 	vkDestroyBuffer(*mLogicalDevice, mBuffer, nullptr);
 	vkFreeMemory(*mLogicalDevice, mBufferMemory, nullptr);
+	vkDestroyBuffer(*mLogicalDevice, stagingBuffer, nullptr);
+	vkFreeMemory(*mLogicalDevice, stagingBufferMemory, nullptr);
+
+	mDestroyed = true;
+}
+
+ComputeBuffer::~ComputeBuffer() {
+	Dispose();
 }

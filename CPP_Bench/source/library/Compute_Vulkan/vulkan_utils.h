@@ -17,6 +17,27 @@ namespace Dynamics_IO_Testbench {
                     int binding;
                 };
 
+                struct QueueFamilyIndices {
+                    bool shouldIncludeGraphics = false;
+
+                    std::optional<uint32_t> graphicsFamily;
+                    std::optional<uint32_t> transferFamily;
+                    std::optional<uint32_t> computeFamily;
+
+                    bool isComplete() {
+                        if (shouldIncludeGraphics) {
+                            return
+                                graphicsFamily.has_value() &&
+                                computeFamily.has_value() &&
+                                transferFamily.has_value();
+                        }
+
+                        return
+                            computeFamily.has_value() &&
+                            transferFamily.has_value();
+                    }
+                };
+
 
 
                 // non-vulkan functions
@@ -87,6 +108,7 @@ namespace Dynamics_IO_Testbench {
 
                 bool checkValidationLayerSupport(std::vector<const char*> validationLayers);
 
+                QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
 
 
                 // Load Enumeration functions

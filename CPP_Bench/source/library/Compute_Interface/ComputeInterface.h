@@ -28,8 +28,10 @@ namespace Dynamics_IO_Testbench {
 
 			static IComputeController* GetComputeController(Compute_SDK implementation, ControllerInfo info);
 
-            static std::vector<Platform> GetSupportedPlatforms();
-            static std::vector<Device> GetSupportedDevices(Platform pltfrm);
+            static std::vector<Platform> GetSupportedPlatforms_OpenCL();
+            static std::vector<Device> GetSupportedDevices_OpenCL(Platform pltfrm);
+
+			static std::vector<Device> GetSupportedDevices_Vulkan();
         private:
 
             static cl_uint num_of_platforms;
@@ -43,6 +45,8 @@ namespace Dynamics_IO_Testbench {
 			static IComputeController* GetComputeController_Vulkan(ControllerInfo info);
 
 			static IComputeController* GetComputeController_DirectX(ControllerInfo info);
+
+			static bool isDeviceSuitable(VkPhysicalDevice device);
 		};
 
 	}

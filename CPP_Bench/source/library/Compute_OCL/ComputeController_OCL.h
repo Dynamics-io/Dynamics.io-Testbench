@@ -26,6 +26,7 @@ namespace Dynamics_IO_Testbench {
 
 				IComputeBuffer* NewReadWriteBuffer(size_t length);
 
+				void Dispose() {}
 
 				// Non-interface methods:
 

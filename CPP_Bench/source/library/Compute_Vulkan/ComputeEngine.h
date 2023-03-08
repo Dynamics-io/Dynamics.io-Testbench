@@ -2,6 +2,7 @@
 
 #include "stdafx.h"
 #include "vulkan/vulkan.h"
+#include "Compute_Vulkan/vulkan_utils.h"
 
 #define DEFAULT_WORK_GROUP_SIZE 16
 
@@ -29,22 +30,27 @@ namespace Dynamics_IO_Testbench {
 
             private:
 
-                ComputeContext* mContext;
-                Buffer_Type mType;
-                VkBuffer mBuffer;
-                VkDeviceMemory mBufferMemory;
-                VkDeviceSize mSize;
+                ComputeContext* mContext{nullptr};
+                Buffer_Type mType{};
+                VkBuffer mBuffer{};
+                VkDeviceMemory mBufferMemory{};
+                VkBuffer stagingBuffer{};
+                VkDeviceMemory stagingBufferMemory{};
+                VkDeviceSize mSize{};
 
-                VkPhysicalDevice* mPhysicalDevice;
-                VkDevice* mLogicalDevice;
+                VkPhysicalDevice* mPhysicalDevice{ nullptr };
+                VkDevice* mLogicalDevice{ nullptr };
 
-                VkQueue* mTransferQueue;
-                VkCommandBuffer* mTransferCmdBuffer;
+                VkQueue* mTransferQueue{ nullptr };
+                VkCommandBuffer* mTransferCmdBuffer{ nullptr };
 
-                bool mSeperateTransferQueue;
+                bool mSeperateTransferQueue{ false };
                 std::vector<uint32_t> mAllQueueFamilies;
 
+                bool mDestroyed{ false };
+
             public:
+                ComputeBuffer() {}
                 ~ComputeBuffer();
 
                 int SetData(void* data);
@@ -57,6 +63,8 @@ namespace Dynamics_IO_Testbench {
                 }
 
                 VkDeviceSize GetSize() { return mSize; };
+
+                void Dispose();
 
             private:
                 ComputeBuffer(ComputeContext* context, Buffer_Type type, VkDeviceSize size);
@@ -73,27 +81,30 @@ namespace Dynamics_IO_Testbench {
                     uint32_t BindIndex;
                 };
 
-                std::string mName;
-                ComputeProgram* mProgram;
-                VkShaderModule* mProgramModule;
+                std::string mName{ "" };
+                ComputeProgram* mProgram{ nullptr };
+                VkShaderModule* mProgramModule{ nullptr };
 
-                VkDevice* mDevice;
-                VkDescriptorSetLayout mComputeDescriptorSetLayout;
-                VkDescriptorSet mComputeDescriptorSet;
-                VkDescriptorPool mDescriptorPool;
-                VkPipelineLayout mComputePipelineLayout;
-                VkPipeline mComputePipeline;
+                VkDevice* mDevice{ nullptr };
+                VkDescriptorSetLayout mComputeDescriptorSetLayout{};
+                VkDescriptorSet mComputeDescriptorSet{};
+                VkDescriptorPool mDescriptorPool{};
+                VkPipelineLayout mComputePipelineLayout{};
+                VkPipeline mComputePipeline{};
 
-                VkQueue* mComputeQueue;
-                VkQueue* mTransferQueue;
-                VkCommandBuffer* mComputeCmdBuffer;
-                VkCommandBuffer* mTransferCmdBuffer;
+                VkQueue* mComputeQueue{ nullptr };
+                VkQueue* mTransferQueue{ nullptr };
+                VkCommandBuffer* mComputeCmdBuffer{ nullptr };
+                VkCommandBuffer* mTransferCmdBuffer{ nullptr };
 
-                uint32_t mWorkGroupSize;
+                uint32_t mWorkGroupSize{ DEFAULT_WORK_GROUP_SIZE };
 
                 std::vector<BoundBuffer> mBoundBuffers;
 
+                bool mDestroyed{ false };
+
             public:
+                ComputeKernel() {}
                 ~ComputeKernel();
                 
                 int SetBuffer(ComputeBuffer* buffer, int arg);
@@ -101,6 +112,8 @@ namespace Dynamics_IO_Testbench {
                 VkResult BuildKernel();
 
                 int Execute(uint32_t x, uint32_t y, uint32_t z);
+
+                void Dispose();
 
             private:
                 ComputeKernel(std::string name, ComputeProgram* program);
@@ -118,14 +131,17 @@ namespace Dynamics_IO_Testbench {
             class ComputeProgram {
                 friend class ComputeContext;
 
-                std::string mName;
-                ComputeContext* mContext;
-                VkDevice* mDevice;
-                VkShaderModule mProgramModule;
+                std::string mName{""};
+                ComputeContext* mContext{ nullptr };
+                VkDevice* mDevice{ nullptr };
+                VkShaderModule mProgramModule{};
 
-                std::map<std::string, ComputeKernel*> kernels;
+                std::map<std::string, ComputeKernel> kernels;
+
+                bool mDestroyed{ false };
 
             public:
+                ComputeProgram(){}
                 ~ComputeProgram();
 
 
@@ -153,6 +169,10 @@ namespace Dynamics_IO_Testbench {
 
                 ComputeKernel* GetKernel(std::string name);
 
+                int Buildkernels();
+
+                void Dispose();
+
             private:
                 ComputeProgram(std::string name, ComputeContext* context);
 
@@ -161,53 +181,36 @@ namespace Dynamics_IO_Testbench {
             class ComputeContext
             {
                 friend class ComputeEngine;
-            public:
-                struct QueueFamilyIndices {
-                    bool shouldIncludeGraphics = false;
-
-                    std::optional<uint32_t> graphicsFamily;
-                    std::optional<uint32_t> transferFamily;
-                    std::optional<uint32_t> computeFamily;
-
-                    bool isComplete() {
-                        if (shouldIncludeGraphics) {
-                            return
-                                graphicsFamily.has_value() &&
-                                computeFamily.has_value() &&
-                                transferFamily.has_value();
-                        }
-
-                        return
-                            computeFamily.has_value() &&
-                            transferFamily.has_value();
-                    }
-                };
 
             private:
 
                 const bool IncludeGraphics = false;
                 
-                std::map<std::string, ComputeProgram*> programs;
+                std::map<std::string, ComputeProgram> programs;
+                std::vector<ComputeBuffer> mBuffers;
 
-                VkInstance* mInstance;
-                VkPhysicalDevice mPhysicalDevice;
-                QueueFamilyIndices mIndices;
-                VkDevice mDevice;
-                VkQueue mGraphicsQueue;
-                VkQueue mComputeQueue;
-                VkQueue mTransferQueue;
-                VkCommandPool mGraphicsCmdPool;
-                VkCommandPool mComputeCmdPool;
-                VkCommandPool mTransferCmdPool;
-                VkCommandBuffer mGraphicsCmdBuffer;
-                VkCommandBuffer mComputeCmdBuffer;
-                VkCommandBuffer mTransferCmdBuffer;
+                VkInstance* mInstance{nullptr};
+                VkPhysicalDevice mPhysicalDevice{};
+                Utilities::QueueFamilyIndices mIndices{};
+                VkDevice mDevice{};
+                VkQueue mGraphicsQueue{};
+                VkQueue mComputeQueue{};
+                VkQueue mTransferQueue{};
+                VkCommandPool mGraphicsCmdPool{};
+                VkCommandPool mComputeCmdPool{};
+                VkCommandPool mTransferCmdPool{};
+                VkCommandBuffer mGraphicsCmdBuffer{};
+                VkCommandBuffer mComputeCmdBuffer{};
+                VkCommandBuffer mTransferCmdBuffer{};
+
+                bool mDestroyed{ false };
 
                 const std::vector<const char*> DeviceExtensions = {
                     
                 };
 
             public:
+                ComputeContext(){}
                 ~ComputeContext();
 
 
@@ -220,7 +223,7 @@ namespace Dynamics_IO_Testbench {
                     return mInstance;
                 }
 
-                QueueFamilyIndices getQueueFamilyIndices() {
+                Utilities::QueueFamilyIndices getQueueFamilyIndices() {
                     return mIndices;
                 }
 
@@ -238,10 +241,15 @@ namespace Dynamics_IO_Testbench {
                 ComputeProgram* Add_Program_SPIRV_File(std::string name, std::string file_path);
                 ComputeProgram* Programs(std::string name);
 
+                ComputeKernel* GetKernel(std::string p_name, std::string name);
+                ComputeBuffer* CreateBuffer(ComputeBuffer::Buffer_Type type, VkDeviceSize size);
+
+                void Dispose();
+
             private:
                 ComputeContext(VkInstance* instance, VkPhysicalDevice device);
 
-                QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
+                //Utilities::QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
 
                 VkResult createLogicalDevice();
 
@@ -259,6 +267,8 @@ namespace Dynamics_IO_Testbench {
                 static VkInstance mInstance;
                 static VkDebugUtilsMessengerEXT mDebugMessenger;
                 static bool mEnableValidationLayers;
+
+                static bool mInitialized;
 
                 static std::string mApp_dir;
 
@@ -278,6 +288,10 @@ namespace Dynamics_IO_Testbench {
 
                 static bool ValidationEnabled() {
                     return mEnableValidationLayers;
+                }
+
+                static bool IsInitialized() {
+                    return mInitialized;
                 }
 
                 static std::vector<const char*> GetValidationLayers() {

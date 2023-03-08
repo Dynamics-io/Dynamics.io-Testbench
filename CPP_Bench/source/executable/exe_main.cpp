@@ -20,8 +20,18 @@ int main()
 
 int Vulkan_test()
 {
-	ComputeInterface::ControllerInfo controllerInfo;
-	ComputeInterface::GetComputeController(ComputeInterface::VULKAN, controllerInfo);
+	//ComputeInterface::ControllerInfo controllerInfo;
+	//ComputeInterface::GetComputeController(ComputeInterface::VULKAN, controllerInfo);
+
+
+	std::vector<Device> devices = ComputeInterface::GetSupportedDevices_Vulkan();
+
+	printf("Devices: %u\n", devices.size());
+	for (Device dev : devices) {
+		Vulkan_Device_Info info = dev.Vulkan_Info;
+
+		printf("%s (%s): %i, %s\n", info.Name.c_str(), info.GetTypeName().c_str(), info.Device_ID, info.GetUUID().c_str());
+	}
 
 	return 0;
 }
@@ -38,21 +48,21 @@ const char* KernelSource =
 
 int OpenCL_test()
 {
-	std::vector<Platform> platforms = ComputeInterface::GetSupportedPlatforms();
+	std::vector<Platform> platforms = ComputeInterface::GetSupportedPlatforms_OpenCL();
 
 	for (const auto p : platforms)
 	{
 		printf("Platform %s:\n", p.name);
 
-		std::vector<Device> devices = ComputeInterface::GetSupportedDevices(p);
+		std::vector<Device> devices = ComputeInterface::GetSupportedDevices_OpenCL(p);
 		for (auto d : devices)
 		{
-			printf("\t%s - %s: Frequency: %u, threads: %u, Memory: %lu, Work Size: %u \n", d.vendor, d.name, d.clock_frequency, d.num_compute_units * d.group_size, d.mem_size, d.max_work_size);
+			//printf("\t%s - %s: Frequency: %u, threads: %u, Memory: %lu, Work Size: %u \n", d.vendor, d.name, d.clock_frequency, d.num_compute_units * d.group_size, d.mem_size, d.max_work_size);
 		}
 	}
 
 	Platform platf = platforms[1];
-	Device dev = ComputeInterface::GetSupportedDevices(platf)[0];
+	Device dev = ComputeInterface::GetSupportedDevices_OpenCL(platf)[0];
 
 	ComputeInterface::ControllerInfo controllerInfo;
 	controllerInfo.platform = platf;
@@ -89,7 +99,9 @@ int OpenCL_test()
 
 	IComputeBuffer* compBuffer = controller->NewReadWriteBuffer(DATA_SIZE * sizeof(int));
 
-	program->KernelAddBuffer(kernel_name, compBuffer);
+	IComputeProgram::BindIndex ind{};
+	ind.ParameterIndex = 0;
+	program->KernelSetBuffer(kernel_name, compBuffer, ind);
 
 	program->RunKernel(kernel_name, DATA_SIZE, 0, 0);
 

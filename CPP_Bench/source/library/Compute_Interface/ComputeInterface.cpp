@@ -1,9 +1,11 @@
 #include "ComputeInterface.h"
 
 #include "Compute_OCL/ComputeController_OCL.h"
+#include "Compute_Vulkan/ComputeController_VK.h"
+#include "Compute_Vulkan/vulkan_utils.h"
 
-#include "Compute_Vulkan/vulkan_test.h"
-#include "Compute_Vulkan/vulkan_compute_test.h"
+//#include "Compute_Vulkan/vulkan_test.h"
+//#include "Compute_Vulkan/vulkan_compute_test.h"
 
 using namespace Dynamics_IO_Testbench::Compute;
 using namespace Dynamics_IO_Testbench::Compute::OCL;
@@ -54,18 +56,14 @@ IComputeController* ComputeInterface::GetComputeController_CUDA(ControllerInfo i
 
 IComputeController* ComputeInterface::GetComputeController_Vulkan(ControllerInfo info)
 {
-    Vulkan_compute_test test;
-    test.Run();
+    //Vulkan_compute_test test;
+    //test.Run();
     
-    /*try {
-        test.Run();
-    }
-    catch (const std::exception& e) {
-        std::cerr << "ERROR in test: " << e.what() << std::endl;
-        return nullptr;
-    }*/
+    IComputeController* controller = ComputeController_VK::New();
 
-	return nullptr;
+    controller->Init(info.platform, info.device, info.program_dir);
+
+    return controller;
 }
 
 IComputeController* ComputeInterface::GetComputeController_DirectX(ControllerInfo info)
@@ -73,7 +71,7 @@ IComputeController* ComputeInterface::GetComputeController_DirectX(ControllerInf
 	return nullptr;
 }
 
-std::vector<Platform> ComputeInterface::GetSupportedPlatforms()
+std::vector<Platform> ComputeInterface::GetSupportedPlatforms_OpenCL()
 {
     std::vector<Platform> res;
 
@@ -119,7 +117,7 @@ std::vector<Platform> ComputeInterface::GetSupportedPlatforms()
     return res;
 }
 
-std::vector<Device> ComputeInterface::GetSupportedDevices(Platform pltfrm)
+std::vector<Device> ComputeInterface::GetSupportedDevices_OpenCL(Platform pltfrm)
 {
     std::vector<Device> res;
 
@@ -129,7 +127,7 @@ std::vector<Device> ComputeInterface::GetSupportedDevices(Platform pltfrm)
 
     // try to get a supported GPU device
     //ComputeEngine::device_ids = new cl_device_id[num_of_devices];
-    cl_int get_res = clGetDeviceIDs(pltfrm.platform, CL_DEVICE_TYPE_ALL, MAX_OCL_DEVICES, device_ids, &num_of_devices);
+    cl_int get_res = clGetDeviceIDs((cl_platform_id)pltfrm.platform, CL_DEVICE_TYPE_ALL, MAX_OCL_DEVICES, device_ids, &num_of_devices);
     if (get_res != CL_SUCCESS)
     {
         printf("Failed to get devices: %i\n", get_res);
@@ -144,53 +142,162 @@ std::vector<Device> ComputeInterface::GetSupportedDevices(Platform pltfrm)
     for (int i = 0; i < num_of_devices; i++)
     {
         // CL_DEVICE_MAX_WORK_ITEM_SIZES
-        Device dev;
-        ZeroMemory(&dev, sizeof(Device));
+        Device device{};
+        OpenCL_Device_Info info{};
 
-        dev.device = device_ids[i];
+        device.cl_device = device_ids[i];
 
         ZeroMemory(Info, INFO_SIZE);
         clGetDeviceInfo(device_ids[i], CL_DEVICE_VENDOR, INFO_SIZE, Info, &n_size);
-        strcpy(dev.vendor, Info);
-        dev.vendor_size = n_size;
+        strcpy(info.vendor, Info);
+        info.vendor_size = n_size;
 
         ZeroMemory(Info, INFO_SIZE);
         clGetDeviceInfo(device_ids[i], CL_DEVICE_NAME, INFO_SIZE, Info, &n_size);
-        strcpy(dev.name, Info);
-        dev.name_size = n_size;
+        strcpy(info.name, Info);
+        info.name_size = n_size;
 
         cl_uint freq;
         clGetDeviceInfo(device_ids[i], CL_DEVICE_MAX_CLOCK_FREQUENCY, sizeof(cl_uint), &freq, &n_size);
-        dev.clock_frequency = freq;
+        info.clock_frequency = freq;
 
         cl_uint nm_unts;
         clGetDeviceInfo(device_ids[i], CL_DEVICE_MAX_COMPUTE_UNITS, sizeof(cl_uint), &nm_unts, &n_size);
-        dev.num_compute_units = nm_unts;
+        info.num_compute_units = nm_unts;
 
         cl_int num_dim;
         clGetDeviceInfo(device_ids[i], CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS, sizeof(cl_uint), &num_dim, &n_size);
 
         size_t* sizes = new size_t[num_dim];
         clGetDeviceInfo(device_ids[i], CL_DEVICE_MAX_WORK_ITEM_SIZES, sizeof(size_t) * num_dim, sizes, &n_size);
-        dev.max_work_size = 1;
+        info.max_work_size = 1;
         for (int w = 0; w < 2; w++)
         {
-            dev.max_work_size *= static_cast<unsigned int>(sizes[w]);
+            info.max_work_size *= static_cast<unsigned int>(sizes[w]);
         }
         delete[] sizes;
 
         size_t work_g_size;
         clGetDeviceInfo(device_ids[i], CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(size_t), &work_g_size, &n_size);
-        dev.group_size = work_g_size;
+        info.group_size = work_g_size;
 
         clGetDeviceInfo(device_ids[i], CL_DEVICE_TYPE, sizeof(cl_device_type), &type, &n_size);
-        dev.is_type_default = (type & CL_DEVICE_TYPE_DEFAULT) == CL_DEVICE_TYPE_DEFAULT;
-        dev.is_type_CPU = (type & CL_DEVICE_TYPE_CPU) == CL_DEVICE_TYPE_CPU;
-        dev.is_type_GPU = (type & CL_DEVICE_TYPE_GPU) == CL_DEVICE_TYPE_GPU;
-        dev.is_type_Accelerator = (type & CL_DEVICE_TYPE_ACCELERATOR) == CL_DEVICE_TYPE_ACCELERATOR;
+        info.is_type_default = (type & CL_DEVICE_TYPE_DEFAULT) == CL_DEVICE_TYPE_DEFAULT;
+        info.is_type_CPU = (type & CL_DEVICE_TYPE_CPU) == CL_DEVICE_TYPE_CPU;
+        info.is_type_GPU = (type & CL_DEVICE_TYPE_GPU) == CL_DEVICE_TYPE_GPU;
+        info.is_type_Accelerator = (type & CL_DEVICE_TYPE_ACCELERATOR) == CL_DEVICE_TYPE_ACCELERATOR;
 
-        res.push_back(dev);
+        device.OpenCL_Info = info;
+
+        res.push_back(device);
     }
 
     return res;
+}
+
+std::vector<Device> ComputeInterface::GetSupportedDevices_Vulkan()
+{
+    std::vector<Device> result;
+
+    VkApplicationInfo appInfo = Utilities::getApplicationInfo(
+        "Get_Devices",
+        VK_MAKE_VERSION(1, 0, 0),
+        "Dynamics_IO",
+        VK_MAKE_VERSION(1, 0, 0),
+        VK_API_VERSION_1_3);
+
+
+    std::vector<const char*> requiredExtensions;
+    VkInstanceCreateInfo createInfo = Utilities::getInstanceCreateInfo(appInfo, requiredExtensions);
+    createInfo.enabledLayerCount = 0;
+    createInfo.pNext = nullptr;
+
+    VkResult res;
+    VkInstance instance;
+    res = vkCreateInstance(&createInfo, nullptr, &instance);
+
+    if (res != VK_SUCCESS) {
+        printf("ComputeInterface::GetSupportedDevices_Vulkan(): Error Initializing Vulkan Instance: %u\n", res);
+        return result;
+    }
+
+    std::vector<VkPhysicalDevice> devices = Utilities::EnumeratePhysicalDevices(instance);
+
+    printf("Total Devices: %i\n", devices.size());
+
+    
+
+    for (const auto& device : devices) {
+        if (!isDeviceSuitable(device)) {
+            continue;
+        }
+
+        //VkPhysicalDeviceProperties deviceProperties;
+        //vkGetPhysicalDeviceProperties(device, &deviceProperties);
+
+        VkPhysicalDeviceFeatures deviceFeatures{};
+        vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
+
+        VkPhysicalDeviceProperties2 deviceProperties2{};
+        deviceProperties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES;
+        vkGetPhysicalDeviceProperties2(device, &deviceProperties2);
+        VkPhysicalDeviceProperties deviceProperties = deviceProperties2.properties;
+        VkPhysicalDeviceIDProperties deviceIDProperties = *((VkPhysicalDeviceIDProperties*)deviceProperties2.pNext);
+            
+        Device res_device{};
+        Vulkan_Device_Info info{};
+
+        info.Name = std::string(deviceProperties.deviceName);
+        info.Device_ID = deviceProperties.deviceID;
+
+        memcpy(info.DeviceUUID, deviceIDProperties.deviceUUID, 16);
+
+        switch (deviceProperties.deviceType) {
+        case VK_PHYSICAL_DEVICE_TYPE_OTHER:
+            info.Type = DeviceType::DEVICE_TYPE_OTHER;
+            break;
+
+        case VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU:
+            info.Type = DeviceType::DEVICE_TYPE_INTEGRATED_GPU;
+            break;
+
+        case VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU:
+            info.Type = DeviceType::DEVICE_TYPE_DISCRETE_GPU;
+            break;
+
+        case VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU:
+            info.Type = DeviceType::DEVICE_TYPE_VIRTUAL_GPU;
+            break;
+
+        case VK_PHYSICAL_DEVICE_TYPE_CPU:
+            info.Type = DeviceType::DEVICE_TYPE_CPU;
+            break;
+        }
+            
+        res_device.vk_device = device;
+        res_device.Vulkan_Info = info;
+        result.push_back(res_device);
+        
+    }
+
+
+    vkDestroyInstance(instance, nullptr);
+
+    return result;
+}
+
+bool ComputeInterface::isDeviceSuitable(VkPhysicalDevice device)
+{
+    VkPhysicalDeviceProperties deviceProperties;
+    vkGetPhysicalDeviceProperties(device, &deviceProperties);
+
+    VkPhysicalDeviceFeatures deviceFeatures;
+    vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
+
+    Utilities::QueueFamilyIndices indices = Utilities::findQueueFamilies(device);
+
+    std::vector<const char*> deviceExtensions;// TODO: User-provided extensions.
+    bool extensionsSupported = Utilities::checkDeviceExtensionSupport(device, deviceExtensions);
+
+    return indices.isComplete() && extensionsSupported;
 }

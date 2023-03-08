@@ -12,7 +12,7 @@ void ComputeController_OCL::Init(Platform platform, Device device, std::string p
 {
 	m_directory = program_dir + "/"; // TODO: check end of program_dir string for '/'
 
-	ComputeEngine::Init(platform.platform, device.device, m_directory + "include");
+	ComputeEngine::Init((cl_platform_id)platform.platform, (cl_device_id)device.cl_device, m_directory + "include");
 
 	// TODO: Add ability to add OpenGL shared context
 	m_context = ComputeEngine::GetNewContext();
