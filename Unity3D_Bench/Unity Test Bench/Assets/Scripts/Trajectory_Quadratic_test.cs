@@ -6,6 +6,16 @@ using UnityEngine;
 
 public class Trajectory_Quadratic_test : MonoBehaviour
 {
+    public struct HitPoint {
+        public Vector3 hitLocalPosition;
+        public Vector3 hitGlobalPosition;
+        public Vector3 PlaneGlobalPosition;
+        public Vector3 PlaneHitNormal;
+        public Vector3 PointHitNormal;
+        public float HitTime;
+    }
+
+
     public Transform plane;
     public Transform endPlaneOrientation;
     public Transform sourceSphere;
@@ -71,7 +81,7 @@ public class Trajectory_Quadratic_test : MonoBehaviour
         watch.Start();
 
 
-        test_localize(
+        benchTestLocalize(
             plane.position,
             plane.forward,
             endPlaneOrientation.position,
@@ -130,7 +140,65 @@ public class Trajectory_Quadratic_test : MonoBehaviour
 
     }
 
+    void benchTestLocalize(
+        Vector3 planePositionStart,
+        Vector3 planeDirectionStart,
+        Vector3 planePositionEnd,
+        Vector3 planeDirectionEnd,
+        Vector3 sphereStart,
+        Vector3 sphereFinish,
+        float time)
+    {
+        const int TEST_SIZE = 50000;
 
+        HitPoint[] hits = new HitPoint[TEST_SIZE];
+
+        System.Diagnostics.Stopwatch p_watch = new System.Diagnostics.Stopwatch();
+
+        p_watch.Start();
+        for (int i = 0; i < TEST_SIZE; i++)
+        {
+            sphereStart = new Vector3(sphereStart.x += (1 / TEST_SIZE), sphereStart.y, sphereStart.z);
+            hits[i] = QuadraticHit(planePositionStart, planeDirectionStart, planePositionEnd, planeDirectionEnd, sphereStart, sphereFinish, time);
+        }
+        p_watch.Stop();
+
+        Debug.LogFormat("benchTestLocalize Time: {0}", p_watch.Elapsed.TotalSeconds);
+    }
+
+    void test_localize2(
+        Vector3 planePositionStart,
+        Vector3 planeDirectionStart,
+        Vector3 planePositionEnd,
+        Vector3 planeDirectionEnd,
+        Vector3 sphereStart,
+        Vector3 sphereFinish,
+        float time)
+    {
+        Vector3[] localPositions = LocalizePath(planePositionStart, planeDirectionStart, planePositionEnd, planeDirectionEnd, sphereStart, sphereFinish, time);
+        HitPoint hit = QuadraticHit(planePositionStart, planeDirectionStart, planePositionEnd, planeDirectionEnd, sphereStart, sphereFinish, time);
+
+        plane.gameObject.name = "p1";
+        sourceSphere.gameObject.name = "c1";
+
+        Vector3 firstLocalPosition = localPositions[0];
+        Vector3 secondLocalPosition = localPositions[1];
+        Vector3 thirdLocalPosition = localPositions[2];
+
+        GameObject.Instantiate(prefab_sphere, firstLocalPosition, Quaternion.identity).name = "1";
+        GameObject.Instantiate(prefab_sphere, secondLocalPosition, Quaternion.identity).name = "2";
+        GameObject.Instantiate(prefab_sphere, thirdLocalPosition, Quaternion.identity).name = "3";
+
+        GameObject hit_point = GameObject.Instantiate(prefab_sphere, hit.hitLocalPosition, Quaternion.identity);
+        hit_point.name = "hit point";
+        hit_point.transform.localScale = new Vector3(0.1f, 0.1f, 0.1f);
+
+        GameObject midPlane = GameObject.Instantiate(prefab_quad, hit.PlaneGlobalPosition, Quaternion.identity);
+        midPlane.name = "plane hit";
+        midPlane.transform.forward = hit.PlaneHitNormal;
+
+        Debug.DrawRay(hit.hitGlobalPosition, hit.PlaneHitNormal, Color.green, 5000);
+    }
 
     void test_localize (
         Vector3 planePositionStart, 
@@ -276,7 +344,7 @@ public class Trajectory_Quadratic_test : MonoBehaviour
 
         if (z_is_y)
         {
-            float[] ans_zy = QuadraticFormulat(zy_coef[0], zy_coef[1], zy_coef[2]);
+            float[] ans_zy = QuadraticFormula(zy_coef[0], zy_coef[1], zy_coef[2]);
             Debug.LogFormat("ZY ANS: {0}, {1}", ans_zy[0], ans_zy[1]);
 
             curve_finish_zy = Mathf.Max(ans_zy[0], ans_zy[1]);
@@ -288,7 +356,7 @@ public class Trajectory_Quadratic_test : MonoBehaviour
 
 
 
-            float[] ans_zx = QuadraticFormulat(zx_coef[0], zx_coef[1], zx_coef[2]);
+            float[] ans_zx = QuadraticFormula(zx_coef[0], zx_coef[1], zx_coef[2]);
             Debug.LogFormat("ZX ANS: {0}, {1}", ans_zx[0], ans_zx[1]);
 
             curve_finish_zx = Mathf.Max(ans_zx[0], ans_zx[1]);
@@ -354,6 +422,157 @@ public class Trajectory_Quadratic_test : MonoBehaviour
         Vector3 sphereGlobalPos = TransformExtensions.TransformPointUnscaled(hitPlanePos, hitPlaneDir, sphereLocalHitPos);
 
         Debug.DrawRay(sphereGlobalPos, hitPlaneDir, Color.green, 5000);
+    }
+
+
+    HitPoint QuadraticHit(
+        Vector3 planePositionStart,
+        Vector3 planeDirectionStart,
+        Vector3 planePositionEnd,
+        Vector3 planeDirectionEnd,
+        Vector3 sphereStart,
+        Vector3 sphereFinish,
+        float time)
+    {
+        // Transform point trajectory from two points local position 
+        // relative to the plane center with an additional third point
+        Vector3[] localPositions = LocalizePath(planePositionStart, planeDirectionStart, planePositionEnd, planeDirectionEnd, sphereStart, sphereFinish, time);
+
+
+        // split each point position into two 2-Dimensional planes:
+        // From the "Top" (Z and X axis) and from the "Side" (Z and Y axis)
+
+        // TODO: The "front" side (Y and X) is not usefull for detecting if the
+        // point crossed the collision barrier, however if it's the longest path
+        // then it could be usefull to get the most accurate time.
+
+        Vector2[] ZY_localPos = new Vector2[3];
+        ZY_localPos[0] = new Vector2(localPositions[0].z, localPositions[0].y);
+        ZY_localPos[1] = new Vector2(localPositions[1].z, localPositions[1].y);
+        ZY_localPos[2] = new Vector2(localPositions[2].z, localPositions[2].y);
+
+        Vector2[] ZX_localPos = new Vector2[3];
+        ZX_localPos[0] = new Vector2(localPositions[0].z, localPositions[0].x);
+        ZX_localPos[1] = new Vector2(localPositions[1].z, localPositions[1].x);
+        ZX_localPos[2] = new Vector2(localPositions[2].z, localPositions[2].x);
+
+
+        // Determine which axis should be used as the "X" axis in the quadratic 
+        // equations below. As the Z axis is shared between the two planes, if
+        // the points are not continuous along the z-axis then the x and y
+        // should be swapped between the two planes.
+
+        bool is_continous_right = ZY_localPos[0].x < ZY_localPos[1].x && ZY_localPos[1].x < ZY_localPos[2].x;
+        bool is_continous_left = ZY_localPos[0].x > ZY_localPos[1].x && ZY_localPos[1].x > ZY_localPos[2].x;
+        bool is_continous = is_continous_right || is_continous_left;
+
+        bool z_is_y = false;
+        if (!is_continous)
+        {
+            Vector2[] tmp_vec = ZY_localPos;
+            ZY_localPos[0] = new Vector3(tmp_vec[0].y, tmp_vec[0].x);
+            ZY_localPos[1] = new Vector3(tmp_vec[1].y, tmp_vec[1].x);
+            ZY_localPos[2] = new Vector3(tmp_vec[2].y, tmp_vec[2].x);
+
+            tmp_vec = ZX_localPos;
+            ZX_localPos[0] = new Vector3(tmp_vec[0].y, tmp_vec[0].x);
+            ZX_localPos[1] = new Vector3(tmp_vec[1].y, tmp_vec[1].x);
+            ZX_localPos[2] = new Vector3(tmp_vec[2].y, tmp_vec[2].x);
+            z_is_y = true;
+        }
+
+
+        // Create quadratic Regressions for both planes to get A, B and C constants.
+        float[] zy_coef = Regression(ZY_localPos);
+        float[] zx_coef = Regression(ZX_localPos);
+
+
+        float curve_start_zy = ZY_localPos[0].x;
+        float curve_finish_zy = 0;
+
+        float curve_start_zx = ZX_localPos[0].x;
+        float curve_finish_zx = 0;
+
+        float hit_location_x = 0;
+        float hit_location_y = 0;
+
+        // Determine the X and Y positions of the hit by either
+        // solving for X = 0 or Y = 0, depending on what the
+        // collision axis is.
+
+        if (z_is_y)
+        {
+            // If the axis X and Y was swapped, the X is the collision axis and we need to
+            // determine where the function crosses the X axis using the quadratic formula
+            // for x = 0. Because these functions cross the X axis in two points, we
+            // need to determine which one of the two to use.
+
+            float[] ans_zy = QuadraticFormula(zy_coef[0], zy_coef[1], zy_coef[2]);
+
+            curve_finish_zy = Mathf.Max(ans_zy[0], ans_zy[1]);
+
+            if (ZY_localPos[2].x < ZY_localPos[0].x)
+            {
+                curve_finish_zy = Mathf.Min(ans_zy[0], ans_zy[1]);
+            }
+
+
+
+            float[] ans_zx = QuadraticFormula(zx_coef[0], zx_coef[1], zx_coef[2]);
+
+            curve_finish_zx = Mathf.Max(ans_zx[0], ans_zx[1]);
+
+            if (ZX_localPos[2].x < ZX_localPos[0].x)
+            {
+                curve_finish_zx = Mathf.Min(ans_zx[0], ans_zx[1]);
+            }
+
+
+            hit_location_x = curve_finish_zx;
+            hit_location_y = curve_finish_zy;
+        }
+        else
+        {
+            // If the axis wasn't swapped, we can just solve for Y by plugging
+            // zero into the quadratic equation to get the position on each
+            // plane.
+
+            hit_location_y = (float)QuadraticSolveY(zy_coef[0], zy_coef[1], zy_coef[2], 0);
+            hit_location_x = (float)QuadraticSolveY(zx_coef[0], zx_coef[1], zx_coef[2], 0);
+        }
+
+        // Get full arc length of the curve in each plane and compare it against the
+        // length of the curve from the first point to the hit point on the
+        // collision plane. Only the longest length is used. "hit_t" is a value
+        // between 0 - 1 to denote the time between frames the collision most
+        // likely occured.
+        float full_len_zy = GetArcLength(ZY_localPos[0].x, ZY_localPos[2].x, zy_coef);
+        float full_len_zx = GetArcLength(ZX_localPos[0].x, ZX_localPos[2].x, zx_coef);
+        float full_len = Mathf.Max(full_len_zy, full_len_zx);
+
+        float len_zy = GetArcLength(curve_start_zy, curve_finish_zy, zy_coef);
+        float len_zx = GetArcLength(curve_start_zx, curve_finish_zx, zx_coef);
+        float len = Mathf.Max(len_zy, len_zx);
+
+        float hit_t = len / full_len;
+
+
+        // Use hit time to interpolate plane position and direction between frames.
+
+        Vector3 hitLocal = new Vector3(hit_location_x, hit_location_y, 0);
+        Vector3 planeNormal = Vector3.Lerp(planeDirectionStart, planeDirectionEnd, hit_t);
+        Vector3 PlanePos = Vector3.Lerp(planePositionStart, planePositionEnd, hit_t);
+        Vector3 sphereGlobalPos = TransformExtensions.TransformPointUnscaled(PlanePos, planeNormal, hitLocal);
+
+        HitPoint hit = default;
+        hit.hitLocalPosition = hitLocal;
+        hit.hitGlobalPosition = sphereGlobalPos;
+        hit.PlaneGlobalPosition = PlanePos;
+        hit.PlaneHitNormal = planeNormal;
+        hit.PointHitNormal = hit.PlaneHitNormal; // TODO: calculate direction point hit plane from.
+        hit.HitTime = hit_t;
+
+        return hit;
     }
 
 
@@ -508,10 +727,10 @@ public class Trajectory_Quadratic_test : MonoBehaviour
         float finish = Mathf.Max(x1, x2);
 
         float arcLenInteg = QuadraticArcLength2(coef[0], coef[1], coef[2], start, finish, false);
-        float arcLenEst = QuadraticArcLengthEstimate(coef[0], coef[1], coef[2], start, finish, 1000000);
+        //float arcLenEst = QuadraticArcLengthEstimate(coef[0], coef[1], coef[2], start, finish, 1000000);
 
-        Debug.Log("Arc Length: " + arcLenInteg);
-        Debug.Log("Leng Est: " + arcLenEst);
+        //Debug.Log("Arc Length: " + arcLenInteg);
+        //Debug.Log("Leng Est: " + arcLenEst);
 
         return arcLenInteg;
     }
@@ -625,7 +844,7 @@ public class Trajectory_Quadratic_test : MonoBehaviour
 
     }
 
-    float[] QuadraticFormulat(float a, float b, float c)
+    float[] QuadraticFormula(float a, float b, float c)
     {
         float sqrt = Mathf.Sqrt(Mathf.Pow(b, 2) - 4 * a * c);
         float _2a = 2 * a;
