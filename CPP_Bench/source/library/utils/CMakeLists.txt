@@ -7,6 +7,7 @@ set(${module}_headers
     Plane.h
     Ray.h
     Sphere.h
+	QuadraticSolvers.h
 )
 
 set(${module}_sources
@@ -15,6 +16,7 @@ set(${module}_sources
     Plane.cpp
     Ray.cpp
     Sphere.cpp
+	QuadraticSolvers.cpp
 )
 
 add_library(${module} STATIC ${${module}_headers} ${${module}_sources})

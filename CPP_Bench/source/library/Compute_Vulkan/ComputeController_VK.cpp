@@ -7,7 +7,7 @@
 using namespace Dynamics_IO_Testbench::Compute;
 using namespace Dynamics_IO_Testbench::Compute::VK;
 
-std::vector<ComputeController_VK> ComputeController_VK::m_controllers;
+std::vector<ComputeController_VK*> ComputeController_VK::m_controllers;
 
 void ComputeController_VK::Init(Platform platform, Device device, std::string program_dir)
 {
@@ -21,7 +21,7 @@ void ComputeController_VK::Init(Platform platform, Device device, std::string pr
 		}
 	}
 
-	m_context = ComputeEngine::GetNewContext((VkPhysicalDevice)device.vk_device);
+	m_context = ComputeEngine::GetNewContext(device);
 }
 
 IComputeProgram* ComputeController_VK::AddProgram(IComputeProgram::ProgramInfo info)
@@ -97,8 +97,10 @@ ComputeController_VK::~ComputeController_VK()
 
 IComputeController* Dynamics_IO_Testbench::Compute::VK::ComputeController_VK::New()
 {
-	m_controllers.push_back(ComputeController_VK());
-	return &m_controllers[m_controllers.size() - 1];
+	int index = m_controllers.size();
+	m_controllers.resize(index + 1);
+	m_controllers[index] = new ComputeController_VK();
+	return m_controllers[index];
 }
 
 void ComputeController_VK::Close()

@@ -45,7 +45,7 @@ int ComputeEngine::Init(std::string dir)
 	return (int)res;
 }
 
-ComputeContext* ComputeEngine::GetNewContext(VkPhysicalDevice device)
+ComputeContext* ComputeEngine::GetNewContext(Device device)
 {
 	mContexts.push_back(ComputeContext(&mInstance, device));
 	return &mContexts[mContexts.size() - 1];
@@ -135,6 +135,10 @@ void ComputeEngine::populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreate
 	createInfo.pfnUserCallback = debugCallback;
 }
 
+const std::vector<const char*> ComputeEngine::GetValidationLayers() {
+	return validationLayers;
+}
+
 void ComputeEngine::Dispose()
 {
 	if (!mInitialized)
@@ -166,10 +170,29 @@ VKAPI_ATTR VkBool32 VKAPI_CALL ComputeEngine::debugCallback(VkDebugUtilsMessageS
 
 // Compute Context
 
-ComputeContext::ComputeContext(VkInstance* instance, VkPhysicalDevice device) {
+ComputeContext::ComputeContext(VkInstance* instance, Device device) {
 	mInstance = instance;
-	mPhysicalDevice = device;
-	mIndices = Utilities::findQueueFamilies(device);
+
+	std::vector<VkPhysicalDevice> devices = Utilities::EnumeratePhysicalDevices(*instance);
+	
+	bool deviceFound = false;
+	for (VkPhysicalDevice dvs : devices) {
+		VkPhysicalDeviceProperties deviceProperties;
+		vkGetPhysicalDeviceProperties(dvs, &deviceProperties);
+
+		if (deviceProperties.deviceID == device.Vulkan_Info.Device_ID) {
+			mPhysicalDevice = dvs;
+			deviceFound = true;
+			break;
+		}
+	}
+
+	if (!deviceFound) {
+		printf("Physical device not found!\n");
+		return;
+	}
+
+	mIndices = Utilities::findQueueFamilies(mPhysicalDevice);
 
 	VkResult res = createLogicalDevice();
 
@@ -260,18 +283,20 @@ VkResult ComputeContext::createLogicalDevice()
 
 
 	std::vector<uint32_t> uniqueQueueFamilies;
-	if (mIndices.computeFamily.value() == mIndices.transferFamily.value())
+	if (mIndices.computeFamily.value() != mIndices.transferFamily.value())
 	{
 		if (IncludeGraphics)
 			uniqueQueueFamilies.push_back(mIndices.graphicsFamily.value());
 		uniqueQueueFamilies.push_back(mIndices.transferFamily.value());
 		uniqueQueueFamilies.push_back(mIndices.computeFamily.value());
+		printf("ComputeContext::createLogicalDevice(): Seperate Queue Families!\n");
 	}
 	else 
 	{
 		if (IncludeGraphics)
 			uniqueQueueFamilies.push_back(mIndices.graphicsFamily.value());
 		uniqueQueueFamilies.push_back(mIndices.computeFamily.value());
+		printf("ComputeContext::createLogicalDevice(): Shared Queue Family!\n");
 	}
 
 	float queuePriority = 1.0f;
@@ -284,8 +309,8 @@ VkResult ComputeContext::createLogicalDevice()
 
 	VkDeviceCreateInfo createInfo = Utilities::getDeviceCreateInfo(queueCreateInfos, deviceFeatures, (std::vector<const char*>)DeviceExtensions);
 
+	const std::vector<const char*> layers = ComputeEngine::GetValidationLayers();
 	if (ComputeEngine::ValidationEnabled()) {
-		std::vector<const char*> layers = ComputeEngine::GetValidationLayers();
 		createInfo.enabledLayerCount = static_cast<uint32_t>(layers.size());
 		createInfo.ppEnabledLayerNames = layers.data();
 	}

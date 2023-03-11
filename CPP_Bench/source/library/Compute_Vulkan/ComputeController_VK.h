@@ -40,9 +40,9 @@ namespace Dynamics_IO_Testbench {
 				ComputeBuffer* NewBuffer(uint32_t type, size_t length);
 
 				~ComputeController_VK();
-
-			private:
 				ComputeController_VK() {}
+			private:
+				
 
 				
 
@@ -55,7 +55,7 @@ namespace Dynamics_IO_Testbench {
 
 				bool mDestroyed{ false };
 
-				static std::vector<ComputeController_VK> m_controllers;
+				static std::vector<ComputeController_VK*> m_controllers;
 			};
 
 

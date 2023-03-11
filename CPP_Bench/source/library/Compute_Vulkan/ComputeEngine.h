@@ -3,6 +3,7 @@
 #include "stdafx.h"
 #include "vulkan/vulkan.h"
 #include "Compute_Vulkan/vulkan_utils.h"
+#include "Compute_Interface/PlatformStructures.h"
 
 #define DEFAULT_WORK_GROUP_SIZE 16
 
@@ -247,7 +248,7 @@ namespace Dynamics_IO_Testbench {
                 void Dispose();
 
             private:
-                ComputeContext(VkInstance* instance, VkPhysicalDevice device);
+                ComputeContext(VkInstance* instance, Device device);
 
                 //Utilities::QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
 
@@ -277,7 +278,7 @@ namespace Dynamics_IO_Testbench {
             public:
                 static int Init(std::string dir);
 
-                static ComputeContext* GetNewContext(VkPhysicalDevice device);
+                static ComputeContext* GetNewContext(Device device);
 
                 static std::string GetAppDir()
                 {
@@ -294,9 +295,7 @@ namespace Dynamics_IO_Testbench {
                     return mInitialized;
                 }
 
-                static std::vector<const char*> GetValidationLayers() {
-                    return validationLayers;
-                }
+                static const std::vector<const char*> GetValidationLayers();
 
                 static void Dispose();
                 

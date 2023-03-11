@@ -232,17 +232,17 @@ std::vector<Device> ComputeInterface::GetSupportedDevices_Vulkan()
             continue;
         }
 
-        //VkPhysicalDeviceProperties deviceProperties;
-        //vkGetPhysicalDeviceProperties(device, &deviceProperties);
+        VkPhysicalDeviceProperties deviceProperties;
+        vkGetPhysicalDeviceProperties(device, &deviceProperties);
 
         VkPhysicalDeviceFeatures deviceFeatures{};
         vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
 
-        VkPhysicalDeviceProperties2 deviceProperties2{};
+        /*VkPhysicalDeviceProperties2 deviceProperties2{};
         deviceProperties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES;
         vkGetPhysicalDeviceProperties2(device, &deviceProperties2);
         VkPhysicalDeviceProperties deviceProperties = deviceProperties2.properties;
-        VkPhysicalDeviceIDProperties deviceIDProperties = *((VkPhysicalDeviceIDProperties*)deviceProperties2.pNext);
+        VkPhysicalDeviceIDProperties deviceIDProperties = *((VkPhysicalDeviceIDProperties*)deviceProperties2.pNext);*/
             
         Device res_device{};
         Vulkan_Device_Info info{};
@@ -250,7 +250,7 @@ std::vector<Device> ComputeInterface::GetSupportedDevices_Vulkan()
         info.Name = std::string(deviceProperties.deviceName);
         info.Device_ID = deviceProperties.deviceID;
 
-        memcpy(info.DeviceUUID, deviceIDProperties.deviceUUID, 16);
+        //memcpy(info.DeviceUUID, deviceIDProperties.deviceUUID, 16);
 
         switch (deviceProperties.deviceType) {
         case VK_PHYSICAL_DEVICE_TYPE_OTHER:

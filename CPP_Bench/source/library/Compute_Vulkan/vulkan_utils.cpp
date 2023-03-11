@@ -304,7 +304,7 @@ Utilities::QueueFamilyIndices Utilities::findQueueFamilies(VkPhysicalDevice devi
     indices.shouldIncludeGraphics = false;
 
     std::vector<VkQueueFamilyProperties> queueFamilies = Utilities::GetPhysicalDeviceQueueFamilyProperties(device);
-    printf("Searching queue families: %i\n", queueFamilies.size());
+    printf("Searching queue families: %i\n", (int)queueFamilies.size());
 
     int i = 0;
     for (const auto& queueFam : queueFamilies) {
