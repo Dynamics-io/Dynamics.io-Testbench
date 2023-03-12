@@ -81,7 +81,7 @@ public class Trajectory_Quadratic_test : MonoBehaviour
         watch.Start();
 
 
-        benchTestLocalize(
+        test_localize2(
             plane.position,
             plane.forward,
             endPlaneOrientation.position,
