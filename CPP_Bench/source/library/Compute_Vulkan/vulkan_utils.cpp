@@ -434,6 +434,7 @@ VkResult Utilities::createDescriptorPool(VkDevice device, int numStorageBuffers,
     // TODO: Possibly other descriptor types
 
     VkDescriptorPoolCreateInfo poolInfo = Utilities::getDescriptorPoolCreateInfo(poolSizes, maxSets);
+    poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
 
     return vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool);
 }
@@ -706,8 +707,9 @@ VkShaderModule Utilities::createShaderModule(VkDevice& device, const std::vector
     createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
 
     VkShaderModule shaderModule;
-    if (vkCreateShaderModule(device, &createInfo, nullptr, &shaderModule) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to create shader module!");
+    VkResult res = vkCreateShaderModule(device, &createInfo, nullptr, &shaderModule);
+    if (res != VK_SUCCESS) {
+        printf("vkCreateShaderModule Failed: %i\n", res);
     }
 
     return shaderModule;

@@ -94,6 +94,9 @@ VkResult ComputeEngine::createInstance()
 
 	VkResult res;
 	res = vkCreateInstance(&createInfo, nullptr, &mInstance);
+	if (res != VK_SUCCESS) {
+		printf("vkCreateInstance Failed: %i\n", res);
+	}
 
 	return res;
 }
@@ -106,9 +109,9 @@ void ComputeEngine::setupDebugMessenger()
 	VkDebugUtilsMessengerCreateInfoEXT createInfo{};
 	populateDebugMessengerCreateInfo(createInfo);
 
-	if (Extensions::CreateDebugUtilsMessengerEXT(mInstance, &createInfo, nullptr, &mDebugMessenger) != VK_SUCCESS)
-	{
-		throw std::runtime_error("Failed to set up debug messenger!");
+	VkResult res = Extensions::CreateDebugUtilsMessengerEXT(mInstance, &createInfo, nullptr, &mDebugMessenger);
+	if (res != VK_SUCCESS) {
+		printf("CreateDebugUtilsMessengerEXT Failed: %i\n", res);
 	}
 }
 
@@ -143,7 +146,7 @@ const std::vector<const char*> ComputeEngine::GetValidationLayers() {
 void ComputeEngine::Dispose()
 {
 	printf("ComputeEngine Dispose called.\n");
-	if (!mInitialized)
+	if (!ComputeEngine::mInitialized)
 		return;
 
 	mContexts.clear();
@@ -154,13 +157,14 @@ void ComputeEngine::Dispose()
 
 	vkDestroyInstance(mInstance, nullptr);
 
-	mInitialized = false;
+	ComputeEngine::mInitialized = false;
 	printf("ComputeEngine Dispose completed.\n");
 }
 
 VKAPI_ATTR VkBool32 VKAPI_CALL ComputeEngine::debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData)
 {
-	if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
+	if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT ||
+		messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)
 	{
 		std::cerr << "validation layer ERROR: " << pCallbackData->pMessage << std::endl;
 		return VK_FALSE;
@@ -206,7 +210,9 @@ ComputeContext::ComputeContext(VkInstance* instance, Device device) {
 	if (success)
 		createCommandBuffers();
 
+	//mBuffers.resize(4);
 	printf("ComputeContext parameter constructor.\n");
+
 }
 
 VkQueue* ComputeContext::GetPreferedComputeQueue()
@@ -280,9 +286,10 @@ ComputeKernel* ComputeContext::GetKernel(std::string p_name, std::string name) {
 
 ComputeBuffer* ComputeContext::CreateBuffer(ComputeBuffer::Buffer_Type type, size_t size) {
 
-	mBuffers.push_back(ComputeBuffer(this, type, size));
-	mBuffers[mBuffers.size() - 1].mCanCallDispose = true;
-	return &mBuffers[mBuffers.size() - 1];
+	mBuffers.emplace_back(ComputeBuffer(this, type, size));
+	auto& buf = mBuffers.back();
+	buf.mCanCallDispose = true;
+	return &buf;
 }
 
 VkResult ComputeContext::createLogicalDevice()
@@ -328,6 +335,9 @@ VkResult ComputeContext::createLogicalDevice()
 
 	VkResult res;
 	res = vkCreateDevice(mPhysicalDevice, &createInfo, nullptr, &mDevice);
+	if (res != VK_SUCCESS) {
+		printf("vkCreateDevice Failed: %i\n", res);
+	}
 
 	return res;
 }
@@ -360,15 +370,18 @@ bool ComputeContext::createCommandPools()
 	if (IncludeGraphics)
 	{
 		if (vkCreateCommandPool(mDevice, &graphics_poolInfo, nullptr, &mGraphicsCmdPool) != VK_SUCCESS) {
+			printf("Failed to create GraphicsCmdPool.\n");
 			return false;
 		}
 	}
 
 	if (vkCreateCommandPool(mDevice, &compute_poolInfo, nullptr, &mComputeCmdPool) != VK_SUCCESS) {
+		printf("Failed to create ComputeCmdPool.\n");
 		return false;
 	}
 
 	if (vkCreateCommandPool(mDevice, &transfer_poolInfo, nullptr, &mTransferCmdPool) != VK_SUCCESS) {
+		printf("Failed to create TransferCmdPool.\n");
 		return false;
 	}
 
@@ -388,14 +401,16 @@ void ComputeContext::Dispose() {
 	if (mDestroyed || !mCanCallDispose)
 		return;
 
-	programs.clear();
-	mBuffers.clear();
-
+	printf("Dispose command pools.\n");
 	if (IncludeGraphics)
 		vkDestroyCommandPool(mDevice, mGraphicsCmdPool, nullptr);
 	vkDestroyCommandPool(mDevice, mComputeCmdPool, nullptr);
 	vkDestroyCommandPool(mDevice, mTransferCmdPool, nullptr);
 
+	programs.clear();
+	mBuffers.clear();
+
+	printf("Dispose logical device\n");
 	vkDestroyDevice(mDevice, nullptr);
 
 	mDestroyed = true;
@@ -454,13 +469,11 @@ ComputeKernel* ComputeProgram::GetKernel(std::string name) {
 }
 
 void ComputeProgram::Dispose() {
-	printf("ComputeProgram Dispose called\n");
+	printf("ComputeProgram Dispose called for '%s'.\n", mName.c_str());
 	if (mDestroyed || !mInitialized || !mCanCallDispose)
 		return;
 
 	kernels.clear();
-
-	vkDestroyShaderModule(*mDevice, mProgramModule, nullptr);
 
 	mDestroyed = true;
 	mInitialized = false;
@@ -468,14 +481,19 @@ void ComputeProgram::Dispose() {
 }
 
 int ComputeProgram::Buildkernels() {
+	VkResult res = VK_ERROR_UNKNOWN;
+
 	for (auto& [key, value] : kernels) {
-		VkResult res = value.BuildKernel();
+		res = value.BuildKernel();
 
 		if (res != VK_SUCCESS)
-			return res;
+			break;
 	}
 
-	return 0;
+	printf("Dispose ProgramModule for program '%s'.\n", mName.c_str());
+	vkDestroyShaderModule(*mDevice, mProgramModule, nullptr);
+
+	return res;
 }
 
 ComputeProgram::~ComputeProgram() {
@@ -522,17 +540,27 @@ VkResult ComputeKernel::BuildKernel()
 
 	res = createComputePipeline();
 
-	if (res != VK_SUCCESS)
+	if (res != VK_SUCCESS){
+		printf("createComputePipeline Failed: %i\n", res);
 		return res;
+	}
 
 	res = createDescriptorPool();
 
-	if (res != VK_SUCCESS)
+	if (res != VK_SUCCESS) {
+		printf("createDescriptorPool Failed: %i\n", res);
 		return res;
+	}
 
 	res = createDescriptorSets();
+	if (res != VK_SUCCESS) {
+		printf("createDescriptorSets Failed: %i\n", res);
+		return res;
+	}
 
 	mBoundBuffers.clear();
+
+	printf("BuildKernel() complete!\n");
 
 	mInitialized = true;
 
@@ -598,12 +626,17 @@ VkResult ComputeKernel::createComputePipeline()
 
 	VkResult res = vkCreatePipelineLayout(*mDevice, &pipelineLayoutInfo, nullptr, &mComputePipelineLayout);
 
-	if (res != VK_SUCCESS)
+	if (res != VK_SUCCESS) {
+		printf("vkCreatePipelineLayout Failed: %i\n", res);
 		return res;
+	}
 
 	VkComputePipelineCreateInfo pipelineInfo = Utilities::getComputePipelineCreateInfo(mComputePipelineLayout, computeShaderStageInfo);
 
 	res = vkCreateComputePipelines(*mDevice, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &mComputePipeline);
+	if (res != VK_SUCCESS) {
+		printf("vkCreateComputePipelines Failed: %i\n", res);
+	}
 
 	return res;
 }
@@ -612,7 +645,7 @@ VkResult ComputeKernel::createDescriptorPool()
 {
 	int numBuffers = mBoundBuffers.size();
 
-	return Utilities::createDescriptorPool(*mDevice, numBuffers, 1, mDescriptorPool);
+	return Utilities::createDescriptorPool(*mDevice, numBuffers, 2, mDescriptorPool);
 }
 
 VkResult ComputeKernel::createDescriptorSets()
@@ -647,16 +680,34 @@ VkResult ComputeKernel::createDescriptorSets()
 }
 
 void ComputeKernel::Dispose() {
+	printf("ComputeKernel Dispose called for '%s'.\n", mName.c_str());
 	if (mDestroyed || !mInitialized || !mCanCallDispose)
 		return;
 
-	vkDestroyPipeline(*mDevice, mComputePipeline, nullptr);
-	vkDestroyPipelineLayout(*mDevice, mComputePipelineLayout, nullptr);
-	vkDestroyDescriptorPool(*mDevice, mDescriptorPool, nullptr);
+	printf("vkDeviceWaitIdle for kernel '%s'.\n", mName.c_str());
+	vkDeviceWaitIdle(*mDevice);
+	printf("vkDeviceWaitIdle for kernel '%s' finished.\n", mName.c_str());
+
+	printf("Free DescriptorSets for kernel '%s'.\n", mName.c_str());
+	vkFreeDescriptorSets(*mDevice, mDescriptorPool, 1, &mComputeDescriptorSet);
+
+	printf("Dispose ComputeDescriptorSetLayout for kernel '%s'.\n", mName.c_str());
 	vkDestroyDescriptorSetLayout(*mDevice, mComputeDescriptorSetLayout, nullptr);
+
+	printf("Dispose DescriptorPool for kernel '%s'.\n", mName.c_str());
+	vkDestroyDescriptorPool(*mDevice, mDescriptorPool, nullptr);
+
+	printf("Dispose ComputePipeline for kernel '%s'.\n", mName.c_str());
+	vkDestroyPipeline(*mDevice, mComputePipeline, nullptr);
+	
+	printf("Dispose ComputePipelineLayout for kernel '%s'.\n", mName.c_str());
+	vkDestroyPipelineLayout(*mDevice, mComputePipelineLayout, nullptr);
+	 
 
 	mDestroyed = true;
 	mInitialized = false;
+
+	printf("ComputeKernel Dispose completed.\n");
 }
 
 ComputeKernel::~ComputeKernel() {
@@ -683,18 +734,20 @@ ComputeBuffer::ComputeBuffer(ComputeContext* context, Buffer_Type type, VkDevice
 	// If it Read Only, it should be the destination (DST) from the staging buffer. (Host -> Buffer_DST)
 	// If it is Write Only, it should be the src of the staging buffer. (Buffer_SRC -> Host)
 	// If it is Read and Write, it should be both.
-	VkBufferUsageFlags transfer_flag = 0; 
 	switch (mType) {
 	case Buffer_Type::READ:
-		transfer_flag = VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+		mStage_transfer_flag = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+		mTransfer_flag = VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 		break;
 
 	case Buffer_Type::Write:
-		transfer_flag = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+		mTransfer_flag = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+		mStage_transfer_flag = VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 		break;
 
 	case Buffer_Type::Read_Write:
-		transfer_flag = VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+		mTransfer_flag = VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+		mStage_transfer_flag = VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 		break;
 	}
 
@@ -702,7 +755,7 @@ ComputeBuffer::ComputeBuffer(ComputeContext* context, Buffer_Type type, VkDevice
 		*mPhysicalDevice,
 		*mLogicalDevice,
 		mSize,
-		VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | transfer_flag,
+		VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | mTransfer_flag,
 		VK_SHARING_MODE_CONCURRENT,
 		0,
 		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
@@ -715,7 +768,7 @@ ComputeBuffer::ComputeBuffer(ComputeContext* context, Buffer_Type type, VkDevice
 		*mPhysicalDevice,
 		*mLogicalDevice,
 		mSize,
-		VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+		VK_BUFFER_USAGE_TRANSFER_DST_BIT | mStage_transfer_flag,
 		VK_SHARING_MODE_CONCURRENT,
 		0,
 		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
@@ -728,18 +781,47 @@ ComputeBuffer::ComputeBuffer(ComputeContext* context, Buffer_Type type, VkDevice
 }
 
 int ComputeBuffer::SetData(void* src_data) {
-	VkBuffer stagingBuffer;
-	VkDeviceMemory stagingBufferMemory;
+	//VkBuffer stagingBuffer;
+	//VkDeviceMemory stagingBufferMemory;
 
-	void* data;
-	Utilities::FlushToBuffer(*mLogicalDevice, stagingBufferMemory, mSize, data, src_data, true);
+	/*Utilities::CreateBuffer(
+		*mPhysicalDevice,
+		*mLogicalDevice,
+		mSize,
+		VK_BUFFER_USAGE_TRANSFER_DST_BIT | mStage_transfer_flag,
+		VK_SHARING_MODE_CONCURRENT,
+		0,
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+		mAllQueueFamilies,
+		stagingBuffer,
+		stagingBufferMemory
+	);*/
+
+	void* maped_data;
+	Utilities::FlushToBuffer(*mLogicalDevice, stagingBufferMemory, mSize, maped_data, src_data, true);
 
 	Utilities::CopyBuffer(*mTransferQueue, *mTransferCmdBuffer, stagingBuffer, mBuffer, mSize);
+
+	//vkDestroyBuffer(*mLogicalDevice, stagingBuffer, nullptr);
+	//vkFreeMemory(*mLogicalDevice, stagingBufferMemory, nullptr);
 
 	return 0;
 }
 
 int ComputeBuffer::GetData(void* outData) {
+
+	/*Utilities::CreateBuffer(
+		*mPhysicalDevice,
+		*mLogicalDevice,
+		mSize,
+		VK_BUFFER_USAGE_TRANSFER_DST_BIT | mStage_transfer_flag,
+		VK_SHARING_MODE_CONCURRENT,
+		0,
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+		mAllQueueFamilies,
+		stagingBuffer,
+		stagingBufferMemory
+	);*/
 
 	Utilities::CopyBuffer(*mTransferQueue, *mTransferCmdBuffer, mBuffer, stagingBuffer, mSize);
 
@@ -747,6 +829,10 @@ int ComputeBuffer::GetData(void* outData) {
 	vkMapMemory(*mLogicalDevice, stagingBufferMemory, 0, mSize, 0, &maped_data);
 	memcpy(outData, maped_data, static_cast<uint32_t>(mSize));
 	vkUnmapMemory(*mLogicalDevice, stagingBufferMemory);
+
+
+	//vkDestroyBuffer(*mLogicalDevice, stagingBuffer, nullptr);
+	//vkFreeMemory(*mLogicalDevice, stagingBufferMemory, nullptr);
 
 	return 0;
 }
@@ -762,6 +848,8 @@ void ComputeBuffer::getAllQueueFamilies()
 			(queueFam.queueFlags & VK_QUEUE_GRAPHICS_BIT)) {
 			
 			mAllQueueFamilies.push_back(i);
+			printf("ComputeBuffer: Queue Family: %i\n", i);
+			i++;
 		}
 	}
 }
@@ -771,8 +859,11 @@ void ComputeBuffer::Dispose() {
 	if (mDestroyed || !mCanCallDispose)
 		return;
 
+	printf("Dispose buffer and buffer memory.\n");
 	vkDestroyBuffer(*mLogicalDevice, mBuffer, nullptr);
 	vkFreeMemory(*mLogicalDevice, mBufferMemory, nullptr);
+
+	printf("Dispose staging buffer and buffer memory.\n");
 	vkDestroyBuffer(*mLogicalDevice, stagingBuffer, nullptr);
 	vkFreeMemory(*mLogicalDevice, stagingBufferMemory, nullptr);
 

@@ -39,6 +39,9 @@ namespace Dynamics_IO_Testbench {
                 VkDeviceMemory stagingBufferMemory{};
                 VkDeviceSize mSize{};
 
+                VkBufferUsageFlags mTransfer_flag{ 0 };
+                VkBufferUsageFlags mStage_transfer_flag{ 0 };
+
                 VkPhysicalDevice* mPhysicalDevice{ nullptr };
                 VkDevice* mLogicalDevice{ nullptr };
 
@@ -193,7 +196,7 @@ namespace Dynamics_IO_Testbench {
                 const bool IncludeGraphics = false;
                 
                 std::map<std::string, ComputeProgram> programs;
-                std::vector<ComputeBuffer> mBuffers;
+                std::list<ComputeBuffer> mBuffers;
 
                 VkInstance* mInstance{nullptr};
                 VkPhysicalDevice mPhysicalDevice{};

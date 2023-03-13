@@ -1,11 +1,11 @@
 #include "ComputeInterface.h"
 
 #include "Compute_OCL/ComputeController_OCL.h"
+
 #include "Compute_Vulkan/ComputeController_VK.h"
 #include "Compute_Vulkan/vulkan_utils.h"
-
 //#include "Compute_Vulkan/vulkan_test.h"
-//#include "Compute_Vulkan/vulkan_compute_test.h"
+#include "Compute_Vulkan/vulkan_compute_test.h"
 
 using namespace Dynamics_IO_Testbench::Compute;
 using namespace Dynamics_IO_Testbench::Compute::OCL;
@@ -40,6 +40,15 @@ IComputeController* ComputeInterface::GetComputeController(ComputeInterface::Com
 	}
 }
 
+void Dynamics_IO_Testbench::Compute::ComputeInterface::DisposePlatform(Compute_SDK implementation)
+{
+    switch (implementation) {
+    case Compute_SDK::VULKAN:
+        ComputeController_VK::DisposePlatform();
+        break;
+    }
+}
+
 IComputeController* ComputeInterface::GetComputeController_OCL(ControllerInfo info)
 {
     IComputeController* controller = ComputeController_OCL::New();
@@ -58,6 +67,8 @@ IComputeController* ComputeInterface::GetComputeController_Vulkan(ControllerInfo
 {
     //Vulkan_compute_test test;
     //test.Run();
+
+    //return nullptr;
     
     IComputeController* controller = ComputeController_VK::New();
 
@@ -223,7 +234,7 @@ std::vector<Device> ComputeInterface::GetSupportedDevices_Vulkan()
 
     std::vector<VkPhysicalDevice> devices = Utilities::EnumeratePhysicalDevices(instance);
 
-    printf("Total Devices: %i\n", devices.size());
+    printf("Total Devices: %li\n", devices.size());
 
     
 

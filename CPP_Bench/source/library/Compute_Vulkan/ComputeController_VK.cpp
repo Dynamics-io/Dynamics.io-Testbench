@@ -71,8 +71,6 @@ IComputeBuffer* ComputeController_VK::NewReadWriteBuffer(size_t length)
 	return new ComputeBuffer_VK(ComputeController_VK::NewBuffer((uint32_t)ComputeBuffer::Buffer_Type::Read_Write, length));
 }
 
-
-
 ComputeBuffer* ComputeController_VK::NewBuffer(uint32_t type, size_t length)
 {
 	return m_context->CreateBuffer((ComputeBuffer::Buffer_Type)type, length);
@@ -98,12 +96,18 @@ ComputeController_VK::~ComputeController_VK()
 	Dispose();
 }
 
-IComputeController* Dynamics_IO_Testbench::Compute::VK::ComputeController_VK::New()
+IComputeController* ComputeController_VK::New()
 {
 	int index = m_controllers.size();
 	m_controllers.resize(index + 1);
 	m_controllers[index] = new ComputeController_VK();
 	return m_controllers[index];
+}
+
+void ComputeController_VK::DisposePlatform() {
+	if (ComputeEngine::IsInitialized()) {
+		ComputeEngine::Dispose();
+	}
 }
 
 void ComputeController_VK::Close()

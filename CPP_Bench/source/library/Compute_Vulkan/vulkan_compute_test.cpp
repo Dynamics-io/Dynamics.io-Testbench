@@ -315,23 +315,6 @@ void Dynamics_IO_Testbench::Compute::VK::Vulkan_compute_test::createBuffers()
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingBufferMemory;
 
-    /*QueueFamilyIndices queueFamilyIndices = findQueueFamilies(physicalDevice);
-    std::vector<uint32_t> families;
-    families.push_back(queueFamilyIndices.computeFamily.value());
-    families.push_back(queueFamilyIndices.transferFamily.value());
-
-    if (IncludeGraphics) {
-        families.push_back(queueFamilyIndices.graphicsFamily.value());
-        if (families[2] == families[0] ||
-            families[2] == families[1]
-            ) {
-            families.pop_back();
-        }
-    }
-
-    if (families[1] == families[0]) {
-
-    }*/
 
     Utilities::CreateBuffer(
         physicalDevice,

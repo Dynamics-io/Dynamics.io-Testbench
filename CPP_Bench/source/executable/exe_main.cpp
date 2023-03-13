@@ -5,7 +5,7 @@
 
 #include "utils/QuadraticSolvers.h"
 
-#define DATA_SIZE 16
+#define DATA_SIZE 32
 
 
 using namespace Dynamics_IO_Testbench::Compute;
@@ -68,9 +68,10 @@ void quadratic_tests() {
 
 int Vulkan_test()
 {
-	//ComputeInterface::ControllerInfo controllerInfo;
-	//ComputeInterface::GetComputeController(ComputeInterface::VULKAN, controllerInfo);
+	//ComputeInterface::ControllerInfo test_controllerInfo;
+	//ComputeInterface::GetComputeController(ComputeInterface::VULKAN, test_controllerInfo);
 
+	//return 0;
 	//testConstructor();
 
 	std::vector<Device> devices = ComputeInterface::GetSupportedDevices_Vulkan();
@@ -109,9 +110,11 @@ int Vulkan_test()
 	program->KernelSetBuffer(kernel_name, in_Buffer, ind);
 
 	ind.GlobalIndex = 1;
-	program->KernelSetBuffer(kernel_name, in_Buffer, ind);
+	program->KernelSetBuffer(kernel_name, out_Buffer, ind);
 
 	program->FinishBuild();
+
+	in_Buffer->SetData(Data);
 
 
 	program->RunKernel(kernel_name, DATA_SIZE, 0, 0);
@@ -120,9 +123,11 @@ int Vulkan_test()
 
 	for (int i = 0; i < DATA_SIZE; i++)
 	{
-		printf("res '%i': %i\n", i, Data[i]);
+		printf("res '%i': %f\n", i, Data[i]);
 	}
 
+	ComputeInterface::DisposePlatform(ComputeInterface::VULKAN);
+	printf("Vulkan Disposed.");
 
 	return 0;
 }

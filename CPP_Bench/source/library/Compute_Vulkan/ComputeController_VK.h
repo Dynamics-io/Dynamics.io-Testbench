@@ -47,6 +47,7 @@ namespace Dynamics_IO_Testbench {
 				
 
 				static IComputeController* New();
+				static void DisposePlatform();
 
 				ComputeContext* m_context{ nullptr };
 				std::string m_directory{ "" };

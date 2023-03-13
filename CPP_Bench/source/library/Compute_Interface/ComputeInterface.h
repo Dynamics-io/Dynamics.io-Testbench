@@ -28,6 +28,8 @@ namespace Dynamics_IO_Testbench {
 
 			static IComputeController* GetComputeController(Compute_SDK implementation, ControllerInfo info);
 
+			static void DisposePlatform(Compute_SDK implementation);
+
             static std::vector<Platform> GetSupportedPlatforms_OpenCL();
             static std::vector<Device> GetSupportedDevices_OpenCL(Platform pltfrm);
 
