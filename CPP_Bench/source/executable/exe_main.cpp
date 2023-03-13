@@ -44,24 +44,13 @@ void testConstructor() {
 
 float result[TEST_SIZE];
 
-int Vulkan_test()
-{
-	//ComputeInterface::ControllerInfo controllerInfo;
-	//ComputeInterface::GetComputeController(ComputeInterface::VULKAN, controllerInfo);
-
-	//testConstructor();
-
-	
-
-
-
-
+void quadratic_tests() {
 	static auto startTime = std::chrono::high_resolution_clock::now();
 
 	float neg = 1;
 	for (int i = 0; i < TEST_SIZE; i++)
 	{
-		
+
 		result[i] = QuadraticSolvers::QuadraticArcLength(1 + (i / TEST_SIZE / 100.0f) * neg, (i / TEST_SIZE / 100.0f), (i / TEST_SIZE / 100.0f), 0, 1);
 		neg = -neg;
 	}
@@ -70,11 +59,19 @@ int Vulkan_test()
 
 	float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 	std::cout << "Test time: " << std::to_string(time) << "\n";
-	
+
 
 	//printf("Arc Length Integral: %f\n", arcLengh);
 
-	return 0;
+	return;
+}
+
+int Vulkan_test()
+{
+	//ComputeInterface::ControllerInfo controllerInfo;
+	//ComputeInterface::GetComputeController(ComputeInterface::VULKAN, controllerInfo);
+
+	//testConstructor();
 
 	std::vector<Device> devices = ComputeInterface::GetSupportedDevices_Vulkan();
 

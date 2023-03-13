@@ -48,6 +48,7 @@ int ComputeEngine::Init(std::string dir)
 ComputeContext* ComputeEngine::GetNewContext(Device device)
 {
 	mContexts.push_back(ComputeContext(&mInstance, device));
+	mContexts[mContexts.size() - 1].mCanCallDispose = true;
 	return &mContexts[mContexts.size() - 1];
 }
 
@@ -141,6 +142,7 @@ const std::vector<const char*> ComputeEngine::GetValidationLayers() {
 
 void ComputeEngine::Dispose()
 {
+	printf("ComputeEngine Dispose called.\n");
 	if (!mInitialized)
 		return;
 
@@ -153,6 +155,7 @@ void ComputeEngine::Dispose()
 	vkDestroyInstance(mInstance, nullptr);
 
 	mInitialized = false;
+	printf("ComputeEngine Dispose completed.\n");
 }
 
 VKAPI_ATTR VkBool32 VKAPI_CALL ComputeEngine::debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData)
@@ -202,6 +205,8 @@ ComputeContext::ComputeContext(VkInstance* instance, Device device) {
 
 	if (success)
 		createCommandBuffers();
+
+	printf("ComputeContext parameter constructor.\n");
 }
 
 VkQueue* ComputeContext::GetPreferedComputeQueue()
@@ -230,6 +235,7 @@ VkCommandBuffer* ComputeContext::GetPreferedTransferCmdBuffer()
 
 ComputeProgram* ComputeContext::Add_Program(std::string name) {
 	programs[name] = ComputeProgram(name, this);
+	programs[name].mCanCallDispose = true;
 	return &programs[name];
 }
 
@@ -273,7 +279,9 @@ ComputeKernel* ComputeContext::GetKernel(std::string p_name, std::string name) {
 }
 
 ComputeBuffer* ComputeContext::CreateBuffer(ComputeBuffer::Buffer_Type type, size_t size) {
+
 	mBuffers.push_back(ComputeBuffer(this, type, size));
+	mBuffers[mBuffers.size() - 1].mCanCallDispose = true;
 	return &mBuffers[mBuffers.size() - 1];
 }
 
@@ -376,7 +384,8 @@ void ComputeContext::createCommandBuffers()
 }
 
 void ComputeContext::Dispose() {
-	if (mDestroyed)
+	printf("ComputeContext Dispose called.\n");
+	if (mDestroyed || !mCanCallDispose)
 		return;
 
 	programs.clear();
@@ -390,6 +399,7 @@ void ComputeContext::Dispose() {
 	vkDestroyDevice(mDevice, nullptr);
 
 	mDestroyed = true;
+	printf("ComputeContext Dispose completed.\n");
 }
 
 ComputeContext::~ComputeContext() {
@@ -403,6 +413,7 @@ ComputeProgram::ComputeProgram(std::string name, ComputeContext* context) {
 	mContext = context;
 	mProgramModule = nullptr;
 	mDevice = context->GetLogicalDevice();
+	printf("ComputeProgram parameter constructor.\n");
 }
 
 int ComputeProgram::Set_Source(const char* source) {
@@ -416,14 +427,17 @@ int ComputeProgram::Set_Binary(const void* binary, size_t length) {
 	std::vector<char> shader_bin (char_binary, char_binary + length);
 
 	mProgramModule = Utilities::createShaderModule(*mDevice, shader_bin);
+	mInitialized = true;
 
 	return 0;
 }
 
 int ComputeProgram::Set_Binary_File(std::string file_path) {
+	printf("ComputeProgram Set_Binary_File called.\n");
 	auto computeShaderBin = Utilities::readFile(file_path);
 
 	mProgramModule = Utilities::createShaderModule(*mDevice, computeShaderBin);
+	mInitialized = true;
 
 	return 0;
 }
@@ -435,11 +449,13 @@ ComputeKernel* ComputeProgram::GetKernel(std::string name) {
 	}
 
 	kernels[name] = ComputeKernel(name, this);
+	kernels[name].mCanCallDispose = true;
 	return &kernels[name];
 }
 
 void ComputeProgram::Dispose() {
-	if (mDestroyed)
+	printf("ComputeProgram Dispose called\n");
+	if (mDestroyed || !mInitialized || !mCanCallDispose)
 		return;
 
 	kernels.clear();
@@ -447,6 +463,8 @@ void ComputeProgram::Dispose() {
 	vkDestroyShaderModule(*mDevice, mProgramModule, nullptr);
 
 	mDestroyed = true;
+	mInitialized = false;
+	printf("ComputeProgram Dispose completed.\n");
 }
 
 int ComputeProgram::Buildkernels() {
@@ -515,6 +533,8 @@ VkResult ComputeKernel::BuildKernel()
 	res = createDescriptorSets();
 
 	mBoundBuffers.clear();
+
+	mInitialized = true;
 
 	return res;
 }
@@ -627,7 +647,7 @@ VkResult ComputeKernel::createDescriptorSets()
 }
 
 void ComputeKernel::Dispose() {
-	if (mDestroyed)
+	if (mDestroyed || !mInitialized || !mCanCallDispose)
 		return;
 
 	vkDestroyPipeline(*mDevice, mComputePipeline, nullptr);
@@ -636,6 +656,7 @@ void ComputeKernel::Dispose() {
 	vkDestroyDescriptorSetLayout(*mDevice, mComputeDescriptorSetLayout, nullptr);
 
 	mDestroyed = true;
+	mInitialized = false;
 }
 
 ComputeKernel::~ComputeKernel() {
@@ -662,7 +683,7 @@ ComputeBuffer::ComputeBuffer(ComputeContext* context, Buffer_Type type, VkDevice
 	// If it Read Only, it should be the destination (DST) from the staging buffer. (Host -> Buffer_DST)
 	// If it is Write Only, it should be the src of the staging buffer. (Buffer_SRC -> Host)
 	// If it is Read and Write, it should be both.
-	VkBufferUsageFlags transfer_flag; 
+	VkBufferUsageFlags transfer_flag = 0; 
 	switch (mType) {
 	case Buffer_Type::READ:
 		transfer_flag = VK_BUFFER_USAGE_TRANSFER_DST_BIT;
@@ -702,6 +723,8 @@ ComputeBuffer::ComputeBuffer(ComputeContext* context, Buffer_Type type, VkDevice
 		stagingBuffer,
 		stagingBufferMemory
 	);
+
+	printf("ComputeBuffer parameter constructor called,\n");
 }
 
 int ComputeBuffer::SetData(void* src_data) {
@@ -744,7 +767,8 @@ void ComputeBuffer::getAllQueueFamilies()
 }
 
 void ComputeBuffer::Dispose() {
-	if (mDestroyed)
+	printf("ComputeBuffer Dispose called,\n");
+	if (mDestroyed || !mCanCallDispose)
 		return;
 
 	vkDestroyBuffer(*mLogicalDevice, mBuffer, nullptr);
@@ -753,6 +777,8 @@ void ComputeBuffer::Dispose() {
 	vkFreeMemory(*mLogicalDevice, stagingBufferMemory, nullptr);
 
 	mDestroyed = true;
+
+	printf("ComputeBuffer Dispose completed,\n");
 }
 
 ComputeBuffer::~ComputeBuffer() {

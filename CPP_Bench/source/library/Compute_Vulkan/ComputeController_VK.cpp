@@ -55,12 +55,15 @@ IComputeProgram* ComputeController_VK::GetProgram(std::string name)
 
 IComputeBuffer* ComputeController_VK::NewReadBuffer(size_t length)
 {
-	return new ComputeBuffer_VK(ComputeController_VK::NewBuffer((uint32_t)ComputeBuffer::Buffer_Type::READ, length));
+	ComputeBuffer* bf = ComputeController_VK::NewBuffer((uint32_t)ComputeBuffer::Buffer_Type::READ, length);
+	ComputeBuffer_VK* bf_vk = new ComputeBuffer_VK(bf);
+	return bf_vk;
 }
 
 IComputeBuffer* ComputeController_VK::NewWriteBuffer(size_t length)
 {
-	return new ComputeBuffer_VK(ComputeController_VK::NewBuffer((uint32_t)ComputeBuffer::Buffer_Type::Write, length));
+	ComputeBuffer* bf = ComputeController_VK::NewBuffer((uint32_t)ComputeBuffer::Buffer_Type::Write, length);
+	return new ComputeBuffer_VK(bf);
 }
 
 IComputeBuffer* ComputeController_VK::NewReadWriteBuffer(size_t length)

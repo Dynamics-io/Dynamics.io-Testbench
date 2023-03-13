@@ -49,9 +49,10 @@ namespace Dynamics_IO_Testbench {
                 std::vector<uint32_t> mAllQueueFamilies;
 
                 bool mDestroyed{ false };
+                bool mCanCallDispose{ false };
 
             public:
-                ComputeBuffer() {}
+                ComputeBuffer() : mCanCallDispose(false) {}
                 ~ComputeBuffer();
 
                 int SetData(void* data);
@@ -102,10 +103,12 @@ namespace Dynamics_IO_Testbench {
 
                 std::vector<BoundBuffer> mBoundBuffers;
 
+                bool mInitialized{ false };
+                bool mCanCallDispose{ false };
                 bool mDestroyed{ false };
 
             public:
-                ComputeKernel() {}
+                ComputeKernel() : mCanCallDispose(false) {}
                 ~ComputeKernel();
                 
                 int SetBuffer(ComputeBuffer* buffer, int arg);
@@ -139,10 +142,12 @@ namespace Dynamics_IO_Testbench {
 
                 std::map<std::string, ComputeKernel> kernels;
 
+                bool mInitialized{ false };
+                bool mCanCallDispose{ false };
                 bool mDestroyed{ false };
 
             public:
-                ComputeProgram(){}
+                ComputeProgram() : mCanCallDispose(false) {}
                 ~ComputeProgram();
 
 
@@ -205,13 +210,14 @@ namespace Dynamics_IO_Testbench {
                 VkCommandBuffer mTransferCmdBuffer{};
 
                 bool mDestroyed{ false };
+                bool mCanCallDispose{ false };
 
                 const std::vector<const char*> DeviceExtensions = {
                     
                 };
 
             public:
-                ComputeContext(){}
+                ComputeContext() : mCanCallDispose(false) {}
                 ~ComputeContext();
 
 
