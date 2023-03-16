@@ -13,6 +13,7 @@ using namespace Dynamics_IO_Testbench::Util;
 
 int Vulkan_test();
 int OpenCL_test();
+int DirectX_test();
 
 class testClass {
 public:
@@ -27,7 +28,7 @@ public:
 
 int main()
 {
-	return Vulkan_test();
+	return DirectX_test();
 	//return OpenCL_test();
 }
 
@@ -64,6 +65,14 @@ void quadratic_tests() {
 	//printf("Arc Length Integral: %f\n", arcLengh);
 
 	return;
+}
+
+int DirectX_test() {
+
+	ComputeInterface::ControllerInfo test_controllerInfo;
+	ComputeInterface::GetComputeController(ComputeInterface::DIRECTX, test_controllerInfo);
+
+	return 0;
 }
 
 int Vulkan_test()

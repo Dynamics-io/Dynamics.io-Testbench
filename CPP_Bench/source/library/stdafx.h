@@ -42,6 +42,7 @@
 
 
 #if defined(WIN32) || defined(WIN64)
-#include <Windows.h>
+#define WINDOWS_PLATFROM
+#include <windows.h>
 #define WIN32_LEAN_AND_MEAN
 #endif

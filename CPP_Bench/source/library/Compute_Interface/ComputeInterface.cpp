@@ -1,18 +1,28 @@
 #include "ComputeInterface.h"
 
 #include "Compute_OCL/ComputeController_OCL.h"
+#pragma comment(lib, "OpenCL.lib")
 
 #include "Compute_Vulkan/ComputeController_VK.h"
 #include "Compute_Vulkan/vulkan_utils.h"
 //#include "Compute_Vulkan/vulkan_test.h"
-#include "Compute_Vulkan/vulkan_compute_test.h"
+//#include "Compute_Vulkan/vulkan_compute_test.h"
+
+#ifdef WINDOWS_PLATFROM
+#include "Compute_DirectX/SystemClass_test.h"
+#include "Compute_DirectX/compute_test.h"
+
+#endif
 
 using namespace Dynamics_IO_Testbench::Compute;
 using namespace Dynamics_IO_Testbench::Compute::OCL;
 using namespace Dynamics_IO_Testbench::Compute::VK;
 
+#ifdef WINDOWS_PLATFROM
+using namespace Dynamics_IO_Testbench::Compute::DX;
+#endif
 
-#pragma comment(lib, "OpenCL.lib")
+
 
 cl_uint ComputeInterface::num_of_platforms = 0;
 cl_uint ComputeInterface::num_of_devices = 0;
@@ -25,14 +35,16 @@ IComputeController* ComputeInterface::GetComputeController(ComputeInterface::Com
 	case ComputeInterface::Compute_SDK::OpenCL:
 		return GetComputeController_OCL(info);
 
-	case ComputeInterface::Compute_SDK::CUDA:
-		return GetComputeController_CUDA(info);
-
 	case ComputeInterface::Compute_SDK::VULKAN:
 		return GetComputeController_Vulkan(info);
 
+#ifdef WINDOWS_PLATFROM
 	case ComputeInterface::Compute_SDK::DIRECTX:
 		return GetComputeController_DirectX(info);
+
+    case ComputeInterface::Compute_SDK::CUDA:
+        return GetComputeController_CUDA(info);
+#endif
 
 	default:
 		// This should never happen.
@@ -79,7 +91,20 @@ IComputeController* ComputeInterface::GetComputeController_Vulkan(ControllerInfo
 
 IComputeController* ComputeInterface::GetComputeController_DirectX(ControllerInfo info)
 {
-	return nullptr;
+    IComputeController* res = nullptr;
+
+#ifdef WINDOWS_PLATFROM
+
+    printf("Running DirectX test app.\n");
+    
+    compute_test test;
+
+    test.Run();
+
+
+#endif
+
+	return res;
 }
 
 std::vector<Platform> ComputeInterface::GetSupportedPlatforms_OpenCL()

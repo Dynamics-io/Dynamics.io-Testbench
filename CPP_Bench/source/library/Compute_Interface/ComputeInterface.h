@@ -14,9 +14,11 @@ namespace Dynamics_IO_Testbench {
 		public:
 			enum Compute_SDK {
 				OpenCL,
-				CUDA,
 				VULKAN,
-				DIRECTX
+#ifdef WINDOWS_PLATFROM
+				DIRECTX,
+				CUDA
+#endif
 			};
 
 			struct ControllerInfo {
