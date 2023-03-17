@@ -252,7 +252,7 @@ namespace Dynamics_IO_Testbench {
                 ComputeProgram* Programs(std::string name);
 
                 ComputeKernel* GetKernel(std::string p_name, std::string name);
-                ComputeBuffer* CreateBuffer(ComputeBuffer::Buffer_Type type, VkDeviceSize size);
+                ComputeBuffer* CreateBuffer(ComputeBuffer::Buffer_Type type, size_t size);
 
                 void Dispose();
 
@@ -282,7 +282,7 @@ namespace Dynamics_IO_Testbench {
 
                 static std::string mApp_dir;
 
-                static std::vector<ComputeContext> mContexts;
+                static std::list<ComputeContext> mContexts;
 
             public:
                 static int Init(std::string dir);

@@ -14,7 +14,7 @@ void ComputeController_VK::Init(Platform platform, Device device, std::string pr
 	m_directory = program_dir + "/"; // TODO: check end of program_dir string for '/'
 
 	if (!ComputeEngine::IsInitialized()) {
-		int res = ComputeEngine::Init(m_directory + "include");
+		int res = ComputeEngine::Init(m_directory);
 
 		if (res != 0) {
 			printf("Failed to initialize Vulkan\n");
@@ -113,5 +113,5 @@ void ComputeController_VK::DisposePlatform() {
 void ComputeController_VK::Close()
 {
 	m_controllers.clear();
-	ComputeEngine::Dispose();
+	DisposePlatform();
 }

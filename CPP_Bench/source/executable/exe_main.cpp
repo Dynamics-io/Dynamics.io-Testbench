@@ -28,7 +28,9 @@ public:
 
 int main()
 {
-	return DirectX_test();
+	//Vulkan_test();
+	DirectX_test();
+	return 0;
 	//return OpenCL_test();
 }
 
@@ -69,8 +71,63 @@ void quadratic_tests() {
 
 int DirectX_test() {
 
-	ComputeInterface::ControllerInfo test_controllerInfo;
-	ComputeInterface::GetComputeController(ComputeInterface::DIRECTX, test_controllerInfo);
+	//ComputeInterface::ControllerInfo test_controllerInfo;
+	//ComputeInterface::GetComputeController(ComputeInterface::DIRECTX, test_controllerInfo);
+
+
+	std::vector<Device> devices = ComputeInterface::GetSupportedDevices_DirectX();
+
+	printf("DirectX Devices: %u\n", (uint32_t)devices.size());
+	for (Device dev : devices) {
+		DirectX_Device_Info info = dev.DirectX_Info;
+
+		printf("\t %s (%s): %i\n", info.Name.c_str(), info.GetTypeName().c_str(), info.Device_ID);
+	}
+
+	Device device = devices[0];
+
+	ComputeInterface::ControllerInfo controllerInfo{};
+	controllerInfo.device = device;
+	controllerInfo.program_dir = "C:/Users/jdrurka1/source/repos/Dynamics-io/Dynamics.io-Testbench/CPP_Bench/shaders/DirectX";
+	IComputeController* controller = ComputeInterface::GetComputeController(ComputeInterface::DIRECTX, controllerInfo);
+
+	std::string kernel_name = "CSMain";
+
+	IComputeProgram::ProgramInfo p_info("Test");
+	p_info.AddKernel(kernel_name);
+
+	IComputeProgram* program = controller->AddProgram(p_info);
+
+	float Data[DATA_SIZE] = { 0 };
+	for (int i = 0; i < DATA_SIZE; i++)
+		Data[i] = i + 1;
+
+	IComputeBuffer* in_Buffer = controller->NewReadBuffer(DATA_SIZE);
+	IComputeBuffer* out_Buffer = controller->NewWriteBuffer(DATA_SIZE);
+
+	IComputeProgram::BindIndex ind{};
+
+	ind.RegisterIndex = 0;
+	program->KernelSetBuffer(kernel_name, in_Buffer, ind);
+
+	ind.RegisterIndex = 0;
+	program->KernelSetBuffer(kernel_name, out_Buffer, ind);
+
+	program->FinishBuild();
+
+	in_Buffer->SetData(Data);
+
+	program->RunKernel(kernel_name, DATA_SIZE, 0, 0);
+
+	out_Buffer->GetData(Data);
+
+	for (int i = 0; i < DATA_SIZE; i++)
+	{
+		printf("res '%i': %f\n", i, Data[i]);
+	}
+
+	ComputeInterface::DisposePlatform(ComputeInterface::DIRECTX);
+	printf("DirectX Disposed.");
 
 	return 0;
 }
@@ -85,12 +142,14 @@ int Vulkan_test()
 
 	std::vector<Device> devices = ComputeInterface::GetSupportedDevices_Vulkan();
 
-	printf("Devices: %u\n", (uint32_t)devices.size());
+	printf("Vulkan Devices: %u\n", (uint32_t)devices.size());
 	for (Device dev : devices) {
 		Vulkan_Device_Info info = dev.Vulkan_Info;
 
-		printf("%s (%s): %i, %s\n", info.Name.c_str(), info.GetTypeName().c_str(), info.Device_ID, info.GetUUID().c_str());
+		printf("\t %s (%s): %i, %s\n", info.Name.c_str(), info.GetTypeName().c_str(), info.Device_ID, info.GetUUID().c_str());
 	}
+
+	return 0;
 
 	Device device = devices[0];
 

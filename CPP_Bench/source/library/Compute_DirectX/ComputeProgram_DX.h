@@ -1,0 +1,89 @@
+#pragma once
+
+#include "Compute_Interface/InterfaceIncludes.h"
+
+namespace Dynamics_IO_Testbench {
+	namespace Compute {
+		namespace DX {
+
+			class ComputeContext;
+			class ComputeEngine;
+			class ComputeKernel;
+			class ComputeBuffer;
+			class ComputeProgram;
+
+			class ComputeBuffer_DX;
+			class ComputeController_DX;
+
+			class ComputeProgram_DX : public IComputeProgram {
+				friend class ComputeController_DX;
+
+			public:
+				// Interface methods:
+
+				void Init(std::string name);
+
+				int FinishBuild();
+
+				int GetKernelID(std::string name);
+
+				int KernelSetBuffer(std::string k_name, IComputeBuffer* buffer, BindIndex arg);
+
+				int RunKernel(std::string k_name, int size_x, int size_y, int size_z);
+
+				int RunKernel(int kernel_id, int size_x, int size_y, int size_z);
+
+				void* GetKernelFunction(int kernel_id);
+
+				ProgramBuildState GetState() { return m_cur_state; }
+
+				int GetBuildResultCode() { return m_dx_build_res; }
+
+				std::string GetBuildErrorMessage() { return m_build_error; }
+
+				std::string GetProgramName() { return m_program_name; }
+
+				void Dispose();
+
+
+				// Non-interface methods:
+
+				// As the name suggests, it uses the kernel name vector to find the individual 
+				// binary files, each named with their entry point.
+				ProgramBuildState BuildProgramFromDirectory(std::vector<std::string> kernels);
+
+			private:
+
+				struct kernelEnt {
+					std::string name;
+					ComputeKernel* kernel;
+					//int args;
+				};
+
+				ComputeProgram_DX(ComputeContext* context);
+
+				int BindKernel(ComputeBuffer* buffer, ComputeKernel* kernel, int arg);
+
+				int InitKernelEntries();
+
+				ComputeContext* m_context{ nullptr };
+
+				std::string m_program_name{ "" };
+				ProgramBuildState m_cur_state{ ProgramBuildState::None };
+				int m_dx_build_res{ 0 };
+				std::string m_build_error{ "" };
+
+				size_t m_num_kernels{ 0 };
+				kernelEnt* m_kernel_entries{ nullptr };
+				std::map<std::string, int> m_kernel_name_to_id;
+
+				// program building
+				std::vector<std::string> m_kernels;
+				ComputeProgram* m_program{ nullptr };
+
+				bool mDestroyed{ false };
+			};
+
+		}
+	}
+}

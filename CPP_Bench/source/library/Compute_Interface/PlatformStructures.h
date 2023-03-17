@@ -78,6 +78,33 @@ namespace Dynamics_IO_Testbench {
             }
         };
 
+        struct DirectX_Device_Info {
+            std::string Name;
+            int AdapterIndex;
+            unsigned int Device_ID;
+            DeviceType Type;
+
+
+            std::string GetTypeName() {
+                switch (Type) {
+                case DeviceType::DEVICE_TYPE_CPU:
+                    return "CPU";
+                case DeviceType::DEVICE_TYPE_INTEGRATED_GPU:
+                    return "INTEGRATED_GPU";
+                case DeviceType::DEVICE_TYPE_DISCRETE_GPU:
+                    return "DISCRETE_GPU";
+                case DeviceType::DEVICE_TYPE_VIRTUAL_GPU:
+                    return "VIRTUAL_GPU";
+                case DeviceType::DEVICE_TYPE_ACCELERATOR:
+                    return "ACCELERATOR";
+                case DeviceType::DEVICE_TYPE_OTHER:
+                    return "OTHER";
+                default:
+                    return "UNKNOWN";
+                }
+            }
+        };
+
         struct Platform {
             void* platform;
 
@@ -97,6 +124,7 @@ namespace Dynamics_IO_Testbench {
 
             OpenCL_Device_Info OpenCL_Info;
             Vulkan_Device_Info Vulkan_Info;
+            DirectX_Device_Info DirectX_Info;
         };
 
     }

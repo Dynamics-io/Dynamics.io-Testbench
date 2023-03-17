@@ -15,7 +15,7 @@ bool ComputeEngine::mInitialized = false;
 
 std::string ComputeEngine::mApp_dir = "";
 
-std::vector<ComputeContext> ComputeEngine::mContexts;
+std::list<ComputeContext> ComputeEngine::mContexts;
 
 const std::vector<const char*> ComputeEngine::validationLayers = {
 	"VK_LAYER_KHRONOS_validation"
@@ -47,9 +47,10 @@ int ComputeEngine::Init(std::string dir)
 
 ComputeContext* ComputeEngine::GetNewContext(Device device)
 {
-	mContexts.push_back(ComputeContext(&mInstance, device));
-	mContexts[mContexts.size() - 1].mCanCallDispose = true;
-	return &mContexts[mContexts.size() - 1];
+	mContexts.emplace_back(ComputeContext(&mInstance, device));
+	auto& buf = mContexts.back();
+	buf.mCanCallDispose = true;
+	return &buf;
 }
 
 std::string ComputeEngine::Get_VK_Version()
@@ -420,6 +421,7 @@ void ComputeContext::Dispose() {
 ComputeContext::~ComputeContext() {
 	Dispose();
 }
+
 
 // Compute Program
 

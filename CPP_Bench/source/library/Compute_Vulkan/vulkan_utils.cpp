@@ -9,6 +9,7 @@ std::vector<char> Utilities::readFile(const std::string& filename)
     std::ifstream file(filename, std::ios::ate | std::ios::binary);
 
     if (!file.is_open()) {
+        printf("Failed to open file: %s\n", filename.c_str());
         throw std::runtime_error("Failed to open file!");
     }
 
@@ -304,20 +305,28 @@ Utilities::QueueFamilyIndices Utilities::findQueueFamilies(VkPhysicalDevice devi
     indices.shouldIncludeGraphics = false;
 
     std::vector<VkQueueFamilyProperties> queueFamilies = Utilities::GetPhysicalDeviceQueueFamilyProperties(device);
-    printf("Searching queue families: %i\n", (int)queueFamilies.size());
+    //printf("Searching queue families: %i\n", (int)queueFamilies.size());
+
+
+    // TODO: Better logic to determine different transfer family in
+    // the case there is only a dedicated transfer family, and not a
+    // dedicated compute family. As a compute family always has a 
+    // is also always combined with a transfer family, it is likely
+    // that a combination family will be found with a dedicated 
+    // transfer family (like in my hardware).
 
     int i = 0;
     for (const auto& queueFam : queueFamilies) {
         if ((queueFam.queueFlags & VK_QUEUE_COMPUTE_BIT) &&
             !(queueFam.queueFlags & VK_QUEUE_TRANSFER_BIT)) {
             indices.computeFamily = i;
-            printf("Found Seperate compute queue Family: %i\n", i);
+            //printf("Found Seperate compute queue Family: %i\n", i);
         }
 
         if (!(queueFam.queueFlags & VK_QUEUE_COMPUTE_BIT) &&
             (queueFam.queueFlags & VK_QUEUE_TRANSFER_BIT)) {
             indices.transferFamily = i;
-            printf("Found Seperate transfer queue Family: %i\n", i);
+            //printf("Found Seperate transfer queue Family: %i\n", i);
         }
     }
 
@@ -328,7 +337,7 @@ Utilities::QueueFamilyIndices Utilities::findQueueFamilies(VkPhysicalDevice devi
                 (queueFam.queueFlags & VK_QUEUE_COMPUTE_BIT)) {
                 indices.transferFamily = i;
                 indices.computeFamily = i;
-                printf("Found combined queue Family: %i\n", i);
+                //printf("Found combined queue Family: %i\n", i);
                 break;
             }
         }
@@ -399,7 +408,7 @@ bool Utilities::checkDeviceExtensionSupport(VkPhysicalDevice device, std::vector
     std::set<std::string> requiredExtensions(deviceExtensions.begin(), deviceExtensions.end());
 
     for (const auto& ext : availableExtensions) {
-        printf("Available: %s\n", ext.extensionName);
+        //printf("Available: %s\n", ext.extensionName);
         requiredExtensions.erase(ext.extensionName);
     }
 

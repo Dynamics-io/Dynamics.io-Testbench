@@ -9,8 +9,10 @@
 //#include "Compute_Vulkan/vulkan_compute_test.h"
 
 #ifdef WINDOWS_PLATFROM
-#include "Compute_DirectX/SystemClass_test.h"
-#include "Compute_DirectX/compute_test.h"
+//#include "Compute_DirectX/SystemClass_test.h"
+//#include "Compute_DirectX/compute_test.h"
+#include "Compute_DirectX/ComputeController_DX.h"
+#include "Compute_DirectX/directX_utils.h"
 
 #endif
 
@@ -52,12 +54,18 @@ IComputeController* ComputeInterface::GetComputeController(ComputeInterface::Com
 	}
 }
 
-void Dynamics_IO_Testbench::Compute::ComputeInterface::DisposePlatform(Compute_SDK implementation)
+void ComputeInterface::DisposePlatform(Compute_SDK implementation)
 {
     switch (implementation) {
     case Compute_SDK::VULKAN:
         ComputeController_VK::DisposePlatform();
         break;
+
+#ifdef WINDOWS_PLATFROM
+    case Compute_SDK::DIRECTX:
+        ComputeController_DX::DisposePlatform();
+        break;
+#endif
     }
 }
 
@@ -91,20 +99,21 @@ IComputeController* ComputeInterface::GetComputeController_Vulkan(ControllerInfo
 
 IComputeController* ComputeInterface::GetComputeController_DirectX(ControllerInfo info)
 {
-    IComputeController* res = nullptr;
+    IComputeController* controller = nullptr;
 
 #ifdef WINDOWS_PLATFROM
 
-    printf("Running DirectX test app.\n");
-    
-    compute_test test;
+    //printf("Running DirectX test app.\n");
+    //compute_test test;
+    //test.Run();
 
-    test.Run();
+    controller = ComputeController_DX::New();
 
+    controller->Init(info.platform, info.device, info.program_dir);
 
 #endif
 
-	return res;
+	return controller;
 }
 
 std::vector<Platform> ComputeInterface::GetSupportedPlatforms_OpenCL()
@@ -235,7 +244,7 @@ std::vector<Device> ComputeInterface::GetSupportedDevices_Vulkan()
 {
     std::vector<Device> result;
 
-    VkApplicationInfo appInfo = Utilities::getApplicationInfo(
+    VkApplicationInfo appInfo = VK::Utilities::getApplicationInfo(
         "Get_Devices",
         VK_MAKE_VERSION(1, 0, 0),
         "Dynamics_IO",
@@ -244,7 +253,7 @@ std::vector<Device> ComputeInterface::GetSupportedDevices_Vulkan()
 
 
     std::vector<const char*> requiredExtensions;
-    VkInstanceCreateInfo createInfo = Utilities::getInstanceCreateInfo(appInfo, requiredExtensions);
+    VkInstanceCreateInfo createInfo = VK::Utilities::getInstanceCreateInfo(appInfo, requiredExtensions);
     createInfo.enabledLayerCount = 0;
     createInfo.pNext = nullptr;
 
@@ -257,14 +266,14 @@ std::vector<Device> ComputeInterface::GetSupportedDevices_Vulkan()
         return result;
     }
 
-    std::vector<VkPhysicalDevice> devices = Utilities::EnumeratePhysicalDevices(instance);
+    std::vector<VkPhysicalDevice> devices = VK::Utilities::EnumeratePhysicalDevices(instance);
 
-    printf("Total Devices: %li\n", devices.size());
+    //printf("Total Devices: %li\n", devices.size());
 
     
 
     for (const auto& device : devices) {
-        if (!isDeviceSuitable(device)) {
+        if (!VK_isDeviceSuitable(device)) {
             continue;
         }
 
@@ -322,7 +331,56 @@ std::vector<Device> ComputeInterface::GetSupportedDevices_Vulkan()
     return result;
 }
 
-bool ComputeInterface::isDeviceSuitable(VkPhysicalDevice device)
+std::vector<Device> ComputeInterface::GetSupportedDevices_DirectX()
+{
+    std::vector<Device> result;
+
+#ifdef WINDOWS_PLATFROM
+
+    std::vector<IDXGIAdapter*> adapters = DX::Utilities::GetAdapters();
+
+    DXGI_ADAPTER_DESC2 desc;
+    int adpt_ind = 0;
+    for (auto& adpt : adapters) {
+        adpt->GetDesc((DXGI_ADAPTER_DESC*)&desc);
+
+        DirectX_Device_Info info{};
+
+        std::wstring desc_wstr(desc.Description);
+        info.Name = std::string(desc_wstr.begin(), desc_wstr.end());
+
+        info.AdapterIndex = adpt_ind;
+
+        info.Device_ID = desc.DeviceId;
+
+        // TODO: figure out how to determine type.
+        // NOTE: Vulkan has the same DeviceIDs as
+        // directx in some, most or all cases. If
+        // they are the same, the device ID could
+        // be used to poll vulkan to determine the
+        // device type. Alternatively, and this
+        // would be the better option, would be
+        // to use the Device UUID, as soon as I can
+        // figure out how to make that work in VK.
+        info.Type = DeviceType::DEVICE_TYPE_OTHER;
+
+        Device device{};
+        device.DirectX_Info = info;
+
+        result.push_back(device);
+
+        adpt_ind++;
+    }
+
+
+    DX::Utilities::ReleaseAdapters(adapters);
+
+#endif
+
+    return result;
+}
+
+bool ComputeInterface::VK_isDeviceSuitable(VkPhysicalDevice device)
 {
     VkPhysicalDeviceProperties deviceProperties;
     vkGetPhysicalDeviceProperties(device, &deviceProperties);
@@ -330,10 +388,10 @@ bool ComputeInterface::isDeviceSuitable(VkPhysicalDevice device)
     VkPhysicalDeviceFeatures deviceFeatures;
     vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
 
-    Utilities::QueueFamilyIndices indices = Utilities::findQueueFamilies(device);
+    VK::Utilities::QueueFamilyIndices indices = VK::Utilities::findQueueFamilies(device);
 
     std::vector<const char*> deviceExtensions;// TODO: User-provided extensions.
-    bool extensionsSupported = Utilities::checkDeviceExtensionSupport(device, deviceExtensions);
+    bool extensionsSupported = VK::Utilities::checkDeviceExtensionSupport(device, deviceExtensions);
 
     return indices.isComplete() && extensionsSupported;
 }

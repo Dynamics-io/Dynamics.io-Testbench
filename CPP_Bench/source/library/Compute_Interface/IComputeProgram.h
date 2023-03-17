@@ -40,6 +40,9 @@ namespace Dynamics_IO_Testbench {
 
 				// Used in kernels where buffers are bound in the global scope
 				int GlobalIndex;
+
+				// Used in DirectX kernels, where read/write buffers have seperate index counters.
+				int RegisterIndex;
 			};
 
 			virtual void Init(std::string name) = 0;

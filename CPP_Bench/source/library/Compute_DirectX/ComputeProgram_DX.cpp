@@ -1,24 +1,24 @@
-#include "Compute_Vulkan/ComputeProgram_VK.h"
+#include "Compute_DirectX/ComputeProgram_DX.h"
 
-#include "Compute_Vulkan/ComputeEngine.h"
-#include "Compute_Vulkan/ComputeBuffer_VK.h"
+#include "Compute_DirectX/ComputeEngine.h"
+#include "Compute_DirectX/ComputeBuffer_DX.h"
 
 using namespace Dynamics_IO_Testbench::Compute;
-using namespace Dynamics_IO_Testbench::Compute::VK;
+using namespace Dynamics_IO_Testbench::Compute::DX;
 
-void ComputeProgram_VK::Init(std::string name)
+void ComputeProgram_DX::Init(std::string name)
 {
 	m_program_name = name;
 	m_cur_state = ProgramBuildState::Inited;
 	m_program = m_context->Add_Program(name);
 }
 
-int ComputeProgram_VK::FinishBuild()
+int ComputeProgram_DX::FinishBuild()
 {
 	return m_program->Buildkernels();
 }
 
-int ComputeProgram_VK::GetKernelID(std::string name)
+int ComputeProgram_DX::GetKernelID(std::string name)
 {
 	if (m_kernel_name_to_id.count(name) <= 0) {
 		printf("Kernel not found: %s\n", name.c_str());
@@ -28,7 +28,7 @@ int ComputeProgram_VK::GetKernelID(std::string name)
 	return m_kernel_name_to_id[name];
 }
 
-int ComputeProgram_VK::KernelSetBuffer(std::string k_name, IComputeBuffer* buffer, BindIndex arg)
+int ComputeProgram_DX::KernelSetBuffer(std::string k_name, IComputeBuffer* buffer, BindIndex arg)
 {
 	if (m_kernel_name_to_id.count(k_name) <= 0) {
 		printf("Kernel not found: %s\n", k_name.c_str());
@@ -39,11 +39,11 @@ int ComputeProgram_VK::KernelSetBuffer(std::string k_name, IComputeBuffer* buffe
 
 	// TODO: handle setting kernel entry arg if larger.
 
-	ComputeBuffer* bfr = ((ComputeBuffer_VK*)buffer)->GetBuffer();
-	return BindKernel(bfr, m_kernel_entries[K_ID].kernel, arg.GlobalIndex);
+	ComputeBuffer* bfr = ((ComputeBuffer_DX*)buffer)->GetBuffer();
+	return BindKernel(bfr, m_kernel_entries[K_ID].kernel, arg.RegisterIndex);
 }
 
-int ComputeProgram_VK::RunKernel(std::string k_name, int size_x, int size_y, int size_z)
+int ComputeProgram_DX::RunKernel(std::string k_name, int size_x, int size_y, int size_z)
 {
 	if (m_kernel_name_to_id.count(k_name) <= 0) {
 		printf("Kernel not found: %s\n", k_name.c_str());
@@ -55,7 +55,7 @@ int ComputeProgram_VK::RunKernel(std::string k_name, int size_x, int size_y, int
 	return RunKernel(K_ID, size_x, size_y, size_z);
 }
 
-int ComputeProgram_VK::RunKernel(int kernel_id, int size_x, int size_y, int size_z)
+int ComputeProgram_DX::RunKernel(int kernel_id, int size_x, int size_y, int size_z)
 {
 	if (kernel_id >= m_num_kernels)
 	{
@@ -66,24 +66,24 @@ int ComputeProgram_VK::RunKernel(int kernel_id, int size_x, int size_y, int size
 	return m_kernel_entries[kernel_id].kernel->Execute(size_x, size_y, size_z);
 }
 
-void* ComputeProgram_VK::GetKernelFunction(int kernel_id)
+void* ComputeProgram_DX::GetKernelFunction(int kernel_id)
 {
 	return nullptr;
 }
 
-void ComputeProgram_VK::Dispose()
+void ComputeProgram_DX::Dispose()
 {
 	if (mDestroyed)
 		return;
 
 	/*
 	TODO: This releases all VK resources, however, other than
-	the vector of ComputeKernels, it does not free the memory 
+	the vector of ComputeKernels, it does not free the memory
 	of the ComputeProgram object itself as it is still present in
 	the std::vector<ComputeProgram> in the owning ComputeContext.
 	If a user were to constantly create programs and destroy them
 	for some reason, it would create a memory leak with an ever
-	growing vector of disposed ComputePrograms. 
+	growing vector of disposed ComputePrograms.
 
 	std::vector<ComputeProgram> in ComputeContext should be replaced
 	with an std::map
@@ -98,20 +98,8 @@ void ComputeProgram_VK::Dispose()
 	mDestroyed = true;
 }
 
-ComputeProgram_VK::ProgramBuildState ComputeProgram_VK::BuildProgramFromBinary(std::string file_path, std::vector<std::string> kernels)
+ComputeProgram_DX::ProgramBuildState ComputeProgram_DX::BuildProgramFromDirectory(std::vector<std::string> kernels)
 {
-	// compile the VKShaderModule from binary input
-	int vk_set_res = m_program->Set_Binary_File(file_path);
-
-	if (vk_set_res != 0) {
-		m_cur_state = ProgramBuildState::BuildError;
-		//m_build_error = m_builder->GetError();
-		printf("Got non-zero result from Set_Binary: %i\n", m_vk_build_res);
-		//printf("Build Error: %s\n", m_builder->GetError().c_str());
-
-		return m_cur_state;
-	}
-
 	for (int i = 0; i < kernels.size(); i++)
 	{
 		m_kernels.push_back(kernels[i]);
@@ -136,61 +124,18 @@ ComputeProgram_VK::ProgramBuildState ComputeProgram_VK::BuildProgramFromBinary(s
 	return m_cur_state;
 }
 
-ComputeProgram_VK::ProgramBuildState ComputeProgram_VK::BuildProgramFromBinary(const void* binary, size_t length, std::vector<std::string> kernels)
-{
-	// compile the VKShaderModule from binary input
-	int vk_set_res = m_program->Set_Binary(binary, length);
 
-	if (vk_set_res != 0) {
-		m_cur_state = ProgramBuildState::BuildError;
-		//m_build_error = m_builder->GetError();
-		printf("Got non-zero result from Set_Binary: %i\n", m_vk_build_res);
-		//printf("Build Error: %s\n", m_builder->GetError().c_str());
-
-		return m_cur_state;
-	}
-
-	for (int i = 0; i < kernels.size(); i++)
-	{
-		m_kernels.push_back(kernels[i]);
-
-		// Create kernel instances inside program
-		m_program->GetKernel(m_kernels[i]);
-	}
-
-	printf("Program Built successfully!\n");
-
-	// setup kernels
-	int kernel_res = InitKernelEntries();
-
-	if (kernel_res == 0)
-		m_cur_state = ProgramBuildState::Constructed;
-	else
-	{
-		m_cur_state = ProgramBuildState::BuildError;
-		m_build_error = "Kernel Error " + std::to_string(kernel_res);
-	}
-
-	return m_cur_state;
-}
-
-ComputeProgram_VK::~ComputeProgram_VK()
-{
-	Dispose();
-}
-
-
-ComputeProgram_VK::ComputeProgram_VK(ComputeContext* context) {
+ComputeProgram_DX::ComputeProgram_DX(ComputeContext* context) {
 	m_context = context;
 }
 
-int ComputeProgram_VK::BindKernel(ComputeBuffer* buffer, ComputeKernel* kernel, int arg)
+int ComputeProgram_DX::BindKernel(ComputeBuffer* buffer, ComputeKernel* kernel, int arg)
 {
 	printf("Bind buffer to kernel: %i\n", arg);
 	return kernel->SetBuffer(buffer, arg);
 }
 
-int ComputeProgram_VK::InitKernelEntries()
+int ComputeProgram_DX::InitKernelEntries()
 {
 	m_num_kernels = m_kernels.size();
 
