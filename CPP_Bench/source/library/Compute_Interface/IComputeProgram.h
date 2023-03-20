@@ -17,20 +17,31 @@ namespace Dynamics_IO_Testbench {
 				BuildError
 			};
 
+			enum class FileType {
+				Text,
+				Binary
+			};
+
 			struct ProgramInfo {
 			public:
+				
 
-				ProgramInfo(std::string name)
-					: m_name(name) {}
+				ProgramInfo(std::string name, FileType type)
+					: m_name(name), m_type(type) {}
 
 				void AddKernel(std::string name) { m_kernels.push_back(name); }
 
 				std::string Name() { return m_name; }
 
+				FileType Type() {
+					return m_type;
+				}
+
 				std::vector<std::string> Kernels() { return m_kernels; }
 
 			private:
 				std::string m_name;
+				FileType m_type;
 				std::vector<std::string> m_kernels;
 			};
 

@@ -20,11 +20,11 @@ namespace Dynamics_IO_Testbench {
 
 				IComputeProgram* GetProgram(std::string name);
 
-				IComputeBuffer* NewReadBuffer(size_t length);
+				IComputeBuffer* NewReadBuffer(size_t numElements, size_t stride);
 
-				IComputeBuffer* NewWriteBuffer(size_t length);
+				IComputeBuffer* NewWriteBuffer(size_t numElements, size_t stride);
 
-				IComputeBuffer* NewReadWriteBuffer(size_t length);
+				IComputeBuffer* NewReadWriteBuffer(size_t numElements, size_t stride);
 
 				void Dispose() {}
 
@@ -35,13 +35,14 @@ namespace Dynamics_IO_Testbench {
 			private:
 				ComputeController_OCL() {}
 
-				static IComputeController* New() { return new ComputeController_OCL(); }
+				static IComputeController* New();
 
 				ComputeContext* m_context{ nullptr };
 				std::string m_directory;
 
 				std::map<std::string, ComputeProgram_OCL*> m_programs;
 
+				static std::vector<ComputeController_OCL*> m_controllers;
 			};
 
 		}

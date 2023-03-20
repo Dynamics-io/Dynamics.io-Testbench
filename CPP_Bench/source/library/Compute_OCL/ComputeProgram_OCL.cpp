@@ -77,7 +77,7 @@ int ComputeProgram_OCL::RunKernel(int kernel_id, int size_x, int size_y, int siz
 	}
 
 	size_t global[] = { std::max(size_x, 1) , std::max(size_y, 1) , std::max(size_z, 1) };
-	return m_kernel_entries[kernel_id].kernel->Execute(0, 3, global);
+	return m_kernel_entries[kernel_id].kernel->Execute(3, global);
 }
 
 void* ComputeProgram_OCL::GetKernelFunction(int kernel_id)
@@ -333,7 +333,7 @@ IComputeProgram::ProgramBuildState ComputeProgram_OCL::BuildProgramFromInternalD
 int ComputeProgram_OCL::BindKernel(ComputeBuffer* buffer, ComputeKernel* kernel, int arg)
 {
 	printf("Bind buffer to kernel: %i\n", arg);
-	return kernel->SetBuffer(0, buffer, arg);
+	return kernel->SetBuffer(buffer, arg);
 }
 
 int ComputeProgram_OCL::InitKernelEntries()

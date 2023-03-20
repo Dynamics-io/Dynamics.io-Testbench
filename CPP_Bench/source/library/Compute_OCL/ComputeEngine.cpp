@@ -7,10 +7,13 @@ using namespace Dynamics_IO_Testbench::Compute::OCL;
 cl_platform_id ComputeEngine::platform_id = 0;
 cl_uint ComputeEngine::num_of_platforms = 0;
 cl_context_properties ComputeEngine::properties[3] = {0};
-cl_device_id ComputeEngine::device_ids[MAX_DEVICES] = { 0 };
-cl_device_id ComputeEngine::cur_device_id = 0;
+cl_device_id ComputeEngine::device_ids[MAX_OCL_DEVICES] = { 0 };
 cl_uint ComputeEngine::num_of_devices = 0;
-std::string  ComputeEngine::app_dir;
+std::string ComputeEngine::app_dir;
+
+std::list<ComputeContext> ComputeEngine::mContexts;
+
+bool ComputeEngine::mInitialized{ false };
 
 /*std::vector<ComputeEngine::Platform> ComputeEngine::GetSupportedPlatforms()
 {
@@ -134,12 +137,10 @@ std::vector<ComputeEngine::Device> ComputeEngine::GetSupportedDevices(Platform p
     return res;
 }*/
 
-int ComputeEngine::Init(cl_platform_id pltform, cl_device_id device, std::string dir)
+int ComputeEngine::Init(Platform pltform, std::string dir)
 {
    
-    platform_id = pltform;
-    cur_device_id = device;
-   
+    platform_id = (cl_platform_id)pltform.platform;
 
    // context properties list - must be terminated with 0
    properties[0] = CL_CONTEXT_PLATFORM;
@@ -148,11 +149,16 @@ int ComputeEngine::Init(cl_platform_id pltform, cl_device_id device, std::string
 
    app_dir = dir;
 
+   mInitialized = true;
+
    return 0;
 }
 
-ComputeContext* ComputeEngine::GetNewContext() {
-   return new ComputeContext(properties, device_ids);
+ComputeContext* ComputeEngine::GetNewContext(Device device) {
+    mContexts.emplace_back(ComputeContext(properties, device));
+    auto& buf = mContexts.back();
+    //buf.mCanCallDispose = true;
+    return &buf;
 }
 
 std::string ComputeEngine::Get_CL_Version()
@@ -169,62 +175,103 @@ std::string ComputeEngine::Get_CL_Version()
     return res;
 }
 
-ComputeContext::ComputeContext(cl_context_properties properties[3], cl_device_id* device_ids)
+void ComputeEngine::Dispose() {
+    properties[0] = 0;
+    properties[1] = 0;
+    properties[2] = 0;
+
+    for (auto& context : mContexts) {
+        context.Dispose();
+    }
+
+    mContexts.clear();
+
+    mInitialized = false;
+}
+
+
+
+ComputeBuffer* ComputeContext::GetBuffer(ComputeBuffer::Buffer_Type type, size_t size)
+{
+    cl_mem_flags flags;
+
+    switch (type)
+    {
+    case ComputeBuffer::Buffer_Type::READ:
+        flags = CL_MEM_READ_ONLY;
+        break;
+
+    case ComputeBuffer::Buffer_Type::Write:
+        flags = CL_MEM_WRITE_ONLY;
+        break;
+
+    case ComputeBuffer::Buffer_Type::Read_Write:
+        flags = CL_MEM_READ_WRITE;
+        break;
+
+    default:
+        return NULL;
+    }
+
+    mBuffers.emplace_back(ComputeBuffer(context, command_queue, numContexts, flags, size));
+    auto& buf = mBuffers.back();
+    //buf.mCanCallDispose = true;
+    return &buf;
+}
+
+void ComputeContext::Dispose()
+{
+    if (mDestroyed || !mInitialized || !mCanCallDispose)
+        return;
+
+    for (const auto& [key, value] : programs) {
+        value->Dispose();
+    }
+
+    for (auto& buff : mBuffers) {
+        buff.Dispose();
+    }
+
+    for (int i = 0; i < numContexts; i++)
+    {
+        clReleaseCommandQueue(command_queue);
+    }
+
+    programs.clear();
+    mBuffers.clear();
+
+    clReleaseContext(context);
+
+    mDestroyed = true;
+    mInitialized = false;
+}
+
+ComputeContext::ComputeContext(cl_context_properties properties[3], Device device)
 {
     cl_int err;
     numContexts = 0;
 
-    //context = new cl_context[ComputeEngine::GetNumDevices()];
-    //command_queue = new cl_command_queue[ComputeEngine::GetNumDevices()];
 
-    cl_device_id device = ComputeEngine::GetDevice();
+    deviceID = (cl_device_id)device.cl_device;
 
-    context = clCreateContext(properties, 1, &device, NULL, NULL, &err);
+    context = clCreateContext(properties, 1, &deviceID, NULL, NULL, &err);
 
-    command_queue[0] = clCreateCommandQueue(context, device, 0, &err);
+    command_queue = clCreateCommandQueue(context, deviceID, 0, &err);
     numContexts = 1;
 
-    /*for (int i = 0; i < ComputeEngine::GetNumDevices(); i++)
-    {
-       command_queue[i] = clCreateCommandQueue(context, device_ids[i], 0, &err);
-       numContexts++;
-    }*/
-
-
+    mInitialized = true;
 }
-
-/*int ComputeContext::SetProgram(const char* source)
-{
-   cl_int err;
-
-   //program = new cl_program[numContexts];
-
-   // create a program from the kernel source code
-   for (int i = 0; i < numContexts; i++)
-   {
-      program[i] = clCreateProgramWithSource(context, 1, (const char **)&source, NULL, &err);
-      // compile the program
-      if (clBuildProgram(program[i], 0, NULL, NULL, NULL, NULL) != CL_SUCCESS)
-      {
-         //printf("Error building program\n");
-         return 1;
-      }
-   }
-
-   return 0;
-   
-}*/
 
 ComputeProgram* ComputeContext::Add_Program(std::string name)
 {
-    ComputeProgram* program = new ComputeProgram(context, command_queue, numContexts);
+    ComputeProgram* program = new ComputeProgram(this, context, command_queue);
     programs[name] = program;
     return program;
 }
 
 ComputeProgram* ComputeContext::Add_Program_Source(std::string name, const char* source)
 {
-   ComputeProgram* program = new ComputeProgram(context, command_queue, numContexts);
+   ComputeProgram* program = new ComputeProgram(this, context, command_queue);
    int res = program->Set_Source(source);
    programs[name] = program;
    return program;
@@ -232,7 +279,7 @@ ComputeProgram* ComputeContext::Add_Program_Source(std::string name, const char*
 
 ComputeProgram* ComputeContext::Add_Program_SPIRV(std::string name, const void* binary, size_t length)
 {
-    ComputeProgram* program = new ComputeProgram(context, command_queue, numContexts);
+    ComputeProgram* program = new ComputeProgram(this, context, command_queue);
     int res = program->Set_Binary(binary, length);
     programs[name] = program;
     return program;
@@ -240,7 +287,7 @@ ComputeProgram* ComputeContext::Add_Program_SPIRV(std::string name, const void* 
 
 ComputeProgram* ComputeContext::Add_Program_SPIRV_File(std::string name, std::string file_path)
 {
-    ComputeProgram* program = new ComputeProgram(context, command_queue, numContexts);
+    ComputeProgram* program = new ComputeProgram(this, context, command_queue);
 
     int res = program->Set_Binary_File(file_path);
     programs[name] = program;
@@ -257,21 +304,20 @@ ComputeKernel* ComputeContext::GetKernel(std::string p_name, std::string name)
    return Programs(p_name)->GetKernel(name);
 }
 
-ComputeProgram::ComputeProgram(cl_context context, cl_command_queue queue[MAX_DEVICES], int numDevs)
-{
-   numDevices = numDevs;
-   m_context = context;
 
-   for (int i = 0; i < numDevices; i++)
-   {
-      command_queue[i] = queue[i];
-   }
+
+ComputeProgram::ComputeProgram(ComputeContext* context_obj, cl_context context, cl_command_queue queue)
+{
+    mContextObj = context_obj;
+    m_context = context;
+    command_queue = queue;
 }
 
 int ComputeProgram::Set_Source(const char* source)
 {
    cl_int err;
    program = clCreateProgramWithSource(m_context, 1, (const char **)&source, NULL, &err);
+   mInitialized = true;
    return err;
 }
 
@@ -279,6 +325,7 @@ int ComputeProgram::Set_Binary(const void* binary, size_t length)
 {
     cl_int err;
     program = clCreateProgramWithIL(m_context, binary, length, &err);
+    mInitialized = true;
     return err;
 }
 
@@ -334,7 +381,7 @@ int ComputeProgram::Build(char* errorStr, size_t e_size)
    int build_res = clBuildProgram(program, 0, NULL, args.c_str(), NULL, NULL);
 
    size_t ret_e_size;
-   int res = clGetProgramBuildInfo(program, ComputeEngine::GetDevice(), CL_PROGRAM_BUILD_LOG, e_size, errorStr, &ret_e_size);
+   int res = clGetProgramBuildInfo(program, mContextObj->Get_CL_Device_ID(), CL_PROGRAM_BUILD_LOG, e_size, errorStr, &ret_e_size);
 
    return build_res;
 }
@@ -346,72 +393,40 @@ ComputeKernel* ComputeProgram::GetKernel(std::string k_name)
       return kernels[k_name];
    }
 
-   ComputeKernel* new_kern = new ComputeKernel((char*)k_name.c_str(), command_queue, program, numDevices);
+   ComputeKernel* new_kern = new ComputeKernel(this, (char*)k_name.c_str(), command_queue, program);
    kernels[k_name] = new_kern;
    return new_kern;
 }
 
 void ComputeProgram::Dispose()
 {
+    if (mDestroyed || !mInitialized || !mCanCallDispose)
+        return;
+
     for (const auto& [key, value] : kernels) {
         value->Dispose();
     }
 
     clReleaseProgram(program);
+
+    mDestroyed = true;
+    mInitialized = false;
 }
 
-ComputeBuffer* ComputeContext::GetBuffer(ComputeBuffer::Buffer_Type type, size_t size)
-{
-   cl_mem_flags flags;
 
-   switch (type)
-   {
-   case ComputeBuffer::Buffer_Type::READ:
-      flags = CL_MEM_READ_ONLY;
-      break;
 
-   case ComputeBuffer::Buffer_Type::Write:
-      flags = CL_MEM_WRITE_ONLY;
-      break;
-
-   case ComputeBuffer::Buffer_Type::Read_Write:
-      flags = CL_MEM_READ_WRITE;
-      break;
-
-   default:
-      return NULL;
-   }
-
-   return new ComputeBuffer(context, command_queue, numContexts, flags, size);
-}
-
-void ComputeContext::Dispose()
-{
-    for (const auto& [key, value] : programs) {
-        value->Dispose();
-    }
-
-    for (int i = 0; i < numContexts; i++)
-    {
-        clReleaseCommandQueue(command_queue[i]);
-    }
-
-    clReleaseContext(context);
-}
-
-ComputeKernel::ComputeKernel(char* name, cl_command_queue queue[MAX_DEVICES], cl_program program, int numPrograms)
+ComputeKernel::ComputeKernel(ComputeProgram* program_obj, char* name, cl_command_queue queue, cl_program program)
 {
    cl_int err;
    //numKernels = numPrograms;
    m_program = program;
+   command_queue = queue;
+   mProgramObj = program_obj;
 
    //kernels = new cl_kernel[numKernels];
    //command_queue = new cl_command_queue[numKernels];
 
-   for (int i = 0; i < numPrograms; i++)
-   {
-      command_queue[i] = queue[i];
-   }
+
    
    printf("ComputeKernel(): Create kernel %s\n", name);
    kernel = clCreateKernel(m_program, name, &err);
@@ -423,18 +438,18 @@ ComputeKernel::ComputeKernel(char* name, cl_command_queue queue[MAX_DEVICES], cl
    }
 
    status = err;
-
+   mInitialized = true;
 }
 
-int ComputeKernel::SetBuffer(int device, ComputeBuffer* buffer, int arg)
+int ComputeKernel::SetBuffer(ComputeBuffer* buffer, int arg)
 {
    int res = clSetKernelArg(kernel, arg, sizeof(cl_mem), (void*)buffer->Get_CL_Mem());
    return res;
 }
 
-int ComputeKernel::Execute(int device, cl_uint work_dim, size_t* global_work_size)
+int ComputeKernel::Execute(cl_uint work_dim, size_t* global_work_size)
 {
-   cl_command_queue c_q = command_queue[device];
+   cl_command_queue c_q = command_queue;
    int res = clEnqueueNDRangeKernel(c_q, kernel, work_dim, NULL, global_work_size, NULL, 0, NULL, NULL);
 
    if (res != 0)
@@ -442,7 +457,7 @@ int ComputeKernel::Execute(int device, cl_uint work_dim, size_t* global_work_siz
        printf("ComputeKernel.Execute: Failed to enqueue Kernel: %i\n", res);
    }
 
-   res = clFinish(command_queue[device]);
+   res = clFinish(command_queue);
 
    if (res != 0)
    {
@@ -454,10 +469,18 @@ int ComputeKernel::Execute(int device, cl_uint work_dim, size_t* global_work_siz
 
 void ComputeKernel::Dispose()
 {
+    if (mDestroyed || !mInitialized || !mCanCallDispose)
+        return;
+
     clReleaseKernel(kernel);
+
+    mDestroyed = true;
+    mInitialized = false;
 }
 
-ComputeBuffer::ComputeBuffer(cl_context contexts, cl_command_queue queues[MAX_DEVICES], int numContext, cl_mem_flags type, size_t length)
+
+
+ComputeBuffer::ComputeBuffer(cl_context contexts, cl_command_queue queue, int numContext, cl_mem_flags type, size_t length)
 {
    num = numContext;
    //buffer = new cl_mem[numContext];
@@ -465,30 +488,35 @@ ComputeBuffer::ComputeBuffer(cl_context contexts, cl_command_queue queues[MAX_DE
    size = length;
 
    context = contexts;
+   command_queue = queue;
 
    cl_int err;
-   for (int i = 0; i < numContext; i++)
-   {
-      command_queue[i] = queues[i];
-      
-   }
+
 
    buffer = clCreateBuffer(context, type, length, NULL, &err);
+
+   mInitialized = true;
 }
 
 int ComputeBuffer::SetData(void* data)
 {
-   int res = clEnqueueWriteBuffer(command_queue[0], buffer, CL_TRUE, 0, size, data, 0, NULL, NULL);
+   int res = clEnqueueWriteBuffer(command_queue, buffer, CL_TRUE, 0, size, data, 0, NULL, NULL);
    return res;
 }
 
 int ComputeBuffer::GetData(void* outData)
 {
-   int res = clEnqueueReadBuffer(command_queue[0], buffer, CL_TRUE, 0, size, outData, 0, NULL, NULL);
+   int res = clEnqueueReadBuffer(command_queue, buffer, CL_TRUE, 0, size, outData, 0, NULL, NULL);
    return res;
 }
 
 void ComputeBuffer::Dispose()
 {
+    if (mDestroyed || !mInitialized || !mCanCallDispose)
+        return;
+
     clReleaseMemObject(buffer);
+
+    mDestroyed = true;
+    mInitialized = false;
 }

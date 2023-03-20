@@ -29,9 +29,10 @@ public:
 int main()
 {
 	//Vulkan_test();
-	DirectX_test();
+	//DirectX_test();
+	OpenCL_test();
+
 	return 0;
-	//return OpenCL_test();
 }
 
 void testConstructor_insert(std::map<std::string, testClass>& test_map) {
@@ -93,7 +94,7 @@ int DirectX_test() {
 
 	std::string kernel_name = "CSMain";
 
-	IComputeProgram::ProgramInfo p_info("Test");
+	IComputeProgram::ProgramInfo p_info("Test", IComputeProgram::FileType::Binary);
 	p_info.AddKernel(kernel_name);
 
 	IComputeProgram* program = controller->AddProgram(p_info);
@@ -102,8 +103,8 @@ int DirectX_test() {
 	for (int i = 0; i < DATA_SIZE; i++)
 		Data[i] = i + 1;
 
-	IComputeBuffer* in_Buffer = controller->NewReadBuffer(DATA_SIZE);
-	IComputeBuffer* out_Buffer = controller->NewWriteBuffer(DATA_SIZE);
+	IComputeBuffer* in_Buffer = controller->NewReadBuffer(DATA_SIZE, sizeof(float));
+	IComputeBuffer* out_Buffer = controller->NewWriteBuffer(DATA_SIZE, sizeof(float));
 
 	IComputeProgram::BindIndex ind{};
 
@@ -160,7 +161,7 @@ int Vulkan_test()
 
 	std::string kernel_name = "main";
 
-	IComputeProgram::ProgramInfo p_info("compute.spv");
+	IComputeProgram::ProgramInfo p_info("compute", IComputeProgram::FileType::Binary);
 	p_info.AddKernel(kernel_name);
 
 	IComputeProgram* program = controller->AddProgram(p_info);
@@ -169,8 +170,8 @@ int Vulkan_test()
 	for (int i = 0; i < DATA_SIZE; i++)
 		Data[i] = i + 1;
 
-	IComputeBuffer* in_Buffer = controller->NewReadBuffer(DATA_SIZE * sizeof(int));
-	IComputeBuffer* out_Buffer = controller->NewWriteBuffer(DATA_SIZE * sizeof(int));
+	IComputeBuffer* in_Buffer = controller->NewReadBuffer(DATA_SIZE, sizeof(float));
+	IComputeBuffer* out_Buffer = controller->NewWriteBuffer(DATA_SIZE, sizeof(float));
 
 	IComputeProgram::BindIndex ind{};
 
@@ -210,9 +211,6 @@ const char* KernelSource =
 "\n";
 
 
-
-
-
 int OpenCL_test()
 {
 	std::vector<Platform> platforms = ComputeInterface::GetSupportedPlatforms_OpenCL();
@@ -240,7 +238,7 @@ int OpenCL_test()
 
 	std::string kernel_name = "work";
 
-	IComputeProgram::ProgramInfo p_info("test_cl_opt.spv");
+	IComputeProgram::ProgramInfo p_info("test_cl_spv", IComputeProgram::FileType::Text);
 	p_info.AddKernel(kernel_name);
 
 	IComputeProgram* program = controller->AddProgram(p_info);
@@ -264,7 +262,7 @@ int OpenCL_test()
 
 	int Data[DATA_SIZE] = { 0 };
 
-	IComputeBuffer* compBuffer = controller->NewReadWriteBuffer(DATA_SIZE * sizeof(int));
+	IComputeBuffer* compBuffer = controller->NewReadWriteBuffer(DATA_SIZE, sizeof(int));
 
 	IComputeProgram::BindIndex ind{};
 	ind.ParameterIndex = 0;

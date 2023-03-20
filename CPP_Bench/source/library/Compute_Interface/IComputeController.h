@@ -18,11 +18,11 @@ namespace Dynamics_IO_Testbench {
 
 			virtual IComputeProgram* GetProgram(std::string name) = 0;
 
-			virtual IComputeBuffer* NewReadBuffer(size_t length) = 0;
+			virtual IComputeBuffer* NewReadBuffer(size_t numElements, size_t stride) = 0;
 
-			virtual IComputeBuffer* NewWriteBuffer(size_t length) = 0;
+			virtual IComputeBuffer* NewWriteBuffer(size_t numElements, size_t stride) = 0;
 
-			virtual IComputeBuffer* NewReadWriteBuffer(size_t length) = 0;
+			virtual IComputeBuffer* NewReadWriteBuffer(size_t numElements, size_t stride) = 0;
 
 			virtual void Dispose() = 0;
 		};

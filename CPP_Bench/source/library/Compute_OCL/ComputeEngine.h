@@ -1,28 +1,34 @@
 #pragma once
 
+#include "Compute_Interface/PlatformStructures.h"
+
 #include "OCL_forwardDeclarations.h"
 #include "CL/cl.h"
 
+// TODO: Clean up this file and the OpenCL implementation
+// to match the other SDK platforms.
 
-//#include "ComputeContext.h"
 namespace Dynamics_IO_Testbench {
     namespace Compute {
         namespace OCL {
 
-            //class ComputeContext;
-            //class ComputeEngine;
-            //class ComputeKernel;
-            //class ComputeBuffer;
-
-#define MAX_DEVICES  10
+            class ComputeContext;
+            class ComputeEngine;
+            class ComputeKernel;
+            class ComputeBuffer;
+            class ComputeProgram;
 
             class ComputeBuffer
             {
                 cl_context context;
                 cl_mem buffer;
-                cl_command_queue command_queue[MAX_DEVICES];
+                cl_command_queue command_queue;
                 int num;
                 size_t size;
+
+                bool mInitialized{ false };
+                bool mDestroyed{ false };
+                bool mCanCallDispose{ true };
 
             public:
                 enum class Buffer_Type
@@ -33,7 +39,7 @@ namespace Dynamics_IO_Testbench {
                 };
 
 
-                ComputeBuffer(cl_context context, cl_command_queue queus[MAX_DEVICES], int numContext, cl_mem_flags type, size_t length);
+                ComputeBuffer(cl_context context, cl_command_queue queue, int numContext, cl_mem_flags type, size_t length);
 
                 cl_mem* Get_CL_Mem()
                 {
@@ -54,19 +60,25 @@ namespace Dynamics_IO_Testbench {
             {
                 cl_program m_program;
                 cl_kernel kernel;
-                cl_command_queue command_queue[MAX_DEVICES];
+                cl_command_queue command_queue;
                 int status;
+
+                ComputeProgram* mProgramObj;
 
                 //int numKernels;
 
+                bool mInitialized{ false };
+                bool mDestroyed{ false };
+                bool mCanCallDispose{ true };
+
             public:
-                ComputeKernel(char* name, cl_command_queue command_queue[MAX_DEVICES], cl_program program, int numPrograms);
+                ComputeKernel(ComputeProgram* program_obj, char* name, cl_command_queue command_queue, cl_program program);
 
                 int GetStatus() { return status; }
 
-                int SetBuffer(int device, ComputeBuffer* buffer, int arg);
+                int SetBuffer(ComputeBuffer* buffer, int arg);
 
-                int Execute(int device, cl_uint work_dim, size_t* global_work_size);
+                int Execute(cl_uint work_dim, size_t* global_work_size);
 
                 void Dispose();
             };
@@ -75,14 +87,21 @@ namespace Dynamics_IO_Testbench {
                 std::map<std::string, ComputeKernel*> kernels;
                 cl_program program;
                 cl_context m_context;
-                cl_command_queue command_queue[MAX_DEVICES];
-                int numDevices;
+                ComputeContext* mContextObj;
+                cl_command_queue command_queue;
 
+                bool mInitialized{ false };
+                bool mDestroyed{ false };
+                bool mCanCallDispose{ true };
 
                 std::string args;
 
             public:
-                ComputeProgram(cl_context context, cl_command_queue queue[MAX_DEVICES], int numDevs);
+                ComputeProgram(ComputeContext* context_obj, cl_context context, cl_command_queue queue);
+
+                ComputeContext* GetContext() {
+                    return mContextObj;
+                }
 
                 int Set_Source(const char* source);
 
@@ -101,12 +120,23 @@ namespace Dynamics_IO_Testbench {
 
             class ComputeContext {
                 std::map<std::string, ComputeProgram*> programs;
+                std::list<ComputeBuffer> mBuffers;
+
                 cl_context context;
-                cl_command_queue command_queue[MAX_DEVICES];
+                cl_command_queue command_queue;
+                cl_device_id deviceID;
                 int numContexts;
 
+                bool mInitialized{ false };
+                bool mDestroyed{ false };
+                bool mCanCallDispose{ true };
+
             public:
-                ComputeContext(cl_context_properties properties[3], cl_device_id* device_ids);
+                ComputeContext(cl_context_properties properties[3], Device device);
+                
+                cl_device_id Get_CL_Device_ID() {
+                    return deviceID;
+                }
 
                 //int SetProgram(const char* source);
                 ComputeProgram* Add_Program(std::string name);
@@ -127,50 +157,22 @@ namespace Dynamics_IO_Testbench {
                 static cl_platform_id platform_id;
                 static cl_uint num_of_platforms;
                 static cl_context_properties properties[3];
-                static cl_device_id device_ids[MAX_DEVICES];
-                static cl_device_id cur_device_id;
+                static cl_device_id device_ids[MAX_OCL_DEVICES];
                 static cl_uint num_of_devices;
 
                 static std::string app_dir;
 
+                static std::list<ComputeContext> mContexts;
+
+                static bool mInitialized;
+
             public:
-                /*struct Platform {
-                    cl_platform_id platform;
 
-                    char name[1000];
-                    unsigned short name_size;
-
-                    char vendor[1000];
-                    unsigned short vendor_size;
-
-                    char version[1000];
-                    unsigned short version_size;
-                };
-
-                struct Device {
-                    cl_device_id device;
-
-                    char vendor[1000];
-                    unsigned short vendor_size;
-
-                    char name[1000];
-                    unsigned short name_size;
-
-                    unsigned int clock_frequency;
-                    unsigned int num_compute_units;
-                    unsigned long mem_size;
-                    unsigned int max_work_size;
-                    unsigned int group_size;
-                    bool is_type_default;
-                    bool is_type_CPU;
-                    bool is_type_GPU;
-                    bool is_type_Accelerator;
-                };*/
 
                 //static std::vector<Platform> GetSupportedPlatforms();
                 //static std::vector<Device> GetSupportedDevices(Platform pltfrm);
-                static int Init(cl_platform_id platform, cl_device_id device, std::string dir);
-                static ComputeContext* GetNewContext();
+                static int Init(Platform platform, std::string dir);
+                static ComputeContext* GetNewContext(Device device);
 
                 static cl_platform_id GetPlatform()
                 {
@@ -186,12 +188,13 @@ namespace Dynamics_IO_Testbench {
                     return app_dir;
                 }
 
-                static cl_device_id GetDevice()
-                {
-                    return cur_device_id;
+                static bool IsInitialized() {
+                    return mInitialized;
                 }
 
                 static std::string Get_CL_Version();
+
+                static void Dispose();
             };
 
         }

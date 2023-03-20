@@ -7,48 +7,49 @@
 using namespace Dynamics_IO_Testbench::Compute;
 using namespace Dynamics_IO_Testbench::Compute::OCL;
 
+std::vector<ComputeController_OCL*> ComputeController_OCL::m_controllers;
+
+#define DEFAULT_BINARY_FILE_TYPE "spv"
+#define DEFAULT_TEXT_FILE_TYPE "cl"
 
 void ComputeController_OCL::Init(Platform platform, Device device, std::string program_dir)
 {
 	m_directory = program_dir + "/"; // TODO: check end of program_dir string for '/'
 
-	ComputeEngine::Init((cl_platform_id)platform.platform, (cl_device_id)device.cl_device, m_directory + "include");
+	
+	ComputeEngine::Init(platform, m_directory + "include");
 
 	// TODO: Add ability to add OpenGL shared context
-	m_context = ComputeEngine::GetNewContext();
+	m_context = ComputeEngine::GetNewContext(device);
 }
 
 IComputeProgram* ComputeController_OCL::AddProgram(IComputeProgram::ProgramInfo info)
 {
-	ComputeProgram_OCL* program = new ComputeProgram_OCL(m_context);
-
 	std::string name = info.Name();
 	std::vector<std::string> kernels = info.Kernels();
 
+	ComputeProgram_OCL* program = new ComputeProgram_OCL(m_context);
+
 	program->Init(name);
 
-	std::string full_file_path = m_directory + name;
-
-	std::vector <std::string> name_parts;
-	boost::split(name_parts, name, boost::is_any_of("."), boost::token_compress_on);
-
-	std::string file_name = name_parts[0];
-	std::string file_type = name_parts[1];
-
-
+	
 	printf("ComputeController_OCL: Reading program from directory: %s\n", m_directory.c_str());
 	
-
-
-	if (file_type == "spv" || file_type == "bin")
-	{
-		printf("ComputeController_OCL: Adding program binary file: %s\n", full_file_path.c_str());
-		program->BuildProgramFromBinary(full_file_path, kernels);
-	}
-	else if (file_type == "cl")
-	{
-		printf("ComputeController_OCL: Adding program source file: %s\n", full_file_path.c_str());
-		program->BuildProgramFromSourceFile(full_file_path, kernels);
+	switch (info.Type()) {
+		case IComputeProgram::FileType::Binary:
+		{
+			std::string full_file_path = m_directory + name + "." + DEFAULT_BINARY_FILE_TYPE;
+			printf("ComputeController_OCL: Adding program binary file: %s\n", full_file_path.c_str());
+			program->BuildProgramFromBinary(full_file_path, kernels);
+			break;
+		}
+		case IComputeProgram::FileType::Text:
+		{
+			std::string full_file_path = m_directory + name + "." + DEFAULT_TEXT_FILE_TYPE;
+			printf("ComputeController_OCL: Adding program source file: %s\n", full_file_path.c_str());
+			program->BuildProgramFromSourceFile(full_file_path, kernels);
+			break;
+		}
 	}
 
 	m_programs[name] = program;
@@ -66,19 +67,19 @@ IComputeProgram* ComputeController_OCL::GetProgram(std::string name)
 	return m_programs[name];
 }
 
-IComputeBuffer* ComputeController_OCL::NewReadBuffer(size_t length)
+IComputeBuffer* ComputeController_OCL::NewReadBuffer(size_t numElements, size_t stride)
 {
-	return new ComputeBuffer_OCL(ComputeController_OCL::NewBuffer(ComputeBuffer::Buffer_Type::READ, length));
+	return new ComputeBuffer_OCL(ComputeController_OCL::NewBuffer(ComputeBuffer::Buffer_Type::READ, numElements * stride));
 }
 
-IComputeBuffer* ComputeController_OCL::NewWriteBuffer(size_t length)
+IComputeBuffer* ComputeController_OCL::NewWriteBuffer(size_t numElements, size_t stride)
 {
-	return new ComputeBuffer_OCL(ComputeController_OCL::NewBuffer(ComputeBuffer::Buffer_Type::Write, length));
+	return new ComputeBuffer_OCL(ComputeController_OCL::NewBuffer(ComputeBuffer::Buffer_Type::Write, numElements * stride));
 }
 
-IComputeBuffer* ComputeController_OCL::NewReadWriteBuffer(size_t length)
+IComputeBuffer* ComputeController_OCL::NewReadWriteBuffer(size_t numElements, size_t stride)
 {
-	return new ComputeBuffer_OCL(ComputeController_OCL::NewBuffer(ComputeBuffer::Buffer_Type::Read_Write, length));
+	return new ComputeBuffer_OCL(ComputeController_OCL::NewBuffer(ComputeBuffer::Buffer_Type::Read_Write, numElements * stride));
 }
 
 
@@ -87,4 +88,12 @@ IComputeBuffer* ComputeController_OCL::NewReadWriteBuffer(size_t length)
 ComputeBuffer* ComputeController_OCL::NewBuffer(ComputeBuffer::Buffer_Type type, size_t length)
 {
 	return m_context->GetBuffer(type, length);
+}
+
+IComputeController* Dynamics_IO_Testbench::Compute::OCL::ComputeController_OCL::New()
+{
+	int index = m_controllers.size();
+	m_controllers.resize(index + 1);
+	m_controllers[index] = new ComputeController_OCL();
+	return m_controllers[index];
 }

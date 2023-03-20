@@ -5,8 +5,6 @@
 #include "IComputeController.h"
 #include "CL/cl.h"
 
-#define MAX_OCL_DEVICES  10
-
 namespace Dynamics_IO_Testbench {
 	namespace Compute {
 

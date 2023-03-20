@@ -7,6 +7,8 @@
 using namespace Dynamics_IO_Testbench::Compute;
 using namespace Dynamics_IO_Testbench::Compute::VK;
 
+#define DEFAULT_BINARY_FILE_TYPE "spv"
+
 std::vector<ComputeController_VK*> ComputeController_VK::m_controllers;
 
 void ComputeController_VK::Init(Platform platform, Device device, std::string program_dir)
@@ -33,7 +35,8 @@ IComputeProgram* ComputeController_VK::AddProgram(IComputeProgram::ProgramInfo i
 
 	m_programs[name]->Init(name);
 
-	std::string full_file_path = m_directory + name;
+	// ProgramInfo FileType is ignored because only SPIRV binary files are supported.
+	std::string full_file_path = m_directory + name + "." + DEFAULT_BINARY_FILE_TYPE;
 
 	printf("ComputeController_VK: Reading program from directory: %s\n", m_directory.c_str());
 
@@ -53,22 +56,22 @@ IComputeProgram* ComputeController_VK::GetProgram(std::string name)
 	return m_programs[name];
 }
 
-IComputeBuffer* ComputeController_VK::NewReadBuffer(size_t length)
+IComputeBuffer* ComputeController_VK::NewReadBuffer(size_t numElements, size_t stride)
 {
-	ComputeBuffer* bf = ComputeController_VK::NewBuffer((uint32_t)ComputeBuffer::Buffer_Type::READ, length);
+	ComputeBuffer* bf = ComputeController_VK::NewBuffer((uint32_t)ComputeBuffer::Buffer_Type::READ, numElements * stride);
 	ComputeBuffer_VK* bf_vk = new ComputeBuffer_VK(bf);
 	return bf_vk;
 }
 
-IComputeBuffer* ComputeController_VK::NewWriteBuffer(size_t length)
+IComputeBuffer* ComputeController_VK::NewWriteBuffer(size_t numElements, size_t stride)
 {
-	ComputeBuffer* bf = ComputeController_VK::NewBuffer((uint32_t)ComputeBuffer::Buffer_Type::Write, length);
+	ComputeBuffer* bf = ComputeController_VK::NewBuffer((uint32_t)ComputeBuffer::Buffer_Type::Write, numElements * stride);
 	return new ComputeBuffer_VK(bf);
 }
 
-IComputeBuffer* ComputeController_VK::NewReadWriteBuffer(size_t length)
+IComputeBuffer* ComputeController_VK::NewReadWriteBuffer(size_t numElements, size_t stride)
 {
-	return new ComputeBuffer_VK(ComputeController_VK::NewBuffer((uint32_t)ComputeBuffer::Buffer_Type::Read_Write, length));
+	return new ComputeBuffer_VK(ComputeController_VK::NewBuffer((uint32_t)ComputeBuffer::Buffer_Type::Read_Write, numElements * stride));
 }
 
 ComputeBuffer* ComputeController_VK::NewBuffer(uint32_t type, size_t length)

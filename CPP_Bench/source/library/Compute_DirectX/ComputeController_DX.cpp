@@ -34,6 +34,9 @@ IComputeProgram* ComputeController_DX::AddProgram(IComputeProgram::ProgramInfo i
 	m_programs[name]->Init(name);
 
 	// directory is contained and constructed completely inside ComputeEngine for DirectX. 
+	// TODO: Currently ProgramInfo's FileType is ignored. Add way to support choosing between 
+	// binary files and text files, instead of binary. Also requires getting DirectX's
+	// compiler to actually work.
 	m_programs[name]->BuildProgramFromDirectory(kernels);
 
 	return m_programs[name];
@@ -49,21 +52,21 @@ IComputeProgram* ComputeController_DX::GetProgram(std::string name)
 	return m_programs[name];
 }
 
-IComputeBuffer* ComputeController_DX::NewReadBuffer(size_t length)
+IComputeBuffer* ComputeController_DX::NewReadBuffer(size_t numElements, size_t stride)
 {
-	ComputeBuffer* bf = ComputeController_DX::NewBuffer((uint32_t)ComputeBuffer::Buffer_Type::READ, length, 4);
+	ComputeBuffer* bf = ComputeController_DX::NewBuffer((uint32_t)ComputeBuffer::Buffer_Type::READ, numElements, stride);
 	return new ComputeBuffer_DX(bf);
 }
 
-IComputeBuffer* ComputeController_DX::NewWriteBuffer(size_t length)
+IComputeBuffer* ComputeController_DX::NewWriteBuffer(size_t numElements, size_t stride)
 {
-	ComputeBuffer* bf = ComputeController_DX::NewBuffer((uint32_t)ComputeBuffer::Buffer_Type::Write, length, 4);
+	ComputeBuffer* bf = ComputeController_DX::NewBuffer((uint32_t)ComputeBuffer::Buffer_Type::Write, numElements, stride);
 	return new ComputeBuffer_DX(bf);
 }
 
-IComputeBuffer* ComputeController_DX::NewReadWriteBuffer(size_t length)
+IComputeBuffer* ComputeController_DX::NewReadWriteBuffer(size_t numElements, size_t stride)
 {
-	ComputeBuffer* bf = ComputeController_DX::NewBuffer((uint32_t)ComputeBuffer::Buffer_Type::Read_Write, length, 4);
+	ComputeBuffer* bf = ComputeController_DX::NewBuffer((uint32_t)ComputeBuffer::Buffer_Type::Read_Write, numElements, stride);
 	return new ComputeBuffer_DX(bf);
 }
 

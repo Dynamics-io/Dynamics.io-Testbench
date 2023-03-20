@@ -1,7 +1,10 @@
 #pragma once
 
+#include "stdafx.h"
 #include "CL/cl.h"
 #include "vulkan/vulkan.h"
+
+#define MAX_OCL_DEVICES  10
 
 namespace Dynamics_IO_Testbench {
     namespace Compute {
