@@ -159,10 +159,12 @@ int Vulkan_test()
 	controllerInfo.program_dir = "C:/Users/jdrurka1/source/repos/Dynamics-io/Dynamics.io-Testbench/CPP_Bench/shaders/Vulkan";
 	IComputeController* controller = ComputeInterface::GetComputeController(ComputeInterface::VULKAN, controllerInfo);
 
-	std::string kernel_name = "work";
+	std::string kernel_name1 = "work";
+	std::string kernel_name2 = "work2";
 
 	IComputeProgram::ProgramInfo p_info("test_cl_spv", IComputeProgram::FileType::Binary);
-	p_info.AddKernel(kernel_name);
+	p_info.AddKernel(kernel_name1);
+	p_info.AddKernel(kernel_name2);
 
 	IComputeProgram* program = controller->AddProgram(p_info);
 
@@ -179,14 +181,24 @@ int Vulkan_test()
 	//program->KernelSetBuffer(kernel_name, in_Buffer, ind);
 
 	ind.GlobalIndex = 0;
-	program->KernelSetBuffer(kernel_name, out_Buffer, ind);
+	program->KernelSetBuffer(kernel_name1, out_Buffer, ind);
+	program->KernelSetBuffer(kernel_name2, out_Buffer, ind);
 
 	program->FinishBuild();
 
 	in_Buffer->SetData(Data);
 
 
-	program->RunKernel(kernel_name, DATA_SIZE, 0, 0);
+	program->RunKernel(kernel_name1, DATA_SIZE, 0, 0);
+
+	out_Buffer->GetData(Data);
+
+	for (int i = 0; i < DATA_SIZE; i++)
+	{
+		printf("res '%i': %i\n", i, Data[i]);
+	}
+
+	program->RunKernel(kernel_name2, DATA_SIZE, 0, 0);
 
 	out_Buffer->GetData(Data);
 
