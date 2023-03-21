@@ -281,6 +281,14 @@ ComputeProgram* ComputeContext::Add_Program_SPIRV(std::string name, const void* 
 {
     ComputeProgram* program = new ComputeProgram(this, context, command_queue);
     int res = program->Set_Binary(binary, length);
+
+    if (res != 0) {
+        printf("Add_Program_SPIRV(): Failed to create program: %i\n", res);
+    }
+    else {
+        printf("Add_Program_SPIRV(): Created program: %i\n", res);
+    }
+
     programs[name] = program;
     return program;
 }
@@ -290,6 +298,14 @@ ComputeProgram* ComputeContext::Add_Program_SPIRV_File(std::string name, std::st
     ComputeProgram* program = new ComputeProgram(this, context, command_queue);
 
     int res = program->Set_Binary_File(file_path);
+
+    if (res != 0) {
+        printf("Add_Program_SPIRV_File(): Failed to create program: %i\n", res);
+    }
+    else {
+        printf("Add_Program_SPIRV_File(): Created program: %i\n", res);
+    }
+
     programs[name] = program;
     return program;
 }
@@ -325,6 +341,7 @@ int ComputeProgram::Set_Binary(const void* binary, size_t length)
 {
     cl_int err;
     program = clCreateProgramWithIL(m_context, binary, length, &err);
+    printf("clCreateProgramWithIL: res %i\n", err);
     mInitialized = true;
     return err;
 }
@@ -378,7 +395,9 @@ int ComputeProgram::Build(char* errorStr, size_t e_size)
         std::string inc_dir = ComputeEngine::GetAppDir();
         args += "-I " + inc_dir;
     }
-   int build_res = clBuildProgram(program, 0, NULL, args.c_str(), NULL, NULL);
+   cl_int build_res = clBuildProgram(program, 0, NULL, args.c_str(), NULL, NULL);
+
+   printf("clBuildProgram: res %i\n", build_res);
 
    size_t ret_e_size;
    int res = clGetProgramBuildInfo(program, mContextObj->Get_CL_Device_ID(), CL_PROGRAM_BUILD_LOG, e_size, errorStr, &ret_e_size);
@@ -429,7 +448,7 @@ ComputeKernel::ComputeKernel(ComputeProgram* program_obj, char* name, cl_command
 
    
    printf("ComputeKernel(): Create kernel %s\n", name);
-   kernel = clCreateKernel(m_program, name, &err);
+   kernel = clCreateKernel(m_program, "work", &err);
 
    if (err != 0)
    {

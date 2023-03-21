@@ -1,6 +1,7 @@
 #include "ComputeInterface.h"
 
 #include "Compute_OCL/ComputeController_OCL.h"
+#include "Compute_OCL/compute_test.h"
 #pragma comment(lib, "OpenCL.lib")
 
 #include "Compute_Vulkan/ComputeController_VK.h"
@@ -71,6 +72,11 @@ void ComputeInterface::DisposePlatform(Compute_SDK implementation)
 
 IComputeController* ComputeInterface::GetComputeController_OCL(ControllerInfo info)
 {
+    compute_test test;
+    test.Run(info.platform, info.device);
+
+    return nullptr;
+
     IComputeController* controller = ComputeController_OCL::New();
 
     controller->Init(info.platform, info.device, info.program_dir);

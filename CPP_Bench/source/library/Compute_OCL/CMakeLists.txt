@@ -9,6 +9,8 @@ set(${module}_headers
 	ComputeController_OCL.h
 	ComputeProgram_OCL.h
 	ComputeBuffer_OCL.h
+	
+	compute_test.h
 )
 
 set(${module}_sources
@@ -19,6 +21,8 @@ set(${module}_sources
 	ComputeController_OCL.cpp
 	ComputeProgram_OCL.cpp
 	ComputeBuffer_OCL.cpp
+	
+	compute_test.cpp
 )
 
 add_library(${module} SHARED ${${module}_headers} ${${module}_sources})

@@ -222,7 +222,9 @@ int OpenCL_test()
 		std::vector<Device> devices = ComputeInterface::GetSupportedDevices_OpenCL(p);
 		for (auto d : devices)
 		{
-			//printf("\t%s - %s: Frequency: %u, threads: %u, Memory: %lu, Work Size: %u \n", d.vendor, d.name, d.clock_frequency, d.num_compute_units * d.group_size, d.mem_size, d.max_work_size);
+			OpenCL_Device_Info info = d.OpenCL_Info;
+			//printf("\t%s - %s: Frequency: %u, threads: %u, Memory: %lu, Work Size: %u \n", info.vendor, info.name, info.clock_frequency, info.num_compute_units * info.group_size, info.mem_size, info.max_work_size);
+			printf("\t%s - %s\n", info.vendor, info.name);
 		}
 	}
 
@@ -232,13 +234,15 @@ int OpenCL_test()
 	ComputeInterface::ControllerInfo controllerInfo;
 	controllerInfo.platform = platf;
 	controllerInfo.device = dev;
-	controllerInfo.program_dir = "C:/Users/jdrurka1/source/repos/Dynamics-io/Dynamics.io-Testbench/llvm_clang_Bench/Kernels";
+	controllerInfo.program_dir = "C:/Users/jdrurka1/source/repos/Dynamics-io/Dynamics.io-Testbench/CPP_Bench/shaders/OpenCL";
 
 	IComputeController* controller = ComputeInterface::GetComputeController(ComputeInterface::OpenCL, controllerInfo);
 
+	return 0;
+
 	std::string kernel_name = "work";
 
-	IComputeProgram::ProgramInfo p_info("test_cl_spv", IComputeProgram::FileType::Text);
+	IComputeProgram::ProgramInfo p_info("test_cl_spv", IComputeProgram::FileType::Binary);
 	p_info.AddKernel(kernel_name);
 
 	IComputeProgram* program = controller->AddProgram(p_info);
