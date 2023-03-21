@@ -88,11 +88,122 @@ static std::vector<cl_uchar> readSPIRVFromFile(
     return ret;
 }
 
+static cl::Program createProgramWithIL(
+    const cl::Context& context,
+    const std::vector<cl_uchar>& il)
+{
+    cl_program program = nullptr;
+
+    // Use the core clCreateProgramWithIL if a device supports OpenCL 2.1 or
+    // newer and SPIR-V.
+    bool useCore = false;
+
+    // Use the extension clCreateProgramWithILKHR if a device supports
+    // cl_khr_il_program.
+    bool useExtension = false;
+
+    std::vector<cl::Device> devices = context.getInfo<CL_CONTEXT_DEVICES>();
+    for (auto device : devices) {
+#ifdef CL_VERSION_2_1
+        // Note: This could look for "SPIR-V" in CL_DEVICE_IL_VERSION.
+        if (getDeviceOpenCLVersion(device) >= 0x00020001 &&
+            !device.getInfo<CL_DEVICE_IL_VERSION>().empty()) {
+            useCore = true;
+        }
+#endif
+        if (checkDeviceForExtension(device, "cl_khr_il_program")) {
+            useExtension = true;
+        }
+    }
+
+#ifdef CL_VERSION_2_1
+    if (useCore) {
+        program = clCreateProgramWithIL(
+            context(),
+            il.data(),
+            il.size(),
+            nullptr);
+    }
+    else
+#endif
+        if (useExtension) {
+            cl::Platform platform{ devices[0].getInfo<CL_DEVICE_PLATFORM>() };
+
+            auto clCreateProgramWithILKHR_ = (clCreateProgramWithILKHR_fn)
+                clGetExtensionFunctionAddressForPlatform(
+                    platform(),
+                    "clCreateProgramWithILKHR");
+
+            if (clCreateProgramWithILKHR_) {
+                program = clCreateProgramWithILKHR_(
+                    context(),
+                    il.data(),
+                    il.size(),
+                    nullptr);
+            }
+        }
+
+    return cl::Program{ program };
+}
+
+
+
+
 void compute_test::Run(Platform pltform, Device device)
 {
     std::string file_path = "C:/Users/jdrurka1/source/repos/Dynamics-io/Dynamics.io-Testbench/CPP_Bench/shaders/OpenCL/test_cl_spv.spv";
 
-	cl_platform_id platform_id = (cl_platform_id)pltform.platform;
+
+    std::vector<cl::Platform> platforms;
+    cl::Platform::get(&platforms);
+
+    printf("\n\n");
+
+    for (cl::Platform plat : platforms) {
+        //printf("Platform Name: %s\n", plat.getInfo<CL_PLATFORM_NAME>().c_str());
+    }
+
+    cl::Platform platform_obj = platforms[1];
+    std::vector<cl::Device> devices;
+    platform_obj.getDevices(CL_DEVICE_TYPE_ALL, &devices);
+    printf("Platform Name: %s\n", platform_obj.getInfo<CL_PLATFORM_NAME>().c_str());
+
+    for (cl::Device devc : devices) {
+        //printf("Device Name: %s\n", devc.getInfo<CL_DEVICE_NAME>().c_str());
+    }
+
+    cl::Device device_obj = devices[0];
+    printf("Device Name: %s\n", device_obj.getInfo<CL_DEVICE_NAME>().c_str());
+
+    bool core_support = false;
+
+    if (getDeviceOpenCLVersion(device_obj) >= 0x00020001 &&
+        !device_obj.getInfo<CL_DEVICE_IL_VERSION>().empty()) {
+        printf("Core API supports IL!\n");
+        core_support = true;
+    }
+    else {
+        printf("CL Version: %X\n", getDeviceOpenCLVersion(device_obj));
+        printf("CL_DEVICE_IL_VERSION: %s\n", device_obj.getInfo<CL_DEVICE_IL_VERSION>().c_str());
+    }
+
+    bool extensionSupported = false;
+
+    if (checkDeviceForExtension(device_obj, "cl_khr_il_program")) {
+        printf("IL Extension supported!\n");
+        extensionSupported = true;
+    }
+    else {
+        printf("Il Extension NOT supported!\n");
+    }
+
+    cl_platform_id platform_id = platform_obj();
+    cl_device_id deviceID = device_obj();
+
+    if (!(core_support || extensionSupported)) {
+        printf("IL not supported!\n");
+        return;
+    }
 
 	// context properties list - must be terminated with 0
 	cl_context_properties properties[3];
@@ -110,9 +221,7 @@ void compute_test::Run(Platform pltform, Device device)
     //std::string v_str = platformInfo;
     printf("OpenCL version: %s\n", platformInfo);
 
-    getDeviceOpenCLVersion()
 
-	cl_device_id deviceID = (cl_device_id)device.cl_device;
 
 	cl_int err;
 
@@ -120,33 +229,29 @@ void compute_test::Run(Platform pltform, Device device)
 	cl_command_queue command_queue = clCreateCommandQueue(context, deviceID, 0, &err);
 
 
-    //open file
-    /*std::ifstream infile(file_path, std::ios::binary);
-    char* buffer;
-    //get length of file
-    infile.seekg(0, infile.end);
-    size_t length = infile.tellg();
-    infile.seekg(0, infile.beg);
-    if (length == 0)
-        return;
-
-    //read file
-    printf("Reading binary file of length %i\n", (int)length);
-    buffer = new char[length];
-    infile.read(buffer, length);*/
-
     std::vector<cl_uchar> buffer = readSPIRVFromFile(file_path);
     size_t length = buffer.size();
     cl_uchar* buffer_ptr = buffer.data();
 
+    cl_program program;
+    if (extensionSupported) {
+        auto clCreateProgramWithILKHR_ = (clCreateProgramWithILKHR_fn)
+            clGetExtensionFunctionAddressForPlatform(
+                platform_obj(),
+                "clCreateProgramWithILKHR");
 
+        program = clCreateProgramWithILKHR_(context, buffer_ptr, length, &err);
+        printf("clCreateProgramWithILKHR_: res %i\n", err);
+    }
+    else {
 
-    //cl_program program = clCreateProgramWithIL(context, buffer, length, &err);
-    //printf("CreateProgramWithIL: res %i\n", err);
+        //cl_program program = clCreateProgramWithIL(context, buffer, length, &err);
+        //printf("CreateProgramWithIL: res %i\n", err);
 
-    cl_int binary_status = 0;
-    cl_program program = clCreateProgramWithBinary(context, 1, &deviceID, &length, (const unsigned char**)&buffer_ptr, &binary_status, &err);
-    printf("CreateProgramWithBinary: res %i, %i\n", err, binary_status);
+        cl_int binary_status = 0;
+        program = clCreateProgramWithBinary(context, 1, &deviceID, &length, (const unsigned char**)&buffer_ptr, &binary_status, &err);
+        printf("CreateProgramWithBinary: res %i, %i\n", err, binary_status);
+    }
 
     std::string args;
     cl_int build_res = clBuildProgram(program, 1, &deviceID, args.c_str(), NULL, NULL);
