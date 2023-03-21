@@ -28,9 +28,9 @@ public:
 
 int main()
 {
-	//Vulkan_test();
+	Vulkan_test();
 	//DirectX_test();
-	OpenCL_test();
+	//OpenCL_test();
 
 	return 0;
 }
@@ -150,7 +150,7 @@ int Vulkan_test()
 		printf("\t %s (%s): %i, %s\n", info.Name.c_str(), info.GetTypeName().c_str(), info.Device_ID, info.GetUUID().c_str());
 	}
 
-	return 0;
+	//return 0;
 
 	Device device = devices[0];
 
@@ -159,26 +159,26 @@ int Vulkan_test()
 	controllerInfo.program_dir = "C:/Users/jdrurka1/source/repos/Dynamics-io/Dynamics.io-Testbench/CPP_Bench/shaders/Vulkan";
 	IComputeController* controller = ComputeInterface::GetComputeController(ComputeInterface::VULKAN, controllerInfo);
 
-	std::string kernel_name = "main";
+	std::string kernel_name = "work";
 
-	IComputeProgram::ProgramInfo p_info("compute", IComputeProgram::FileType::Binary);
+	IComputeProgram::ProgramInfo p_info("test_cl_spv", IComputeProgram::FileType::Binary);
 	p_info.AddKernel(kernel_name);
 
 	IComputeProgram* program = controller->AddProgram(p_info);
 
-	float Data[DATA_SIZE] = { 0 };
+	int Data[DATA_SIZE] = { 0 };
 	for (int i = 0; i < DATA_SIZE; i++)
 		Data[i] = i + 1;
 
-	IComputeBuffer* in_Buffer = controller->NewReadBuffer(DATA_SIZE, sizeof(float));
-	IComputeBuffer* out_Buffer = controller->NewWriteBuffer(DATA_SIZE, sizeof(float));
+	IComputeBuffer* in_Buffer = controller->NewReadBuffer(DATA_SIZE, sizeof(int));
+	IComputeBuffer* out_Buffer = controller->NewWriteBuffer(DATA_SIZE, sizeof(int));
 
 	IComputeProgram::BindIndex ind{};
 
 	ind.GlobalIndex = 0;
-	program->KernelSetBuffer(kernel_name, in_Buffer, ind);
+	//program->KernelSetBuffer(kernel_name, in_Buffer, ind);
 
-	ind.GlobalIndex = 1;
+	ind.GlobalIndex = 0;
 	program->KernelSetBuffer(kernel_name, out_Buffer, ind);
 
 	program->FinishBuild();
@@ -192,7 +192,7 @@ int Vulkan_test()
 
 	for (int i = 0; i < DATA_SIZE; i++)
 	{
-		printf("res '%i': %f\n", i, Data[i]);
+		printf("res '%i': %i\n", i, Data[i]);
 	}
 
 	ComputeInterface::DisposePlatform(ComputeInterface::VULKAN);
