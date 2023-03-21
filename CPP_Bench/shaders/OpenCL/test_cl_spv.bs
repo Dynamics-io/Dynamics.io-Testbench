@@ -1,0 +1,39 @@
+; ModuleID = 'test_cl_spv.cl'
+source_filename = "test_cl_spv.cl"
+target datalayout = "e-p:32:32-i64:64-v16:16-v24:32-v32:32-v48:64-v96:128-v192:256-v256:256-v512:512-v1024:1024"
+target triple = "spir"
+
+; Function Attrs: convergent noinline norecurse nounwind optnone
+define dso_local spir_kernel void @work(ptr addrspace(1) noundef align 4 %0) #0 !kernel_arg_addr_space !4 !kernel_arg_access_qual !5 !kernel_arg_type !6 !kernel_arg_base_type !6 !kernel_arg_type_qual !7 {
+  %2 = alloca ptr addrspace(1), align 4
+  %3 = alloca i32, align 4
+  store ptr addrspace(1) %0, ptr %2, align 4
+  %4 = call spir_func i32 @_Z13get_global_idj(i32 noundef 0) #2
+  store i32 %4, ptr %3, align 4
+  %5 = load ptr addrspace(1), ptr %2, align 4
+  %6 = load i32, ptr %3, align 4
+  %7 = getelementptr inbounds i32, ptr addrspace(1) %5, i32 %6
+  store i32 7, ptr addrspace(1) %7, align 4
+  ret void
+}
+
+; Function Attrs: convergent nounwind willreturn memory(none)
+declare dso_local spir_func i32 @_Z13get_global_idj(i32 noundef) #1
+
+attributes #0 = { convergent noinline norecurse nounwind optnone "frame-pointer"="all" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "uniform-work-group-size"="true" }
+attributes #1 = { convergent nounwind willreturn memory(none) "frame-pointer"="all" "no-trapping-math"="true" "stack-protector-buffer-size"="8" }
+attributes #2 = { convergent nounwind willreturn memory(none) }
+
+!llvm.module.flags = !{!0, !1}
+!opencl.ocl.version = !{!2}
+!opencl.spir.version = !{!2}
+!llvm.ident = !{!3}
+
+!0 = !{i32 1, !"wchar_size", i32 4}
+!1 = !{i32 7, !"frame-pointer", i32 2}
+!2 = !{i32 1, i32 2}
+!3 = !{!"clang version 17.0.0 (https://github.com/llvm/llvm-project.git be83a4b257c8f0dfd74a659261a544483c5df9af)"}
+!4 = !{i32 1}
+!5 = !{!"none"}
+!6 = !{!"int*"}
+!7 = !{!""}
