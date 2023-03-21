@@ -25,6 +25,8 @@ set(${module}_sources
 	compute_test.cpp
 )
 
+add_subdirectory(CL_SDK)
+
 add_library(${module} SHARED ${${module}_headers} ${${module}_sources})
-target_link_libraries(Compute_OCL OpenCL)
+target_link_libraries(Compute_OCL Compute_OCL_SDK)
 

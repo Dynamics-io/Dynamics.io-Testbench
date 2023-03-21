@@ -3,7 +3,8 @@
 #include "ForwardDeclarations.h"
 #include "PlatformStructures.h"
 #include "IComputeController.h"
-#include "CL/cl.h"
+//#include "CL/cl.h"
+#include "Compute_OCL/CL_SDK/cl.h"
 
 namespace Dynamics_IO_Testbench {
 	namespace Compute {

@@ -21,7 +21,11 @@ add_subdirectory(Compute_Vulkan)
 add_subdirectory(Compute_DirectX)
 add_subdirectory(Compute_Interface)
 
+#target_include_directories(lib_Dynamics_IO_Testbench PUBLIC "${CMAKE_CURRENT_LIST_DIR}/Compute_OCL/include")
+
 
 add_library(lib_Dynamics_IO_Testbench SHARED ${${PROJECT_NAME}_headers} ${${PROJECT_NAME}_sources})
+
+include_directories("${CMAKE_CURRENT_LIST_DIR}/Compute_OCL/include")
 
 target_link_libraries(lib_Dynamics_IO_Testbench Utils Compute_Interface Compute_CUDA Compute_OCL Compute_Vulkan Compute_DirectX)

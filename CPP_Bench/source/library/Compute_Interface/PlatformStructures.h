@@ -1,7 +1,8 @@
 #pragma once
 
 #include "stdafx.h"
-#include "CL/cl.h"
+//#include "CL/cl.h"
+//#include "Compute_OCL/include/CL_SDK/cl.h"
 #include "vulkan/vulkan.h"
 
 #define MAX_OCL_DEVICES  10
