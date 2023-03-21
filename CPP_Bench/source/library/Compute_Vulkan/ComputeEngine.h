@@ -5,7 +5,7 @@
 #include "Compute_Vulkan/vulkan_utils.h"
 #include "Compute_Interface/PlatformStructures.h"
 
-#define DEFAULT_WORK_GROUP_SIZE 1
+#define DEFAULT_WORK_GROUP_SIZE 16
 
 namespace Dynamics_IO_Testbench {
     namespace Compute {
