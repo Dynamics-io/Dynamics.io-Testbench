@@ -20,6 +20,8 @@ namespace Dynamics_IO_Testbench {
         };
 
         struct OpenCL_Device_Info {
+            void* cl_device;
+
             char vendor[1000];
             unsigned short vendor_size;
 
@@ -38,7 +40,9 @@ namespace Dynamics_IO_Testbench {
         };
 
         struct Vulkan_Device_Info {
-            std::string Name;
+            void* vk_device;
+            char Name[256];
+            unsigned short name_size;
             uint32_t Device_ID;
             uint8_t DeviceUUID[16];
             DeviceType Type;
@@ -83,7 +87,8 @@ namespace Dynamics_IO_Testbench {
         };
 
         struct DirectX_Device_Info {
-            std::string Name;
+            char Name[128];
+            unsigned short name_size;
             int AdapterIndex;
             unsigned int Device_ID;
             DeviceType Type;
@@ -122,14 +127,14 @@ namespace Dynamics_IO_Testbench {
             unsigned short version_size;
         };
 
-        struct Device {
+        /*struct Device {
             void* cl_device;
             void* vk_device;
 
             OpenCL_Device_Info OpenCL_Info;
             Vulkan_Device_Info Vulkan_Info;
             DirectX_Device_Info DirectX_Info;
-        };
+        };*/
 
     }
 }

@@ -12,15 +12,17 @@ std::vector<ComputeController_OCL*> ComputeController_OCL::m_controllers;
 #define DEFAULT_BINARY_FILE_TYPE "spv"
 #define DEFAULT_TEXT_FILE_TYPE "cl"
 
-void ComputeController_OCL::Init(Platform platform, Device device, std::string program_dir)
+void ComputeController_OCL::Init(Platform platform, void* device, std::string program_dir)
 {
 	m_directory = program_dir + "/"; // TODO: check end of program_dir string for '/'
 
 	
 	ComputeEngine::Init(platform, m_directory + "include");
 
+	OpenCL_Device_Info info = *(OpenCL_Device_Info*)device;
+
 	// TODO: Add ability to add OpenGL shared context
-	m_context = ComputeEngine::GetNewContext(device);
+	m_context = ComputeEngine::GetNewContext(info);
 }
 
 IComputeProgram* ComputeController_OCL::AddProgram(IComputeProgram::ProgramInfo info)

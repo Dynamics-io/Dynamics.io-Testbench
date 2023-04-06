@@ -12,7 +12,7 @@ namespace Dynamics_IO_Testbench {
 		public:
 			
 
-			virtual void Init(Platform platform, Device device, std::string program_dir) = 0;
+			virtual void Init(Platform platform, void* device, std::string program_dir) = 0;
 
 			virtual IComputeProgram* AddProgram(IComputeProgram::ProgramInfo info) = 0;
 

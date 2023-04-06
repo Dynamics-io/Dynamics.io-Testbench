@@ -257,7 +257,7 @@ namespace Dynamics_IO_Testbench {
                 void Dispose();
 
             private:
-                ComputeContext(VkInstance* instance, Device device);
+                ComputeContext(VkInstance* instance, Vulkan_Device_Info device);
 
                 //Utilities::QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
 
@@ -287,7 +287,7 @@ namespace Dynamics_IO_Testbench {
             public:
                 static int Init(std::string dir);
 
-                static ComputeContext* GetNewContext(Device device);
+                static ComputeContext* GetNewContext(Vulkan_Device_Info device);
 
                 static std::string GetAppDir()
                 {

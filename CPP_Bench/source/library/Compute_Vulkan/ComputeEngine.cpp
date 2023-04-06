@@ -45,7 +45,7 @@ int ComputeEngine::Init(std::string dir)
 	return (int)res;
 }
 
-ComputeContext* ComputeEngine::GetNewContext(Device device)
+ComputeContext* ComputeEngine::GetNewContext(Vulkan_Device_Info device)
 {
 	mContexts.emplace_back(ComputeContext(&mInstance, device));
 	auto& buf = mContexts.back();
@@ -178,7 +178,7 @@ VKAPI_ATTR VkBool32 VKAPI_CALL ComputeEngine::debugCallback(VkDebugUtilsMessageS
 
 // Compute Context
 
-ComputeContext::ComputeContext(VkInstance* instance, Device device) {
+ComputeContext::ComputeContext(VkInstance* instance, Vulkan_Device_Info device) {
 	mInstance = instance;
 
 	std::vector<VkPhysicalDevice> devices = Utilities::EnumeratePhysicalDevices(*instance);
@@ -188,7 +188,8 @@ ComputeContext::ComputeContext(VkInstance* instance, Device device) {
 		VkPhysicalDeviceProperties deviceProperties;
 		vkGetPhysicalDeviceProperties(dvs, &deviceProperties);
 
-		if (deviceProperties.deviceID == device.Vulkan_Info.Device_ID) {
+		// TODO: Implement better way to match device.
+		if (deviceProperties.deviceID == device.Device_ID) {
 			mPhysicalDevice = dvs;
 			deviceFound = true;
 			break;
@@ -198,6 +199,9 @@ ComputeContext::ComputeContext(VkInstance* instance, Device device) {
 	if (!deviceFound) {
 		printf("Physical device not found!\n");
 		return;
+	}
+	else {
+		printf("Found device '%s'\n", device.Name);
 	}
 
 	mIndices = Utilities::findQueueFamilies(mPhysicalDevice);

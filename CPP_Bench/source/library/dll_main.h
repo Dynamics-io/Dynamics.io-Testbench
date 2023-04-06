@@ -10,6 +10,71 @@
 
 using namespace Dynamics_IO_Testbench::Compute;
 
+EXPORTED void* ComputeInterface_GetComputeController(ComputeInterface::Compute_SDK implementation, ComputeInterface::ControllerInfo info);
+
+EXPORTED void ComputeInterface_DisposePlatform(ComputeInterface::Compute_SDK implementation);
+
+EXPORTED int ComputeInterface_GetSupportedDevicesSize_Vulkan();
+
+EXPORTED int ComputeInterface_GetSupportedDevices_Vulkan(Vulkan_Device_Info* out_devices);
+
+
+EXPORTED void* IComputeController_AddProgram(void* handle, IComputeProgram::ProgramInfo info);
+
+EXPORTED void* IComputeController_AddProgram_ref(void* handle, IComputeProgram::ProgramInfo* info);
+		 
+EXPORTED void* IComputeController_GetProgram(void* handle, char* name, int size);
+		 
+EXPORTED void* IComputeController_NewReadBuffer(void* handle, int numElements, int stride);
+		 
+EXPORTED void* IComputeController_NewWriteBuffer(void* handle, int numElements, int stride);
+		 
+EXPORTED void* IComputeController_NewReadWriteBuffer(void* handle, int numElements, int stride);
+
+EXPORTED void IComputeController_Dispose(void* handle);
+
+
+EXPORTED void IComputeProgram_Init(void* handle, char* name, int size);
+
+EXPORTED int IComputeProgram_FinishBuild(void* handle);
+
+EXPORTED int IComputeProgram_GetKernelID(void* handle, char* name, int size);
+
+EXPORTED int IComputeProgram_KernelSetBuffer(void* handle, char* name, int size, IComputeBuffer* buffer, IComputeProgram::BindIndex arg);
+
+EXPORTED int IComputeProgram_RunKernel_1(void* handle, char* name, int size, int size_x, int size_y, int size_z);
+
+EXPORTED int IComputeProgram_RunKernel_2(void* handle, int kernel_id, int size_x, int size_y, int size_z);
+
+//EXPORTED void* IComputeProgram_GetKernelFunction(void* handle, int kernel_id);
+
+EXPORTED IComputeProgram::ProgramBuildState IComputeProgram_GetState(void* handle);
+
+EXPORTED int IComputeProgram_GetBuildResultCode(void* handle);
+
+// EXPORTED std::string GetBuildErrorMessage() = 0;
+
+// EXPORTED std::string GetProgramName() = 0;
+
+EXPORTED void IComputeProgram_Dispose(void* handle);
+
+
+EXPORTED void* IComputeProgram_ProgramInfo_New(char* program_name, int size, IComputeProgram::FileType type);
+
+EXPORTED void IComputeProgram_ProgramInfo_AddKernel(void* handle, char* name, int size);
+
+
+EXPORTED int IComputeBuffer_SetData(void* handle, void* data);
+
+EXPORTED int IComputeBuffer_GetData(void* handle, void* outData);
+
+EXPORTED int IComputeBuffer_GetSize(void* handle);
+
+EXPORTED void IComputeBuffer_Dispose(void* handle);
+
+EXPORTED void* IComputeBuffer_Get_Native_Ptr(void* handle);
+
+
 /*
 
 EXPORTED int ComputeEngine_Platforms_Init();

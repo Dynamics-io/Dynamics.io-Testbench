@@ -137,7 +137,7 @@ namespace Dynamics_IO_Testbench {
                 bool mCanCallDispose{ true };
 
             public:
-                ComputeContext(cl_context_properties properties[3], Device device);
+                ComputeContext(cl_context_properties properties[3], OpenCL_Device_Info device);
                 
                 cl_device_id Get_CL_Device_ID() {
                     return deviceID;
@@ -177,7 +177,7 @@ namespace Dynamics_IO_Testbench {
                 //static std::vector<Platform> GetSupportedPlatforms();
                 //static std::vector<Device> GetSupportedDevices(Platform pltfrm);
                 static int Init(Platform platform, std::string dir);
-                static ComputeContext* GetNewContext(Device device);
+                static ComputeContext* GetNewContext(OpenCL_Device_Info device);
 
                 static cl_platform_id GetPlatform()
                 {

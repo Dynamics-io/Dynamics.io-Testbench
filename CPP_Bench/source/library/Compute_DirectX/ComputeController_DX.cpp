@@ -9,7 +9,7 @@ using namespace Dynamics_IO_Testbench::Compute::DX;
 
 std::vector<ComputeController_DX*> ComputeController_DX::m_controllers;
 
-void ComputeController_DX::Init(Platform platform, Device device, std::string program_dir)
+void ComputeController_DX::Init(Platform platform, void* device, std::string program_dir)
 {
 	m_directory = program_dir + "/"; // TODO: check end of program_dir string for '/'
 
@@ -21,7 +21,9 @@ void ComputeController_DX::Init(Platform platform, Device device, std::string pr
 		}
 	}
 
-	m_context = ComputeEngine::GetNewContext(device);
+	DirectX_Device_Info info = *(DirectX_Device_Info*)device;
+
+	m_context = ComputeEngine::GetNewContext(info);
 }
 
 IComputeProgram* ComputeController_DX::AddProgram(IComputeProgram::ProgramInfo info)

@@ -13,7 +13,7 @@ int ComputeEngine::Init(std::string dir) {
 	return 0;
 }
 
-ComputeContext* ComputeEngine::GetNewContext(Device device)
+ComputeContext* ComputeEngine::GetNewContext(DirectX_Device_Info device)
 {
 	mContexts.emplace_back(ComputeContext(device));
 	auto& buf = mContexts.back();
@@ -26,7 +26,7 @@ void ComputeEngine::Dispose() {
 }
 
 
-ComputeContext::ComputeContext(Device device) {
+ComputeContext::ComputeContext(DirectX_Device_Info device) {
 	HRESULT res;
 
 	IDXGIFactory* factory;
@@ -40,7 +40,7 @@ ComputeContext::ComputeContext(Device device) {
 	DXGI_ADAPTER_DESC2 adapter_desc;
 	IDXGIAdapter* adapter;
 
-	res = factory->EnumAdapters(device.DirectX_Info.AdapterIndex, &adapter);
+	res = factory->EnumAdapters(device.AdapterIndex, &adapter);
 	if (FAILED(res)) {
 		return;
 	}

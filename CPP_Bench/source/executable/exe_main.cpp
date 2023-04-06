@@ -76,20 +76,20 @@ int DirectX_test() {
 	//ComputeInterface::GetComputeController(ComputeInterface::DIRECTX, test_controllerInfo);
 
 
-	std::vector<Device> devices = ComputeInterface::GetSupportedDevices_DirectX();
+	std::vector<DirectX_Device_Info> devices = ComputeInterface::GetSupportedDevices_DirectX();
 
 	printf("DirectX Devices: %u\n", (uint32_t)devices.size());
-	for (Device dev : devices) {
-		DirectX_Device_Info info = dev.DirectX_Info;
+	for (DirectX_Device_Info info : devices) {
+		//DirectX_Device_Info info = dev.DirectX_Info;
 
-		printf("\t %s (%s): %i\n", info.Name.c_str(), info.GetTypeName().c_str(), info.Device_ID);
+		printf("\t %s (%s): %i\n", info.Name, info.GetTypeName().c_str(), info.Device_ID);
 	}
 
-	Device device = devices[0];
+	DirectX_Device_Info device = devices[0];
 
 	ComputeInterface::ControllerInfo controllerInfo{};
-	controllerInfo.device = device;
-	controllerInfo.program_dir = "C:/Users/jdrurka1/source/repos/Dynamics-io/Dynamics.io-Testbench/CPP_Bench/shaders/DirectX";
+	controllerInfo.device = &device;
+	controllerInfo.SetProgramDir("C:/Users/jdrurka1/source/repos/Dynamics-io/Dynamics.io-Testbench/CPP_Bench/shaders/DirectX");
 	IComputeController* controller = ComputeInterface::GetComputeController(ComputeInterface::DIRECTX, controllerInfo);
 
 	std::string kernel_name = "CSMain";
@@ -141,22 +141,27 @@ int Vulkan_test()
 	//return 0;
 	//testConstructor();
 
-	std::vector<Device> devices = ComputeInterface::GetSupportedDevices_Vulkan();
+	int b_size = sizeof(bool);
+	printf("bool size: %i\n", b_size);
+	return 0;
+
+
+	std::vector<Vulkan_Device_Info> devices = ComputeInterface::GetSupportedDevices_Vulkan();
 
 	printf("Vulkan Devices: %u\n", (uint32_t)devices.size());
-	for (Device dev : devices) {
-		Vulkan_Device_Info info = dev.Vulkan_Info;
+	for (Vulkan_Device_Info info : devices) {
+		//Vulkan_Device_Info info = dev.Vulkan_Info;
 
-		printf("\t %s (%s): %i, %s\n", info.Name.c_str(), info.GetTypeName().c_str(), info.Device_ID, info.GetUUID().c_str());
+		printf("\t %s (%s): %i, %s\n", info.Name, info.GetTypeName().c_str(), info.Device_ID, info.GetUUID().c_str());
 	}
 
 	//return 0;
 
-	Device device = devices[0];
+	Vulkan_Device_Info device = devices[0];
 
 	ComputeInterface::ControllerInfo controllerInfo{};
-	controllerInfo.device = device;
-	controllerInfo.program_dir = "C:/Users/jdrurka1/source/repos/Dynamics-io/Dynamics.io-Testbench/CPP_Bench/shaders/Vulkan";
+	controllerInfo.device = &device;
+	controllerInfo.SetProgramDir("C:/Users/jdrurka1/source/repos/Dynamics-io/Dynamics.io-Testbench/CPP_Bench/shaders/Vulkan");
 	IComputeController* controller = ComputeInterface::GetComputeController(ComputeInterface::VULKAN, controllerInfo);
 
 	std::string kernel_name1 = "work";
@@ -231,22 +236,22 @@ int OpenCL_test()
 	{
 		printf("Platform %s:\n", p.name);
 
-		std::vector<Device> devices = ComputeInterface::GetSupportedDevices_OpenCL(p);
-		for (auto d : devices)
+		std::vector<OpenCL_Device_Info> devices = ComputeInterface::GetSupportedDevices_OpenCL(p);
+		for (auto info : devices)
 		{
-			OpenCL_Device_Info info = d.OpenCL_Info;
+			//OpenCL_Device_Info info = d.OpenCL_Info;
 			//printf("\t%s - %s: Frequency: %u, threads: %u, Memory: %lu, Work Size: %u \n", info.vendor, info.name, info.clock_frequency, info.num_compute_units * info.group_size, info.mem_size, info.max_work_size);
 			printf("\t%s - %s\n", info.vendor, info.name);
 		}
 	}
 
 	Platform platf = platforms[1];
-	Device dev = ComputeInterface::GetSupportedDevices_OpenCL(platf)[0];
+	OpenCL_Device_Info dev = ComputeInterface::GetSupportedDevices_OpenCL(platf)[0];
 
 	ComputeInterface::ControllerInfo controllerInfo;
 	controllerInfo.platform = platf;
-	controllerInfo.device = dev;
-	controllerInfo.program_dir = "C:/Users/jdrurka1/source/repos/Dynamics-io/Dynamics.io-Testbench/CPP_Bench/shaders/OpenCL";
+	controllerInfo.device = &dev;
+	controllerInfo.SetProgramDir("C:/Users/jdrurka1/source/repos/Dynamics-io/Dynamics.io-Testbench/CPP_Bench/shaders/OpenCL");
 
 	IComputeController* controller = ComputeInterface::GetComputeController(ComputeInterface::OpenCL, controllerInfo);
 

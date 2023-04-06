@@ -11,7 +11,7 @@ using namespace Dynamics_IO_Testbench::Compute::VK;
 
 std::vector<ComputeController_VK*> ComputeController_VK::m_controllers;
 
-void ComputeController_VK::Init(Platform platform, Device device, std::string program_dir)
+void ComputeController_VK::Init(Platform platform, void* device, std::string program_dir)
 {
 	m_directory = program_dir + "/"; // TODO: check end of program_dir string for '/'
 
@@ -23,7 +23,9 @@ void ComputeController_VK::Init(Platform platform, Device device, std::string pr
 		}
 	}
 
-	m_context = ComputeEngine::GetNewContext(device);
+	Vulkan_Device_Info info = *(Vulkan_Device_Info*)device;
+
+	m_context = ComputeEngine::GetNewContext(info);
 }
 
 IComputeProgram* ComputeController_VK::AddProgram(IComputeProgram::ProgramInfo info)

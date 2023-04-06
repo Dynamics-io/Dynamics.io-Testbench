@@ -19,7 +19,7 @@ namespace Dynamics_IO_Testbench {
 				friend class ComputeInterface;
 
 			public:
-				void Init(Platform platform, Device device, std::string program_dir);
+				void Init(Platform platform, void* device, std::string program_dir);
 
 				IComputeProgram* AddProgram(IComputeProgram::ProgramInfo info);
 

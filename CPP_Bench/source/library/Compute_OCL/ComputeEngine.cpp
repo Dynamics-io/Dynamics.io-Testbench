@@ -154,7 +154,7 @@ int ComputeEngine::Init(Platform pltform, std::string dir)
    return 0;
 }
 
-ComputeContext* ComputeEngine::GetNewContext(Device device) {
+ComputeContext* ComputeEngine::GetNewContext(OpenCL_Device_Info device) {
     mContexts.emplace_back(ComputeContext(properties, device));
     auto& buf = mContexts.back();
     //buf.mCanCallDispose = true;
@@ -246,7 +246,7 @@ void ComputeContext::Dispose()
     mInitialized = false;
 }
 
-ComputeContext::ComputeContext(cl_context_properties properties[3], Device device)
+ComputeContext::ComputeContext(cl_context_properties properties[3], OpenCL_Device_Info device)
 {
     cl_int err;
     numContexts = 0;

@@ -10,7 +10,7 @@ set(${module}_headers
 	ComputeProgram_OCL.h
 	ComputeBuffer_OCL.h
 	
-	compute_test.h
+	#compute_test.h
 )
 
 set(${module}_sources
@@ -22,7 +22,7 @@ set(${module}_sources
 	ComputeProgram_OCL.cpp
 	ComputeBuffer_OCL.cpp
 	
-	compute_test.cpp
+	#compute_test.cpp
 )
 
 add_subdirectory(CL_SDK)

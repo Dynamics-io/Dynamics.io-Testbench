@@ -1,7 +1,7 @@
 #include "ComputeInterface.h"
 
 #include "Compute_OCL/ComputeController_OCL.h"
-#include "Compute_OCL/compute_test.h"
+//#include "Compute_OCL/compute_test.h"
 #pragma comment(lib, "OpenCL.lib")
 
 #include "Compute_Vulkan/ComputeController_VK.h"
@@ -72,8 +72,8 @@ void ComputeInterface::DisposePlatform(Compute_SDK implementation)
 
 IComputeController* ComputeInterface::GetComputeController_OCL(ControllerInfo info)
 {
-    compute_test test;
-    test.Run(info.platform, info.device);
+    //compute_test test;
+    //test.Run(info.platform, info.device);
 
     return nullptr;
 
@@ -168,9 +168,9 @@ std::vector<Platform> ComputeInterface::GetSupportedPlatforms_OpenCL()
     return res;
 }
 
-std::vector<Device> ComputeInterface::GetSupportedDevices_OpenCL(Platform pltfrm)
+std::vector<OpenCL_Device_Info> ComputeInterface::GetSupportedDevices_OpenCL(Platform pltfrm)
 {
-    std::vector<Device> res;
+    std::vector<OpenCL_Device_Info> res;
 
     num_of_devices = 0;
 
@@ -193,10 +193,10 @@ std::vector<Device> ComputeInterface::GetSupportedDevices_OpenCL(Platform pltfrm
     for (int i = 0; i < num_of_devices; i++)
     {
         // CL_DEVICE_MAX_WORK_ITEM_SIZES
-        Device device{};
+        //Device device{};
         OpenCL_Device_Info info{};
 
-        device.cl_device = device_ids[i];
+        info.cl_device = device_ids[i];
 
         ZeroMemory(Info, INFO_SIZE);
         clGetDeviceInfo(device_ids[i], CL_DEVICE_VENDOR, INFO_SIZE, Info, &n_size);
@@ -238,17 +238,17 @@ std::vector<Device> ComputeInterface::GetSupportedDevices_OpenCL(Platform pltfrm
         info.is_type_GPU = (type & CL_DEVICE_TYPE_GPU) == CL_DEVICE_TYPE_GPU;
         info.is_type_Accelerator = (type & CL_DEVICE_TYPE_ACCELERATOR) == CL_DEVICE_TYPE_ACCELERATOR;
 
-        device.OpenCL_Info = info;
+        //device.OpenCL_Info = info;
 
-        res.push_back(device);
+        res.push_back(info);
     }
 
     return res;
 }
 
-std::vector<Device> ComputeInterface::GetSupportedDevices_Vulkan()
+std::vector<Vulkan_Device_Info> ComputeInterface::GetSupportedDevices_Vulkan()
 {
-    std::vector<Device> result;
+    std::vector<Vulkan_Device_Info> result;
 
     VkApplicationInfo appInfo = VK::Utilities::getApplicationInfo(
         "Get_Devices",
@@ -295,10 +295,13 @@ std::vector<Device> ComputeInterface::GetSupportedDevices_Vulkan()
         VkPhysicalDeviceProperties deviceProperties = deviceProperties2.properties;
         VkPhysicalDeviceIDProperties deviceIDProperties = *((VkPhysicalDeviceIDProperties*)deviceProperties2.pNext);*/
             
-        Device res_device{};
+        //Device res_device{};
         Vulkan_Device_Info info{};
 
-        info.Name = std::string(deviceProperties.deviceName);
+        memcpy(info.Name, deviceProperties.deviceName, 256);
+        info.name_size = std::string(deviceProperties.deviceName).size();
+
+
         info.Device_ID = deviceProperties.deviceID;
 
         //memcpy(info.DeviceUUID, deviceIDProperties.deviceUUID, 16);
@@ -325,9 +328,9 @@ std::vector<Device> ComputeInterface::GetSupportedDevices_Vulkan()
             break;
         }
             
-        res_device.vk_device = device;
-        res_device.Vulkan_Info = info;
-        result.push_back(res_device);
+        info.vk_device = device;
+        //res_device.Vulkan_Info = info;
+        result.push_back(info);
         
     }
 
@@ -337,9 +340,9 @@ std::vector<Device> ComputeInterface::GetSupportedDevices_Vulkan()
     return result;
 }
 
-std::vector<Device> ComputeInterface::GetSupportedDevices_DirectX()
+std::vector<DirectX_Device_Info> ComputeInterface::GetSupportedDevices_DirectX()
 {
-    std::vector<Device> result;
+    std::vector<DirectX_Device_Info> result;
 
 #ifdef WINDOWS_PLATFROM
 
@@ -353,7 +356,9 @@ std::vector<Device> ComputeInterface::GetSupportedDevices_DirectX()
         DirectX_Device_Info info{};
 
         std::wstring desc_wstr(desc.Description);
-        info.Name = std::string(desc_wstr.begin(), desc_wstr.end());
+        std::string desc_str = std::string(desc_wstr.begin(), desc_wstr.end());
+        memcpy(info.Name, desc_str.data(), desc_str.size());
+        info.name_size = desc_str.size();
 
         info.AdapterIndex = adpt_ind;
 
@@ -370,10 +375,10 @@ std::vector<Device> ComputeInterface::GetSupportedDevices_DirectX()
         // figure out how to make that work in VK.
         info.Type = DeviceType::DEVICE_TYPE_OTHER;
 
-        Device device{};
-        device.DirectX_Info = info;
+        //Device device{};
+        //device.DirectX_Info = info;
 
-        result.push_back(device);
+        result.push_back(info);
 
         adpt_ind++;
     }

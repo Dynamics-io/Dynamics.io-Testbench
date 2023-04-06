@@ -202,7 +202,7 @@ namespace Dynamics_IO_Testbench {
                 void Dispose();
 
             private:
-                ComputeContext(Device device);
+                ComputeContext(DirectX_Device_Info device);
             };
 
 
@@ -217,7 +217,7 @@ namespace Dynamics_IO_Testbench {
             public:
                 static int Init(std::string dir);
 
-                static ComputeContext* GetNewContext(Device device);
+                static ComputeContext* GetNewContext(DirectX_Device_Info device);
 
                 static std::string GetAppDir()
                 {

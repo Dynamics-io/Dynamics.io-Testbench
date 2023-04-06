@@ -23,8 +23,12 @@ namespace Dynamics_IO_Testbench {
 			struct ControllerInfo {
 			public:
 				Platform platform;
-				Device device;
-				std::string program_dir;
+				void* device;
+				char program_dir[1000];
+
+				void SetProgramDir(std::string dir) {
+					memcpy(program_dir, dir.data(), dir.size());
+				}
 			};
 
 			static IComputeController* GetComputeController(Compute_SDK implementation, ControllerInfo info);
@@ -32,11 +36,11 @@ namespace Dynamics_IO_Testbench {
 			static void DisposePlatform(Compute_SDK implementation);
 
             static std::vector<Platform> GetSupportedPlatforms_OpenCL();
-            static std::vector<Device> GetSupportedDevices_OpenCL(Platform pltfrm);
+            static std::vector<OpenCL_Device_Info> GetSupportedDevices_OpenCL(Platform pltfrm);
 
-			static std::vector<Device> GetSupportedDevices_Vulkan();
+			static std::vector<Vulkan_Device_Info> GetSupportedDevices_Vulkan();
 
-			static std::vector<Device> GetSupportedDevices_DirectX();
+			static std::vector<DirectX_Device_Info> GetSupportedDevices_DirectX();
 
         private:
 
