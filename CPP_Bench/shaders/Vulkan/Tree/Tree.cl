@@ -11,18 +11,18 @@ struct metanode {
 	int IndexInParent;
 	int RefineFlag;
 	float LocalCostChange;
-} metanode;
+};
 
 struct BoundingBox{
 	float4 Min;
 	float4 Max;
-} BoundingBox;
+};
 
 struct InsertionChoice{
-	int Choice,
+	int Choice;
 	struct BoundingBox MergedCandidate;
 	float CostChange;
-} InsertionChoice;
+};
 
 int Node_GetChildIndex(int index, int child)
 {
@@ -51,10 +51,10 @@ int Leaf_ChildIndex(unsigned int leaf)
 
 int AllocateNode(struct tree_counts* counts)
 {
-	struct tree_counts = counts[0];
-	int count = tree_counts.NodeCount;
-	tree_counts.NodeCount = count + 1;
-	counts[0] = tree_counts;
+	struct tree_counts tmp = counts[0];
+	int count = tmp.NodeCount;
+	tmp.NodeCount = count + 1;
+	counts[0] = tmp;
 	return count;
 }
 
@@ -69,7 +69,7 @@ int IncrementLeaves(struct tree_counts* counts)
 
 int AddLeaf(int nodeIndex, int childIndex, struct tree_counts* counts, unsigned int* leaves)
 {
-	struct tree_counts = counts[0];
+	struct tree_counts cnts = counts[0];
 	int count = cnts.LeafCount;
 	leaves[count] = Leaf_New(nodeIndex, childIndex);
 	cnts.LeafCount = count + 1;
@@ -78,7 +78,7 @@ int AddLeaf(int nodeIndex, int childIndex, struct tree_counts* counts, unsigned 
 }
 
 __attribute__((reqd_work_group_size(1, 1, 1)))
-kernel void Init(global struct tree_counts* counts, global metanode* metanodes){
+kernel void Init(global struct tree_counts* counts, global struct metanode* metanodes){
 	counts[0].NodeCount = 1;
 	counts[0].LeafCount = 0;
 	
@@ -96,10 +96,13 @@ int InsertLeafIntoEmptySlot(
 	float4* NodeChild_Min,
 	float4* NodeChild_Max,
 	int* NodeChild_Index,
-	int* NodeChild_LeafCount
+	int* NodeChild_LeafCount,
+	
+	struct tree_counts* counts, 
+	unsigned int* leaves
 )
 {
-	int leafIndex = AddLeaf(nodeIndex, childIndex);
+	int leafIndex = AddLeaf(nodeIndex, childIndex, counts, leaves);
 	int child = Node_GetChildIndex(nodeIndex, childIndex);
 	
 	NodeChild_Min[child] = leafBox.Min;
@@ -110,16 +113,16 @@ int InsertLeafIntoEmptySlot(
 	return leafIndex;
 }
 
-float ComputeBoundsMetric_1(struct BoundingBox bounds)
-{
-	return ComputeBoundsMetric_2(bounds.Min, bounds.Max);
-}
-
 float ComputeBoundsMetric_2(float4 min, float4 max)
 {
 	// compute volume.
     float4 offset = max - min;
     return (offset.x * offset.y) + (offset.y * offset.z) + (offset.x * offset.z);
+}
+
+float ComputeBoundsMetric_1(struct BoundingBox bounds)
+{
+	return ComputeBoundsMetric_2(bounds.Min, bounds.Max);
 }
 
 struct BoundingBox CreateMerged(float4 minA, float4 maxA, float4 minB, float4 maxB)
@@ -164,11 +167,12 @@ struct InsertionChoice ComputeBestInsertionChoice(
 	float4 NodeChild_Min,
 	float4 NodeChild_Max,
 	int NodeChild_Index,
-	int NodeChild_LeafCount,
+	int NodeChild_LeafCount
 )
 {
 	struct InsertionChoice result;
 	result.MergedCandidate = CreateMerged(NodeChild_Min, NodeChild_Max, bounds.Min, bounds.Max);
+	float newCost = ComputeBoundsMetric(result.MergedCandidate);
 	if (NodeChild_Index >= 0)
 	{
 		//Estimate the cost of child node expansions as max(SAH(newLeafBounds), costChange) * log2(child.LeafCount).
@@ -224,7 +228,7 @@ int MergeLeafNodes(
 	
 	// Insert the new leaf into the second child slot
 	int b = Node_GetChildIndex(newNode, 1);
-	int leafIndex = AddLeaf(newNodeIndex, 1);
+	int leafIndex = AddLeaf(newNodeIndex, 1, counts, leaves);
 	NodeChild_Index[b] = Encode(leafIndex);
 	NodeChild_Min[b] = newLeafBounds.Min;
 	NodeChild_Max[b] = newLeafBounds.Max;
@@ -276,7 +280,9 @@ kernel void Add(
 				NodeChild_Min,
 				NodeChild_Max,
 				NodeChild_Index,
-				NodeChild_LeafCount
+				NodeChild_LeafCount,
+				counts_ref,
+				leaves
 			);
 			continue;
 		}
