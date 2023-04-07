@@ -137,7 +137,7 @@ struct BoundingBox CreateMerged(float4 minA, float4 maxA, float4 minB, float4 ma
 int LeadingZeros(int x)
 {
 	// from https://stackoverflow.com/questions/10439242/count-leading-zeroes-in-an-int32
-
+	/*
 	const int numIntBits = sizeof(int) * 8; //compile time constant
 											//do the smearing
 	x |= x >> 1;
@@ -152,6 +152,8 @@ int LeadingZeros(int x)
 	x += x >> 8;
 	x += x >> 16;
 	return numIntBits - (x & 0x0000003f); //subtract # of 1s from 32
+	*/
+	return 0;
 }
 
 int GetContainingPowerOf2(int i)
