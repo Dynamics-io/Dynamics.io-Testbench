@@ -1,937 +1,781 @@
-; ModuleID = 'Tree.cl'
-source_filename = "Tree.cl"
-target datalayout = "e-p:32:32-i64:64-v16:16-v24:32-v32:32-v48:64-v96:128-v192:256-v256:256-v512:512-v1024:1024"
-target triple = "spir-unknown-unknown"
-
-%struct.tree_counts = type { i32, i32 }
-%struct.metanode = type { i32, i32, i32, float }
-%struct.BoundingBox = type { <4 x float>, <4 x float> }
-%struct.InsertionChoice = type { i32, %struct.BoundingBox, float, [12 x i8] }
-
-; Function Attrs: convergent norecurse nounwind
-define dso_local spir_func i32 @Node_GetChildIndex(i32 %index, i32 %child) #0 {
-entry:
-  %index.addr = alloca i32, align 4
-  %child.addr = alloca i32, align 4
-  store i32 %index, ptr %index.addr, align 4
-  store i32 %child, ptr %child.addr, align 4
-  %0 = load i32, ptr %index.addr, align 4
-  %mul = mul nsw i32 %0, 2
-  %1 = load i32, ptr %child.addr, align 4
-  %add = add nsw i32 %mul, %1
-  ret i32 %add
-}
-
-; Function Attrs: convergent norecurse nounwind
-define dso_local spir_func i32 @Encode(i32 %index) #0 {
-entry:
-  %index.addr = alloca i32, align 4
-  store i32 %index, ptr %index.addr, align 4
-  %0 = load i32, ptr %index.addr, align 4
-  %sub = sub nsw i32 -1, %0
-  ret i32 %sub
-}
-
-; Function Attrs: convergent norecurse nounwind
-define dso_local spir_func i32 @Leaf_New(i32 %nodeIndex, i32 %childIndex) #0 {
-entry:
-  %nodeIndex.addr = alloca i32, align 4
-  %childIndex.addr = alloca i32, align 4
-  store i32 %nodeIndex, ptr %nodeIndex.addr, align 4
-  store i32 %childIndex, ptr %childIndex.addr, align 4
-  %0 = load i32, ptr %nodeIndex.addr, align 4
-  %and = and i32 %0, 2147483647
-  %1 = load i32, ptr %childIndex.addr, align 4
-  %shl = shl i32 %1, 31
-  %or = or i32 %and, %shl
-  ret i32 %or
-}
-
-; Function Attrs: convergent norecurse nounwind
-define dso_local spir_func i32 @Leaf_NodeIndex(i32 %leaf) #0 {
-entry:
-  %leaf.addr = alloca i32, align 4
-  store i32 %leaf, ptr %leaf.addr, align 4
-  %0 = load i32, ptr %leaf.addr, align 4
-  %and = and i32 %0, 2147483647
-  ret i32 %and
-}
-
-; Function Attrs: convergent norecurse nounwind
-define dso_local spir_func i32 @Leaf_ChildIndex(i32 %leaf) #0 {
-entry:
-  %leaf.addr = alloca i32, align 4
-  store i32 %leaf, ptr %leaf.addr, align 4
-  %0 = load i32, ptr %leaf.addr, align 4
-  %and = and i32 %0, -2147483648
-  %shr = lshr i32 %and, 31
-  ret i32 %shr
-}
-
-; Function Attrs: convergent norecurse nounwind
-define dso_local spir_func i32 @AllocateNode(ptr addrspace(1) %counts) #0 {
-entry:
-  %counts.addr = alloca ptr addrspace(1), align 4
-  %tmp = alloca %struct.tree_counts, align 4
-  %count = alloca i32, align 4
-  store ptr addrspace(1) %counts, ptr %counts.addr, align 4
-  %0 = load ptr addrspace(1), ptr %counts.addr, align 4
-  %arrayidx = getelementptr inbounds %struct.tree_counts, ptr addrspace(1) %0, i32 0
-  call void @llvm.memcpy.p0.p1.i32(ptr align 4 %tmp, ptr addrspace(1) align 4 %arrayidx, i32 8, i1 false)
-  %NodeCount = getelementptr inbounds %struct.tree_counts, ptr %tmp, i32 0, i32 0
-  %1 = load i32, ptr %NodeCount, align 4
-  store i32 %1, ptr %count, align 4
-  %2 = load i32, ptr %count, align 4
-  %add = add nsw i32 %2, 1
-  %NodeCount1 = getelementptr inbounds %struct.tree_counts, ptr %tmp, i32 0, i32 0
-  store i32 %add, ptr %NodeCount1, align 4
-  %3 = load ptr addrspace(1), ptr %counts.addr, align 4
-  %arrayidx2 = getelementptr inbounds %struct.tree_counts, ptr addrspace(1) %3, i32 0
-  call void @llvm.memcpy.p1.p0.i32(ptr addrspace(1) align 4 %arrayidx2, ptr align 4 %tmp, i32 8, i1 false)
-  %4 = load i32, ptr %count, align 4
-  ret i32 %4
-}
-
-; Function Attrs: nocallback nofree nounwind willreturn memory(argmem: readwrite)
-declare void @llvm.memcpy.p0.p1.i32(ptr noalias nocapture writeonly, ptr addrspace(1) noalias nocapture readonly, i32, i1 immarg) #1
-
-; Function Attrs: nocallback nofree nounwind willreturn memory(argmem: readwrite)
-declare void @llvm.memcpy.p1.p0.i32(ptr addrspace(1) noalias nocapture writeonly, ptr noalias nocapture readonly, i32, i1 immarg) #1
-
-; Function Attrs: convergent norecurse nounwind
-define dso_local spir_func i32 @IncrementLeaves(ptr addrspace(1) %counts) #0 {
-entry:
-  %counts.addr = alloca ptr addrspace(1), align 4
-  %cnts = alloca %struct.tree_counts, align 4
-  %count = alloca i32, align 4
-  store ptr addrspace(1) %counts, ptr %counts.addr, align 4
-  %0 = load ptr addrspace(1), ptr %counts.addr, align 4
-  %arrayidx = getelementptr inbounds %struct.tree_counts, ptr addrspace(1) %0, i32 0
-  call void @llvm.memcpy.p0.p1.i32(ptr align 4 %cnts, ptr addrspace(1) align 4 %arrayidx, i32 8, i1 false)
-  %LeafCount = getelementptr inbounds %struct.tree_counts, ptr %cnts, i32 0, i32 1
-  %1 = load i32, ptr %LeafCount, align 4
-  store i32 %1, ptr %count, align 4
-  %2 = load i32, ptr %count, align 4
-  %add = add nsw i32 %2, 1
-  %LeafCount1 = getelementptr inbounds %struct.tree_counts, ptr %cnts, i32 0, i32 1
-  store i32 %add, ptr %LeafCount1, align 4
-  %3 = load ptr addrspace(1), ptr %counts.addr, align 4
-  %arrayidx2 = getelementptr inbounds %struct.tree_counts, ptr addrspace(1) %3, i32 0
-  call void @llvm.memcpy.p1.p0.i32(ptr addrspace(1) align 4 %arrayidx2, ptr align 4 %cnts, i32 8, i1 false)
-  %4 = load i32, ptr %count, align 4
-  ret i32 %4
-}
-
-; Function Attrs: convergent norecurse nounwind
-define dso_local spir_func i32 @AddLeaf(i32 %nodeIndex, i32 %childIndex, ptr addrspace(1) %counts, ptr addrspace(1) %leaves) #0 {
-entry:
-  %nodeIndex.addr = alloca i32, align 4
-  %childIndex.addr = alloca i32, align 4
-  %counts.addr = alloca ptr addrspace(1), align 4
-  %leaves.addr = alloca ptr addrspace(1), align 4
-  %cnts = alloca %struct.tree_counts, align 4
-  %count = alloca i32, align 4
-  store i32 %nodeIndex, ptr %nodeIndex.addr, align 4
-  store i32 %childIndex, ptr %childIndex.addr, align 4
-  store ptr addrspace(1) %counts, ptr %counts.addr, align 4
-  store ptr addrspace(1) %leaves, ptr %leaves.addr, align 4
-  %0 = load ptr addrspace(1), ptr %counts.addr, align 4
-  %arrayidx = getelementptr inbounds %struct.tree_counts, ptr addrspace(1) %0, i32 0
-  call void @llvm.memcpy.p0.p1.i32(ptr align 4 %cnts, ptr addrspace(1) align 4 %arrayidx, i32 8, i1 false)
-  %LeafCount = getelementptr inbounds %struct.tree_counts, ptr %cnts, i32 0, i32 1
-  %1 = load i32, ptr %LeafCount, align 4
-  store i32 %1, ptr %count, align 4
-  %2 = load i32, ptr %nodeIndex.addr, align 4
-  %3 = load i32, ptr %childIndex.addr, align 4
-  %call = call spir_func i32 @Leaf_New(i32 %2, i32 %3) #5
-  %4 = load ptr addrspace(1), ptr %leaves.addr, align 4
-  %5 = load i32, ptr %count, align 4
-  %arrayidx1 = getelementptr inbounds i32, ptr addrspace(1) %4, i32 %5
-  store i32 %call, ptr addrspace(1) %arrayidx1, align 4
-  %6 = load i32, ptr %count, align 4
-  %add = add nsw i32 %6, 1
-  %LeafCount2 = getelementptr inbounds %struct.tree_counts, ptr %cnts, i32 0, i32 1
-  store i32 %add, ptr %LeafCount2, align 4
-  %7 = load ptr addrspace(1), ptr %counts.addr, align 4
-  %arrayidx3 = getelementptr inbounds %struct.tree_counts, ptr addrspace(1) %7, i32 0
-  call void @llvm.memcpy.p1.p0.i32(ptr addrspace(1) align 4 %arrayidx3, ptr align 4 %cnts, i32 8, i1 false)
-  %8 = load i32, ptr %count, align 4
-  ret i32 %8
-}
-
-; Function Attrs: convergent norecurse nounwind
-define dso_local spir_kernel void @Init(ptr addrspace(1) align 4 %counts, ptr addrspace(1) align 4 %metanodes) #2 !kernel_arg_addr_space !3 !kernel_arg_access_qual !4 !kernel_arg_type !5 !kernel_arg_base_type !5 !kernel_arg_type_qual !6 !reqd_work_group_size !7 {
-entry:
-  %counts.addr = alloca ptr addrspace(1), align 4
-  %metanodes.addr = alloca ptr addrspace(1), align 4
-  store ptr addrspace(1) %counts, ptr %counts.addr, align 4
-  store ptr addrspace(1) %metanodes, ptr %metanodes.addr, align 4
-  %0 = load ptr addrspace(1), ptr %counts.addr, align 4
-  %arrayidx = getelementptr inbounds %struct.tree_counts, ptr addrspace(1) %0, i32 0
-  %NodeCount = getelementptr inbounds %struct.tree_counts, ptr addrspace(1) %arrayidx, i32 0, i32 0
-  store i32 1, ptr addrspace(1) %NodeCount, align 4
-  %1 = load ptr addrspace(1), ptr %counts.addr, align 4
-  %arrayidx1 = getelementptr inbounds %struct.tree_counts, ptr addrspace(1) %1, i32 0
-  %LeafCount = getelementptr inbounds %struct.tree_counts, ptr addrspace(1) %arrayidx1, i32 0, i32 1
-  store i32 0, ptr addrspace(1) %LeafCount, align 4
-  %2 = load ptr addrspace(1), ptr %metanodes.addr, align 4
-  %arrayidx2 = getelementptr inbounds %struct.metanode, ptr addrspace(1) %2, i32 0
-  %Parent = getelementptr inbounds %struct.metanode, ptr addrspace(1) %arrayidx2, i32 0, i32 0
-  store i32 -1, ptr addrspace(1) %Parent, align 4
-  %3 = load ptr addrspace(1), ptr %metanodes.addr, align 4
-  %arrayidx3 = getelementptr inbounds %struct.metanode, ptr addrspace(1) %3, i32 0
-  %IndexInParent = getelementptr inbounds %struct.metanode, ptr addrspace(1) %arrayidx3, i32 0, i32 1
-  store i32 -1, ptr addrspace(1) %IndexInParent, align 4
-  ret void
-}
-
-; Function Attrs: convergent norecurse nounwind
-define dso_local spir_func i32 @InsertLeafIntoEmptySlot(ptr byval(%struct.BoundingBox) align 16 %leafBox, i32 %nodeIndex, i32 %childIndex, ptr addrspace(1) %NodeChild_Min, ptr addrspace(1) %NodeChild_Max, ptr addrspace(1) %NodeChild_Index, ptr addrspace(1) %NodeChild_LeafCount, ptr addrspace(1) %counts, ptr addrspace(1) %leaves) #0 {
-entry:
-  %nodeIndex.addr = alloca i32, align 4
-  %childIndex.addr = alloca i32, align 4
-  %NodeChild_Min.addr = alloca ptr addrspace(1), align 4
-  %NodeChild_Max.addr = alloca ptr addrspace(1), align 4
-  %NodeChild_Index.addr = alloca ptr addrspace(1), align 4
-  %NodeChild_LeafCount.addr = alloca ptr addrspace(1), align 4
-  %counts.addr = alloca ptr addrspace(1), align 4
-  %leaves.addr = alloca ptr addrspace(1), align 4
-  %leafIndex = alloca i32, align 4
-  %child = alloca i32, align 4
-  store i32 %nodeIndex, ptr %nodeIndex.addr, align 4
-  store i32 %childIndex, ptr %childIndex.addr, align 4
-  store ptr addrspace(1) %NodeChild_Min, ptr %NodeChild_Min.addr, align 4
-  store ptr addrspace(1) %NodeChild_Max, ptr %NodeChild_Max.addr, align 4
-  store ptr addrspace(1) %NodeChild_Index, ptr %NodeChild_Index.addr, align 4
-  store ptr addrspace(1) %NodeChild_LeafCount, ptr %NodeChild_LeafCount.addr, align 4
-  store ptr addrspace(1) %counts, ptr %counts.addr, align 4
-  store ptr addrspace(1) %leaves, ptr %leaves.addr, align 4
-  %0 = load i32, ptr %nodeIndex.addr, align 4
-  %1 = load i32, ptr %childIndex.addr, align 4
-  %2 = load ptr addrspace(1), ptr %counts.addr, align 4
-  %3 = load ptr addrspace(1), ptr %leaves.addr, align 4
-  %call = call spir_func i32 @AddLeaf(i32 %0, i32 %1, ptr addrspace(1) %2, ptr addrspace(1) %3) #5
-  store i32 %call, ptr %leafIndex, align 4
-  %4 = load i32, ptr %nodeIndex.addr, align 4
-  %5 = load i32, ptr %childIndex.addr, align 4
-  %call1 = call spir_func i32 @Node_GetChildIndex(i32 %4, i32 %5) #5
-  store i32 %call1, ptr %child, align 4
-  %Min = getelementptr inbounds %struct.BoundingBox, ptr %leafBox, i32 0, i32 0
-  %6 = load <4 x float>, ptr %Min, align 16
-  %7 = load ptr addrspace(1), ptr %NodeChild_Min.addr, align 4
-  %8 = load i32, ptr %child, align 4
-  %arrayidx = getelementptr inbounds <4 x float>, ptr addrspace(1) %7, i32 %8
-  store <4 x float> %6, ptr addrspace(1) %arrayidx, align 16
-  %Max = getelementptr inbounds %struct.BoundingBox, ptr %leafBox, i32 0, i32 1
-  %9 = load <4 x float>, ptr %Max, align 16
-  %10 = load ptr addrspace(1), ptr %NodeChild_Max.addr, align 4
-  %11 = load i32, ptr %child, align 4
-  %arrayidx2 = getelementptr inbounds <4 x float>, ptr addrspace(1) %10, i32 %11
-  store <4 x float> %9, ptr addrspace(1) %arrayidx2, align 16
-  %12 = load i32, ptr %leafIndex, align 4
-  %call3 = call spir_func i32 @Encode(i32 %12) #5
-  %13 = load ptr addrspace(1), ptr %NodeChild_Index.addr, align 4
-  %14 = load i32, ptr %child, align 4
-  %arrayidx4 = getelementptr inbounds i32, ptr addrspace(1) %13, i32 %14
-  store i32 %call3, ptr addrspace(1) %arrayidx4, align 4
-  %15 = load ptr addrspace(1), ptr %NodeChild_LeafCount.addr, align 4
-  %16 = load i32, ptr %child, align 4
-  %arrayidx5 = getelementptr inbounds i32, ptr addrspace(1) %15, i32 %16
-  store i32 1, ptr addrspace(1) %arrayidx5, align 4
-  %17 = load i32, ptr %leafIndex, align 4
-  ret i32 %17
-}
-
-; Function Attrs: convergent norecurse nounwind
-define dso_local spir_func float @ComputeBoundsMetric_2(<4 x float> %min, <4 x float> %max) #0 {
-entry:
-  %min.addr = alloca <4 x float>, align 16
-  %max.addr = alloca <4 x float>, align 16
-  %offset = alloca <4 x float>, align 16
-  store <4 x float> %min, ptr %min.addr, align 16
-  store <4 x float> %max, ptr %max.addr, align 16
-  %0 = load <4 x float>, ptr %max.addr, align 16
-  %1 = load <4 x float>, ptr %min.addr, align 16
-  %sub = fsub <4 x float> %0, %1
-  store <4 x float> %sub, ptr %offset, align 16
-  %2 = load <4 x float>, ptr %offset, align 16
-  %3 = extractelement <4 x float> %2, i32 0
-  %4 = load <4 x float>, ptr %offset, align 16
-  %5 = extractelement <4 x float> %4, i32 1
-  %6 = load <4 x float>, ptr %offset, align 16
-  %7 = extractelement <4 x float> %6, i32 1
-  %8 = load <4 x float>, ptr %offset, align 16
-  %9 = extractelement <4 x float> %8, i32 2
-  %mul1 = fmul float %7, %9
-  %10 = call float @llvm.fmuladd.f32(float %3, float %5, float %mul1)
-  %11 = load <4 x float>, ptr %offset, align 16
-  %12 = extractelement <4 x float> %11, i32 0
-  %13 = load <4 x float>, ptr %offset, align 16
-  %14 = extractelement <4 x float> %13, i32 2
-  %15 = call float @llvm.fmuladd.f32(float %12, float %14, float %10)
-  ret float %15
-}
-
-; Function Attrs: nocallback nofree nosync nounwind speculatable willreturn memory(none)
-declare float @llvm.fmuladd.f32(float, float, float) #3
-
-; Function Attrs: convergent norecurse nounwind
-define dso_local spir_func float @ComputeBoundsMetric_1(ptr byval(%struct.BoundingBox) align 16 %bounds) #0 {
-entry:
-  %Min = getelementptr inbounds %struct.BoundingBox, ptr %bounds, i32 0, i32 0
-  %0 = load <4 x float>, ptr %Min, align 16
-  %Max = getelementptr inbounds %struct.BoundingBox, ptr %bounds, i32 0, i32 1
-  %1 = load <4 x float>, ptr %Max, align 16
-  %call = call spir_func float @ComputeBoundsMetric_2(<4 x float> %0, <4 x float> %1) #5
-  ret float %call
-}
-
-; Function Attrs: convergent norecurse nounwind
-define dso_local spir_func void @CreateMerged(ptr noalias sret(%struct.BoundingBox) align 16 %agg.result, <4 x float> %minA, <4 x float> %maxA, <4 x float> %minB, <4 x float> %maxB) #0 {
-entry:
-  %minA.addr = alloca <4 x float>, align 16
-  %maxA.addr = alloca <4 x float>, align 16
-  %minB.addr = alloca <4 x float>, align 16
-  %maxB.addr = alloca <4 x float>, align 16
-  store <4 x float> %minA, ptr %minA.addr, align 16
-  store <4 x float> %maxA, ptr %maxA.addr, align 16
-  store <4 x float> %minB, ptr %minB.addr, align 16
-  store <4 x float> %maxB, ptr %maxB.addr, align 16
-  %0 = load <4 x float>, ptr %minA.addr, align 16
-  %1 = load <4 x float>, ptr %minB.addr, align 16
-  %call = call spir_func <4 x float> @_Z3minDv4_fS_(<4 x float> %0, <4 x float> %1) #6
-  %Min = getelementptr inbounds %struct.BoundingBox, ptr %agg.result, i32 0, i32 0
-  store <4 x float> %call, ptr %Min, align 16
-  %2 = load <4 x float>, ptr %maxA.addr, align 16
-  %3 = load <4 x float>, ptr %maxB.addr, align 16
-  %call1 = call spir_func <4 x float> @_Z3maxDv4_fS_(<4 x float> %2, <4 x float> %3) #6
-  %Max = getelementptr inbounds %struct.BoundingBox, ptr %agg.result, i32 0, i32 1
-  store <4 x float> %call1, ptr %Max, align 16
-  ret void
-}
-
-; Function Attrs: convergent nounwind willreturn memory(none)
-declare spir_func <4 x float> @_Z3minDv4_fS_(<4 x float>, <4 x float>) #4
-
-; Function Attrs: convergent nounwind willreturn memory(none)
-declare spir_func <4 x float> @_Z3maxDv4_fS_(<4 x float>, <4 x float>) #4
-
-; Function Attrs: convergent norecurse nounwind
-define dso_local spir_func i32 @LeadingZeros(i32 %x) #0 {
-entry:
-  %x.addr = alloca i32, align 4
-  %numIntBits = alloca i32, align 4
-  store i32 %x, ptr %x.addr, align 4
-  store i32 32, ptr %numIntBits, align 4
-  %0 = load i32, ptr %x.addr, align 4
-  %shr = ashr i32 %0, 1
-  %1 = load i32, ptr %x.addr, align 4
-  %or = or i32 %1, %shr
-  store i32 %or, ptr %x.addr, align 4
-  %2 = load i32, ptr %x.addr, align 4
-  %shr1 = ashr i32 %2, 2
-  %3 = load i32, ptr %x.addr, align 4
-  %or2 = or i32 %3, %shr1
-  store i32 %or2, ptr %x.addr, align 4
-  %4 = load i32, ptr %x.addr, align 4
-  %shr3 = ashr i32 %4, 4
-  %5 = load i32, ptr %x.addr, align 4
-  %or4 = or i32 %5, %shr3
-  store i32 %or4, ptr %x.addr, align 4
-  %6 = load i32, ptr %x.addr, align 4
-  %shr5 = ashr i32 %6, 8
-  %7 = load i32, ptr %x.addr, align 4
-  %or6 = or i32 %7, %shr5
-  store i32 %or6, ptr %x.addr, align 4
-  %8 = load i32, ptr %x.addr, align 4
-  %shr7 = ashr i32 %8, 16
-  %9 = load i32, ptr %x.addr, align 4
-  %or8 = or i32 %9, %shr7
-  store i32 %or8, ptr %x.addr, align 4
-  %10 = load i32, ptr %x.addr, align 4
-  %shr9 = ashr i32 %10, 1
-  %and = and i32 %shr9, 1431655765
-  %11 = load i32, ptr %x.addr, align 4
-  %sub = sub nsw i32 %11, %and
-  store i32 %sub, ptr %x.addr, align 4
-  %12 = load i32, ptr %x.addr, align 4
-  %shr10 = ashr i32 %12, 2
-  %and11 = and i32 %shr10, 858993459
-  %13 = load i32, ptr %x.addr, align 4
-  %and12 = and i32 %13, 858993459
-  %add = add nsw i32 %and11, %and12
-  store i32 %add, ptr %x.addr, align 4
-  %14 = load i32, ptr %x.addr, align 4
-  %shr13 = ashr i32 %14, 4
-  %15 = load i32, ptr %x.addr, align 4
-  %add14 = add nsw i32 %shr13, %15
-  %and15 = and i32 %add14, 252645135
-  store i32 %and15, ptr %x.addr, align 4
-  %16 = load i32, ptr %x.addr, align 4
-  %shr16 = ashr i32 %16, 8
-  %17 = load i32, ptr %x.addr, align 4
-  %add17 = add nsw i32 %17, %shr16
-  store i32 %add17, ptr %x.addr, align 4
-  %18 = load i32, ptr %x.addr, align 4
-  %shr18 = ashr i32 %18, 16
-  %19 = load i32, ptr %x.addr, align 4
-  %add19 = add nsw i32 %19, %shr18
-  store i32 %add19, ptr %x.addr, align 4
-  %20 = load i32, ptr %x.addr, align 4
-  %and20 = and i32 %20, 63
-  %sub21 = sub nsw i32 32, %and20
-  ret i32 %sub21
-}
-
-; Function Attrs: convergent norecurse nounwind
-define dso_local spir_func i32 @GetContainingPowerOf2(i32 %i) #0 {
-entry:
-  %i.addr = alloca i32, align 4
-  %signed_ = alloca i32, align 4
-  store i32 %i, ptr %i.addr, align 4
-  %0 = load i32, ptr %i.addr, align 4
-  %cmp = icmp eq i32 %0, 0
-  br i1 %cmp, label %cond.true, label %cond.false
-
-cond.true:                                        ; preds = %entry
-  br label %cond.end
-
-cond.false:                                       ; preds = %entry
-  %1 = load i32, ptr %i.addr, align 4
-  br label %cond.end
-
-cond.end:                                         ; preds = %cond.false, %cond.true
-  %cond = phi i32 [ 1, %cond.true ], [ %1, %cond.false ]
-  store i32 %cond, ptr %signed_, align 4
-  %2 = load i32, ptr %signed_, align 4
-  %sub = sub nsw i32 %2, 1
-  %call = call spir_func i32 @LeadingZeros(i32 %sub) #5
-  %sub1 = sub nsw i32 32, %call
-  ret i32 %sub1
-}
-
-; Function Attrs: convergent norecurse nounwind
-define dso_local spir_func void @ComputeBestInsertionChoice(ptr noalias sret(%struct.InsertionChoice) align 16 %agg.result, ptr byval(%struct.BoundingBox) align 16 %bounds, float %newLeafCost, <4 x float> %NodeChild_Min, <4 x float> %NodeChild_Max, i32 %NodeChild_Index, i32 %NodeChild_LeafCount) #0 {
-entry:
-  %newLeafCost.addr = alloca float, align 4
-  %NodeChild_Min.addr = alloca <4 x float>, align 16
-  %NodeChild_Max.addr = alloca <4 x float>, align 16
-  %NodeChild_Index.addr = alloca i32, align 4
-  %NodeChild_LeafCount.addr = alloca i32, align 4
-  %tmp = alloca %struct.BoundingBox, align 16
-  %newCost = alloca float, align 4
-  store float %newLeafCost, ptr %newLeafCost.addr, align 4
-  store <4 x float> %NodeChild_Min, ptr %NodeChild_Min.addr, align 16
-  store <4 x float> %NodeChild_Max, ptr %NodeChild_Max.addr, align 16
-  store i32 %NodeChild_Index, ptr %NodeChild_Index.addr, align 4
-  store i32 %NodeChild_LeafCount, ptr %NodeChild_LeafCount.addr, align 4
-  %MergedCandidate = getelementptr inbounds %struct.InsertionChoice, ptr %agg.result, i32 0, i32 1
-  %0 = load <4 x float>, ptr %NodeChild_Min.addr, align 16
-  %1 = load <4 x float>, ptr %NodeChild_Max.addr, align 16
-  %Min = getelementptr inbounds %struct.BoundingBox, ptr %bounds, i32 0, i32 0
-  %2 = load <4 x float>, ptr %Min, align 16
-  %Max = getelementptr inbounds %struct.BoundingBox, ptr %bounds, i32 0, i32 1
-  %3 = load <4 x float>, ptr %Max, align 16
-  call spir_func void @CreateMerged(ptr sret(%struct.BoundingBox) align 16 %tmp, <4 x float> %0, <4 x float> %1, <4 x float> %2, <4 x float> %3) #5
-  call void @llvm.memcpy.p0.p0.i32(ptr align 16 %MergedCandidate, ptr align 16 %tmp, i32 32, i1 false)
-  %MergedCandidate1 = getelementptr inbounds %struct.InsertionChoice, ptr %agg.result, i32 0, i32 1
-  %call = call spir_func float @ComputeBoundsMetric_1(ptr byval(%struct.BoundingBox) align 16 %MergedCandidate1) #5
-  store float %call, ptr %newCost, align 4
-  %4 = load i32, ptr %NodeChild_Index.addr, align 4
-  %cmp = icmp sge i32 %4, 0
-  br i1 %cmp, label %if.then, label %if.else
-
-if.then:                                          ; preds = %entry
-  %5 = load float, ptr %newCost, align 4
-  %6 = load <4 x float>, ptr %NodeChild_Min.addr, align 16
-  %7 = load <4 x float>, ptr %NodeChild_Max.addr, align 16
-  %call2 = call spir_func float @ComputeBoundsMetric_2(<4 x float> %6, <4 x float> %7) #5
-  %sub = fsub float %5, %call2
-  %CostChange = getelementptr inbounds %struct.InsertionChoice, ptr %agg.result, i32 0, i32 2
-  store float %sub, ptr %CostChange, align 16
-  %CostChange3 = getelementptr inbounds %struct.InsertionChoice, ptr %agg.result, i32 0, i32 2
-  %8 = load float, ptr %CostChange3, align 16
-  %9 = load i32, ptr %NodeChild_LeafCount.addr, align 4
-  %call4 = call spir_func i32 @GetContainingPowerOf2(i32 %9) #5
-  %conv = sitofp i32 %call4 to float
-  %10 = load float, ptr %newLeafCost.addr, align 4
-  %CostChange5 = getelementptr inbounds %struct.InsertionChoice, ptr %agg.result, i32 0, i32 2
-  %11 = load float, ptr %CostChange5, align 16
-  %call6 = call spir_func float @_Z3maxff(float %10, float %11) #6
-  %12 = call float @llvm.fmuladd.f32(float %conv, float %call6, float %8)
-  %CostChange7 = getelementptr inbounds %struct.InsertionChoice, ptr %agg.result, i32 0, i32 2
-  store float %12, ptr %CostChange7, align 16
-  %Choice = getelementptr inbounds %struct.InsertionChoice, ptr %agg.result, i32 0, i32 0
-  store i32 1, ptr %Choice, align 16
-  br label %if.end
-
-if.else:                                          ; preds = %entry
-  %13 = load float, ptr %newCost, align 4
-  %CostChange8 = getelementptr inbounds %struct.InsertionChoice, ptr %agg.result, i32 0, i32 2
-  store float %13, ptr %CostChange8, align 16
-  %Choice9 = getelementptr inbounds %struct.InsertionChoice, ptr %agg.result, i32 0, i32 0
-  store i32 0, ptr %Choice9, align 16
-  br label %if.end
-
-if.end:                                           ; preds = %if.else, %if.then
-  ret void
-}
-
-; Function Attrs: nocallback nofree nounwind willreturn memory(argmem: readwrite)
-declare void @llvm.memcpy.p0.p0.i32(ptr noalias nocapture writeonly, ptr noalias nocapture readonly, i32, i1 immarg) #1
-
-; Function Attrs: convergent nounwind willreturn memory(none)
-declare spir_func float @_Z3maxff(float, float) #4
-
-; Function Attrs: convergent norecurse nounwind
-define dso_local spir_func i32 @MergeLeafNodes(ptr byval(%struct.BoundingBox) align 16 %newLeafBounds, i32 %parentIndex, i32 %indexInParent, ptr byval(%struct.BoundingBox) align 16 %merged, ptr addrspace(1) %counts, ptr addrspace(1) %metanodes, ptr addrspace(1) %NodeChild_Min, ptr addrspace(1) %NodeChild_Max, ptr addrspace(1) %NodeChild_Index, ptr addrspace(1) %NodeChild_LeafCount, ptr addrspace(1) %leaves) #0 {
-entry:
-  %parentIndex.addr = alloca i32, align 4
-  %indexInParent.addr = alloca i32, align 4
-  %counts.addr = alloca ptr addrspace(1), align 4
-  %metanodes.addr = alloca ptr addrspace(1), align 4
-  %NodeChild_Min.addr = alloca ptr addrspace(1), align 4
-  %NodeChild_Max.addr = alloca ptr addrspace(1), align 4
-  %NodeChild_Index.addr = alloca ptr addrspace(1), align 4
-  %NodeChild_LeafCount.addr = alloca ptr addrspace(1), align 4
-  %leaves.addr = alloca ptr addrspace(1), align 4
-  %newNodeIndex = alloca i32, align 4
-  %newNode = alloca i32, align 4
-  %parentNode = alloca i32, align 4
-  %childInParent = alloca i32, align 4
-  %b = alloca i32, align 4
-  %leafIndex = alloca i32, align 4
-  %new_a = alloca i32, align 4
-  %oldLeafIndex = alloca i32, align 4
-  store i32 %parentIndex, ptr %parentIndex.addr, align 4
-  store i32 %indexInParent, ptr %indexInParent.addr, align 4
-  store ptr addrspace(1) %counts, ptr %counts.addr, align 4
-  store ptr addrspace(1) %metanodes, ptr %metanodes.addr, align 4
-  store ptr addrspace(1) %NodeChild_Min, ptr %NodeChild_Min.addr, align 4
-  store ptr addrspace(1) %NodeChild_Max, ptr %NodeChild_Max.addr, align 4
-  store ptr addrspace(1) %NodeChild_Index, ptr %NodeChild_Index.addr, align 4
-  store ptr addrspace(1) %NodeChild_LeafCount, ptr %NodeChild_LeafCount.addr, align 4
-  store ptr addrspace(1) %leaves, ptr %leaves.addr, align 4
-  %0 = load ptr addrspace(1), ptr %counts.addr, align 4
-  %call = call spir_func i32 @AllocateNode(ptr addrspace(1) %0) #5
-  store i32 %call, ptr %newNodeIndex, align 4
-  %1 = load i32, ptr %newNodeIndex, align 4
-  store i32 %1, ptr %newNode, align 4
-  %2 = load i32, ptr %parentIndex.addr, align 4
-  %3 = load ptr addrspace(1), ptr %metanodes.addr, align 4
-  %4 = load i32, ptr %newNodeIndex, align 4
-  %arrayidx = getelementptr inbounds %struct.metanode, ptr addrspace(1) %3, i32 %4
-  %Parent = getelementptr inbounds %struct.metanode, ptr addrspace(1) %arrayidx, i32 0, i32 0
-  store i32 %2, ptr addrspace(1) %Parent, align 4
-  %5 = load i32, ptr %indexInParent.addr, align 4
-  %6 = load ptr addrspace(1), ptr %metanodes.addr, align 4
-  %7 = load i32, ptr %newNodeIndex, align 4
-  %arrayidx1 = getelementptr inbounds %struct.metanode, ptr addrspace(1) %6, i32 %7
-  %IndexInParent = getelementptr inbounds %struct.metanode, ptr addrspace(1) %arrayidx1, i32 0, i32 1
-  store i32 %5, ptr addrspace(1) %IndexInParent, align 4
-  %8 = load ptr addrspace(1), ptr %metanodes.addr, align 4
-  %9 = load i32, ptr %newNodeIndex, align 4
-  %arrayidx2 = getelementptr inbounds %struct.metanode, ptr addrspace(1) %8, i32 %9
-  %RefineFlag = getelementptr inbounds %struct.metanode, ptr addrspace(1) %arrayidx2, i32 0, i32 2
-  store i32 0, ptr addrspace(1) %RefineFlag, align 4
-  %10 = load i32, ptr %parentIndex.addr, align 4
-  store i32 %10, ptr %parentNode, align 4
-  %11 = load i32, ptr %parentNode, align 4
-  %12 = load i32, ptr %indexInParent.addr, align 4
-  %call3 = call spir_func i32 @Node_GetChildIndex(i32 %11, i32 %12) #5
-  store i32 %call3, ptr %childInParent, align 4
-  %13 = load ptr addrspace(1), ptr %NodeChild_Min.addr, align 4
-  %14 = load i32, ptr %childInParent, align 4
-  %arrayidx4 = getelementptr inbounds <4 x float>, ptr addrspace(1) %13, i32 %14
-  %15 = load <4 x float>, ptr addrspace(1) %arrayidx4, align 16
-  %16 = load ptr addrspace(1), ptr %NodeChild_Min.addr, align 4
-  %17 = load i32, ptr %newNode, align 4
-  %arrayidx5 = getelementptr inbounds <4 x float>, ptr addrspace(1) %16, i32 %17
-  store <4 x float> %15, ptr addrspace(1) %arrayidx5, align 16
-  %18 = load ptr addrspace(1), ptr %NodeChild_Max.addr, align 4
-  %19 = load i32, ptr %childInParent, align 4
-  %arrayidx6 = getelementptr inbounds <4 x float>, ptr addrspace(1) %18, i32 %19
-  %20 = load <4 x float>, ptr addrspace(1) %arrayidx6, align 16
-  %21 = load ptr addrspace(1), ptr %NodeChild_Max.addr, align 4
-  %22 = load i32, ptr %newNode, align 4
-  %arrayidx7 = getelementptr inbounds <4 x float>, ptr addrspace(1) %21, i32 %22
-  store <4 x float> %20, ptr addrspace(1) %arrayidx7, align 16
-  %23 = load ptr addrspace(1), ptr %NodeChild_Index.addr, align 4
-  %24 = load i32, ptr %childInParent, align 4
-  %arrayidx8 = getelementptr inbounds i32, ptr addrspace(1) %23, i32 %24
-  %25 = load i32, ptr addrspace(1) %arrayidx8, align 4
-  %26 = load ptr addrspace(1), ptr %NodeChild_Index.addr, align 4
-  %27 = load i32, ptr %newNode, align 4
-  %arrayidx9 = getelementptr inbounds i32, ptr addrspace(1) %26, i32 %27
-  store i32 %25, ptr addrspace(1) %arrayidx9, align 4
-  %28 = load ptr addrspace(1), ptr %NodeChild_LeafCount.addr, align 4
-  %29 = load i32, ptr %childInParent, align 4
-  %arrayidx10 = getelementptr inbounds i32, ptr addrspace(1) %28, i32 %29
-  %30 = load i32, ptr addrspace(1) %arrayidx10, align 4
-  %31 = load ptr addrspace(1), ptr %NodeChild_LeafCount.addr, align 4
-  %32 = load i32, ptr %newNode, align 4
-  %arrayidx11 = getelementptr inbounds i32, ptr addrspace(1) %31, i32 %32
-  store i32 %30, ptr addrspace(1) %arrayidx11, align 4
-  %33 = load i32, ptr %newNode, align 4
-  %call12 = call spir_func i32 @Node_GetChildIndex(i32 %33, i32 1) #5
-  store i32 %call12, ptr %b, align 4
-  %34 = load i32, ptr %newNodeIndex, align 4
-  %35 = load ptr addrspace(1), ptr %counts.addr, align 4
-  %36 = load ptr addrspace(1), ptr %leaves.addr, align 4
-  %call13 = call spir_func i32 @AddLeaf(i32 %34, i32 1, ptr addrspace(1) %35, ptr addrspace(1) %36) #5
-  store i32 %call13, ptr %leafIndex, align 4
-  %37 = load i32, ptr %leafIndex, align 4
-  %call14 = call spir_func i32 @Encode(i32 %37) #5
-  %38 = load ptr addrspace(1), ptr %NodeChild_Index.addr, align 4
-  %39 = load i32, ptr %b, align 4
-  %arrayidx15 = getelementptr inbounds i32, ptr addrspace(1) %38, i32 %39
-  store i32 %call14, ptr addrspace(1) %arrayidx15, align 4
-  %Min = getelementptr inbounds %struct.BoundingBox, ptr %newLeafBounds, i32 0, i32 0
-  %40 = load <4 x float>, ptr %Min, align 16
-  %41 = load ptr addrspace(1), ptr %NodeChild_Min.addr, align 4
-  %42 = load i32, ptr %b, align 4
-  %arrayidx16 = getelementptr inbounds <4 x float>, ptr addrspace(1) %41, i32 %42
-  store <4 x float> %40, ptr addrspace(1) %arrayidx16, align 16
-  %Max = getelementptr inbounds %struct.BoundingBox, ptr %newLeafBounds, i32 0, i32 1
-  %43 = load <4 x float>, ptr %Max, align 16
-  %44 = load ptr addrspace(1), ptr %NodeChild_Max.addr, align 4
-  %45 = load i32, ptr %b, align 4
-  %arrayidx17 = getelementptr inbounds <4 x float>, ptr addrspace(1) %44, i32 %45
-  store <4 x float> %43, ptr addrspace(1) %arrayidx17, align 16
-  %46 = load ptr addrspace(1), ptr %NodeChild_LeafCount.addr, align 4
-  %47 = load i32, ptr %b, align 4
-  %arrayidx18 = getelementptr inbounds i32, ptr addrspace(1) %46, i32 %47
-  store i32 1, ptr addrspace(1) %arrayidx18, align 4
-  %48 = load i32, ptr %newNode, align 4
-  %call19 = call spir_func i32 @Node_GetChildIndex(i32 %48, i32 0) #5
-  store i32 %call19, ptr %new_a, align 4
-  %49 = load ptr addrspace(1), ptr %NodeChild_Index.addr, align 4
-  %50 = load i32, ptr %new_a, align 4
-  %arrayidx20 = getelementptr inbounds i32, ptr addrspace(1) %49, i32 %50
-  %51 = load i32, ptr addrspace(1) %arrayidx20, align 4
-  %call21 = call spir_func i32 @Encode(i32 %51) #5
-  store i32 %call21, ptr %oldLeafIndex, align 4
-  %52 = load i32, ptr %newNodeIndex, align 4
-  %call22 = call spir_func i32 @Leaf_New(i32 %52, i32 0) #5
-  %53 = load ptr addrspace(1), ptr %leaves.addr, align 4
-  %54 = load i32, ptr %oldLeafIndex, align 4
-  %arrayidx23 = getelementptr inbounds i32, ptr addrspace(1) %53, i32 %54
-  store i32 %call22, ptr addrspace(1) %arrayidx23, align 4
-  %55 = load i32, ptr %newNodeIndex, align 4
-  %56 = load ptr addrspace(1), ptr %NodeChild_Index.addr, align 4
-  %57 = load i32, ptr %childInParent, align 4
-  %arrayidx24 = getelementptr inbounds i32, ptr addrspace(1) %56, i32 %57
-  store i32 %55, ptr addrspace(1) %arrayidx24, align 4
-  %Min25 = getelementptr inbounds %struct.BoundingBox, ptr %merged, i32 0, i32 0
-  %58 = load <4 x float>, ptr %Min25, align 16
-  %59 = load ptr addrspace(1), ptr %NodeChild_Min.addr, align 4
-  %60 = load i32, ptr %childInParent, align 4
-  %arrayidx26 = getelementptr inbounds <4 x float>, ptr addrspace(1) %59, i32 %60
-  store <4 x float> %58, ptr addrspace(1) %arrayidx26, align 16
-  %Max27 = getelementptr inbounds %struct.BoundingBox, ptr %merged, i32 0, i32 1
-  %61 = load <4 x float>, ptr %Max27, align 16
-  %62 = load ptr addrspace(1), ptr %NodeChild_Max.addr, align 4
-  %63 = load i32, ptr %childInParent, align 4
-  %arrayidx28 = getelementptr inbounds <4 x float>, ptr addrspace(1) %62, i32 %63
-  store <4 x float> %61, ptr addrspace(1) %arrayidx28, align 16
-  %64 = load ptr addrspace(1), ptr %NodeChild_LeafCount.addr, align 4
-  %65 = load i32, ptr %childInParent, align 4
-  %arrayidx29 = getelementptr inbounds i32, ptr addrspace(1) %64, i32 %65
-  store i32 2, ptr addrspace(1) %arrayidx29, align 4
-  %66 = load i32, ptr %leafIndex, align 4
-  ret i32 %66
-}
-
-; Function Attrs: convergent norecurse nounwind
-define dso_local spir_kernel void @Add(ptr addrspace(1) align 4 %counts_ref, ptr addrspace(1) align 16 %bounds_arr, ptr addrspace(1) align 4 %numBounds, ptr addrspace(1) align 16 %NodeChild_Min, ptr addrspace(1) align 16 %NodeChild_Max, ptr addrspace(1) align 4 %NodeChild_Index, ptr addrspace(1) align 4 %NodeChild_LeafCount, ptr addrspace(1) align 4 %leaves, ptr addrspace(1) align 4 %metanodes, ptr addrspace(1) align 4 %result) #2 !kernel_arg_addr_space !8 !kernel_arg_access_qual !9 !kernel_arg_type !10 !kernel_arg_base_type !11 !kernel_arg_type_qual !12 !reqd_work_group_size !7 {
-entry:
-  %counts_ref.addr = alloca ptr addrspace(1), align 4
-  %bounds_arr.addr = alloca ptr addrspace(1), align 4
-  %numBounds.addr = alloca ptr addrspace(1), align 4
-  %NodeChild_Min.addr = alloca ptr addrspace(1), align 4
-  %NodeChild_Max.addr = alloca ptr addrspace(1), align 4
-  %NodeChild_Index.addr = alloca ptr addrspace(1), align 4
-  %NodeChild_LeafCount.addr = alloca ptr addrspace(1), align 4
-  %leaves.addr = alloca ptr addrspace(1), align 4
-  %metanodes.addr = alloca ptr addrspace(1), align 4
-  %result.addr = alloca ptr addrspace(1), align 4
-  %boundsCount = alloca i32, align 4
-  %i = alloca i32, align 4
-  %counts = alloca %struct.tree_counts, align 4
-  %LeafCount = alloca i32, align 4
-  %NodeCount = alloca i32, align 4
-  %bounds = alloca %struct.BoundingBox, align 16
-  %nodeIndex = alloca i32, align 4
-  %newLeafCost = alloca float, align 4
-  %child_a = alloca i32, align 4
-  %child_b = alloca i32, align 4
-  %choiceA = alloca %struct.InsertionChoice, align 16
-  %choiceB = alloca %struct.InsertionChoice, align 16
-  store ptr addrspace(1) %counts_ref, ptr %counts_ref.addr, align 4
-  store ptr addrspace(1) %bounds_arr, ptr %bounds_arr.addr, align 4
-  store ptr addrspace(1) %numBounds, ptr %numBounds.addr, align 4
-  store ptr addrspace(1) %NodeChild_Min, ptr %NodeChild_Min.addr, align 4
-  store ptr addrspace(1) %NodeChild_Max, ptr %NodeChild_Max.addr, align 4
-  store ptr addrspace(1) %NodeChild_Index, ptr %NodeChild_Index.addr, align 4
-  store ptr addrspace(1) %NodeChild_LeafCount, ptr %NodeChild_LeafCount.addr, align 4
-  store ptr addrspace(1) %leaves, ptr %leaves.addr, align 4
-  store ptr addrspace(1) %metanodes, ptr %metanodes.addr, align 4
-  store ptr addrspace(1) %result, ptr %result.addr, align 4
-  %0 = load ptr addrspace(1), ptr %numBounds.addr, align 4
-  %arrayidx = getelementptr inbounds i32, ptr addrspace(1) %0, i32 0
-  %1 = load i32, ptr addrspace(1) %arrayidx, align 4
-  store i32 %1, ptr %boundsCount, align 4
-  store i32 0, ptr %i, align 4
-  br label %for.cond
-
-for.cond:                                         ; preds = %for.inc, %entry
-  %2 = load i32, ptr %i, align 4
-  %3 = load i32, ptr %boundsCount, align 4
-  %cmp = icmp slt i32 %2, %3
-  br i1 %cmp, label %for.body, label %for.end
-
-for.body:                                         ; preds = %for.cond
-  %4 = load ptr addrspace(1), ptr %counts_ref.addr, align 4
-  %arrayidx1 = getelementptr inbounds %struct.tree_counts, ptr addrspace(1) %4, i32 0
-  call void @llvm.memcpy.p0.p1.i32(ptr align 4 %counts, ptr addrspace(1) align 4 %arrayidx1, i32 8, i1 false)
-  %LeafCount2 = getelementptr inbounds %struct.tree_counts, ptr %counts, i32 0, i32 1
-  %5 = load i32, ptr %LeafCount2, align 4
-  store i32 %5, ptr %LeafCount, align 4
-  %NodeCount3 = getelementptr inbounds %struct.tree_counts, ptr %counts, i32 0, i32 0
-  %6 = load i32, ptr %NodeCount3, align 4
-  store i32 %6, ptr %NodeCount, align 4
-  %7 = load ptr addrspace(1), ptr %bounds_arr.addr, align 4
-  %8 = load i32, ptr %i, align 4
-  %arrayidx4 = getelementptr inbounds %struct.BoundingBox, ptr addrspace(1) %7, i32 %8
-  call void @llvm.memcpy.p0.p1.i32(ptr align 16 %bounds, ptr addrspace(1) align 16 %arrayidx4, i32 32, i1 false)
-  %9 = load i32, ptr %LeafCount, align 4
-  %cmp5 = icmp slt i32 %9, 2
-  br i1 %cmp5, label %if.then, label %if.end
-
-if.then:                                          ; preds = %for.body
-  %10 = load i32, ptr %LeafCount, align 4
-  %11 = load ptr addrspace(1), ptr %NodeChild_Min.addr, align 4
-  %12 = load ptr addrspace(1), ptr %NodeChild_Max.addr, align 4
-  %13 = load ptr addrspace(1), ptr %NodeChild_Index.addr, align 4
-  %14 = load ptr addrspace(1), ptr %NodeChild_LeafCount.addr, align 4
-  %15 = load ptr addrspace(1), ptr %counts_ref.addr, align 4
-  %16 = load ptr addrspace(1), ptr %leaves.addr, align 4
-  %call = call spir_func i32 @InsertLeafIntoEmptySlot(ptr byval(%struct.BoundingBox) align 16 %bounds, i32 0, i32 %10, ptr addrspace(1) %11, ptr addrspace(1) %12, ptr addrspace(1) %13, ptr addrspace(1) %14, ptr addrspace(1) %15, ptr addrspace(1) %16) #5
-  %17 = load ptr addrspace(1), ptr %result.addr, align 4
-  %18 = load i32, ptr %i, align 4
-  %arrayidx6 = getelementptr inbounds i32, ptr addrspace(1) %17, i32 %18
-  store i32 %call, ptr addrspace(1) %arrayidx6, align 4
-  br label %for.inc
-
-if.end:                                           ; preds = %for.body
-  store i32 0, ptr %nodeIndex, align 4
-  %call7 = call spir_func float @ComputeBoundsMetric_1(ptr byval(%struct.BoundingBox) align 16 %bounds) #5
-  store float %call7, ptr %newLeafCost, align 4
-  br label %while.body
-
-while.body:                                       ; preds = %if.end, %if.end52
-  %19 = load i32, ptr %nodeIndex, align 4
-  %call8 = call spir_func i32 @Node_GetChildIndex(i32 %19, i32 0) #5
-  store i32 %call8, ptr %child_a, align 4
-  %20 = load i32, ptr %nodeIndex, align 4
-  %call9 = call spir_func i32 @Node_GetChildIndex(i32 %20, i32 1) #5
-  store i32 %call9, ptr %child_b, align 4
-  %21 = load float, ptr %newLeafCost, align 4
-  %22 = load ptr addrspace(1), ptr %NodeChild_Min.addr, align 4
-  %23 = load i32, ptr %child_a, align 4
-  %arrayidx10 = getelementptr inbounds <4 x float>, ptr addrspace(1) %22, i32 %23
-  %24 = load <4 x float>, ptr addrspace(1) %arrayidx10, align 16
-  %25 = load ptr addrspace(1), ptr %NodeChild_Max.addr, align 4
-  %26 = load i32, ptr %child_a, align 4
-  %arrayidx11 = getelementptr inbounds <4 x float>, ptr addrspace(1) %25, i32 %26
-  %27 = load <4 x float>, ptr addrspace(1) %arrayidx11, align 16
-  %28 = load ptr addrspace(1), ptr %NodeChild_Index.addr, align 4
-  %29 = load i32, ptr %child_a, align 4
-  %arrayidx12 = getelementptr inbounds i32, ptr addrspace(1) %28, i32 %29
-  %30 = load i32, ptr addrspace(1) %arrayidx12, align 4
-  %31 = load ptr addrspace(1), ptr %NodeChild_LeafCount.addr, align 4
-  %32 = load i32, ptr %child_a, align 4
-  %arrayidx13 = getelementptr inbounds i32, ptr addrspace(1) %31, i32 %32
-  %33 = load i32, ptr addrspace(1) %arrayidx13, align 4
-  call spir_func void @ComputeBestInsertionChoice(ptr sret(%struct.InsertionChoice) align 16 %choiceA, ptr byval(%struct.BoundingBox) align 16 %bounds, float %21, <4 x float> %24, <4 x float> %27, i32 %30, i32 %33) #5
-  %34 = load float, ptr %newLeafCost, align 4
-  %35 = load ptr addrspace(1), ptr %NodeChild_Min.addr, align 4
-  %36 = load i32, ptr %child_b, align 4
-  %arrayidx14 = getelementptr inbounds <4 x float>, ptr addrspace(1) %35, i32 %36
-  %37 = load <4 x float>, ptr addrspace(1) %arrayidx14, align 16
-  %38 = load ptr addrspace(1), ptr %NodeChild_Max.addr, align 4
-  %39 = load i32, ptr %child_b, align 4
-  %arrayidx15 = getelementptr inbounds <4 x float>, ptr addrspace(1) %38, i32 %39
-  %40 = load <4 x float>, ptr addrspace(1) %arrayidx15, align 16
-  %41 = load ptr addrspace(1), ptr %NodeChild_Index.addr, align 4
-  %42 = load i32, ptr %child_b, align 4
-  %arrayidx16 = getelementptr inbounds i32, ptr addrspace(1) %41, i32 %42
-  %43 = load i32, ptr addrspace(1) %arrayidx16, align 4
-  %44 = load ptr addrspace(1), ptr %NodeChild_LeafCount.addr, align 4
-  %45 = load i32, ptr %child_b, align 4
-  %arrayidx17 = getelementptr inbounds i32, ptr addrspace(1) %44, i32 %45
-  %46 = load i32, ptr addrspace(1) %arrayidx17, align 4
-  call spir_func void @ComputeBestInsertionChoice(ptr sret(%struct.InsertionChoice) align 16 %choiceB, ptr byval(%struct.BoundingBox) align 16 %bounds, float %34, <4 x float> %37, <4 x float> %40, i32 %43, i32 %46) #5
-  %CostChange = getelementptr inbounds %struct.InsertionChoice, ptr %choiceA, i32 0, i32 2
-  %47 = load float, ptr %CostChange, align 16
-  %CostChange18 = getelementptr inbounds %struct.InsertionChoice, ptr %choiceB, i32 0, i32 2
-  %48 = load float, ptr %CostChange18, align 16
-  %cmp19 = fcmp ole float %47, %48
-  br i1 %cmp19, label %if.then20, label %if.else33
-
-if.then20:                                        ; preds = %while.body
-  %Choice = getelementptr inbounds %struct.InsertionChoice, ptr %choiceA, i32 0, i32 0
-  %49 = load i32, ptr %Choice, align 16
-  %cmp21 = icmp eq i32 %49, 0
-  br i1 %cmp21, label %if.then22, label %if.else
-
-if.then22:                                        ; preds = %if.then20
-  %50 = load i32, ptr %nodeIndex, align 4
-  %MergedCandidate = getelementptr inbounds %struct.InsertionChoice, ptr %choiceA, i32 0, i32 1
-  %51 = load ptr addrspace(1), ptr %counts_ref.addr, align 4
-  %52 = load ptr addrspace(1), ptr %metanodes.addr, align 4
-  %53 = load ptr addrspace(1), ptr %NodeChild_Min.addr, align 4
-  %54 = load ptr addrspace(1), ptr %NodeChild_Max.addr, align 4
-  %55 = load ptr addrspace(1), ptr %NodeChild_Index.addr, align 4
-  %56 = load ptr addrspace(1), ptr %NodeChild_LeafCount.addr, align 4
-  %57 = load ptr addrspace(1), ptr %leaves.addr, align 4
-  %call23 = call spir_func i32 @MergeLeafNodes(ptr byval(%struct.BoundingBox) align 16 %bounds, i32 %50, i32 0, ptr byval(%struct.BoundingBox) align 16 %MergedCandidate, ptr addrspace(1) %51, ptr addrspace(1) %52, ptr addrspace(1) %53, ptr addrspace(1) %54, ptr addrspace(1) %55, ptr addrspace(1) %56, ptr addrspace(1) %57) #5
-  %58 = load ptr addrspace(1), ptr %result.addr, align 4
-  %59 = load i32, ptr %i, align 4
-  %arrayidx24 = getelementptr inbounds i32, ptr addrspace(1) %58, i32 %59
-  store i32 %call23, ptr addrspace(1) %arrayidx24, align 4
-  br label %while.end
-
-if.else:                                          ; preds = %if.then20
-  %MergedCandidate25 = getelementptr inbounds %struct.InsertionChoice, ptr %choiceA, i32 0, i32 1
-  %Min = getelementptr inbounds %struct.BoundingBox, ptr %MergedCandidate25, i32 0, i32 0
-  %60 = load <4 x float>, ptr %Min, align 16
-  %61 = load ptr addrspace(1), ptr %NodeChild_Min.addr, align 4
-  %62 = load i32, ptr %child_a, align 4
-  %arrayidx26 = getelementptr inbounds <4 x float>, ptr addrspace(1) %61, i32 %62
-  store <4 x float> %60, ptr addrspace(1) %arrayidx26, align 16
-  %MergedCandidate27 = getelementptr inbounds %struct.InsertionChoice, ptr %choiceA, i32 0, i32 1
-  %Max = getelementptr inbounds %struct.BoundingBox, ptr %MergedCandidate27, i32 0, i32 1
-  %63 = load <4 x float>, ptr %Max, align 16
-  %64 = load ptr addrspace(1), ptr %NodeChild_Max.addr, align 4
-  %65 = load i32, ptr %child_a, align 4
-  %arrayidx28 = getelementptr inbounds <4 x float>, ptr addrspace(1) %64, i32 %65
-  store <4 x float> %63, ptr addrspace(1) %arrayidx28, align 16
-  %66 = load ptr addrspace(1), ptr %NodeChild_Index.addr, align 4
-  %67 = load i32, ptr %child_a, align 4
-  %arrayidx29 = getelementptr inbounds i32, ptr addrspace(1) %66, i32 %67
-  %68 = load i32, ptr addrspace(1) %arrayidx29, align 4
-  store i32 %68, ptr %nodeIndex, align 4
-  %69 = load ptr addrspace(1), ptr %NodeChild_LeafCount.addr, align 4
-  %70 = load i32, ptr %child_a, align 4
-  %arrayidx30 = getelementptr inbounds i32, ptr addrspace(1) %69, i32 %70
-  %71 = load i32, ptr addrspace(1) %arrayidx30, align 4
-  %add = add nsw i32 %71, 1
-  %72 = load ptr addrspace(1), ptr %NodeChild_LeafCount.addr, align 4
-  %73 = load i32, ptr %child_a, align 4
-  %arrayidx31 = getelementptr inbounds i32, ptr addrspace(1) %72, i32 %73
-  store i32 %add, ptr addrspace(1) %arrayidx31, align 4
-  br label %if.end32
-
-if.end32:                                         ; preds = %if.else
-  br label %if.end52
-
-if.else33:                                        ; preds = %while.body
-  %Choice34 = getelementptr inbounds %struct.InsertionChoice, ptr %choiceA, i32 0, i32 0
-  %74 = load i32, ptr %Choice34, align 16
-  %cmp35 = icmp eq i32 %74, 0
-  br i1 %cmp35, label %if.then36, label %if.else40
-
-if.then36:                                        ; preds = %if.else33
-  %75 = load i32, ptr %nodeIndex, align 4
-  %MergedCandidate37 = getelementptr inbounds %struct.InsertionChoice, ptr %choiceB, i32 0, i32 1
-  %76 = load ptr addrspace(1), ptr %counts_ref.addr, align 4
-  %77 = load ptr addrspace(1), ptr %metanodes.addr, align 4
-  %78 = load ptr addrspace(1), ptr %NodeChild_Min.addr, align 4
-  %79 = load ptr addrspace(1), ptr %NodeChild_Max.addr, align 4
-  %80 = load ptr addrspace(1), ptr %NodeChild_Index.addr, align 4
-  %81 = load ptr addrspace(1), ptr %NodeChild_LeafCount.addr, align 4
-  %82 = load ptr addrspace(1), ptr %leaves.addr, align 4
-  %call38 = call spir_func i32 @MergeLeafNodes(ptr byval(%struct.BoundingBox) align 16 %bounds, i32 %75, i32 1, ptr byval(%struct.BoundingBox) align 16 %MergedCandidate37, ptr addrspace(1) %76, ptr addrspace(1) %77, ptr addrspace(1) %78, ptr addrspace(1) %79, ptr addrspace(1) %80, ptr addrspace(1) %81, ptr addrspace(1) %82) #5
-  %83 = load ptr addrspace(1), ptr %result.addr, align 4
-  %84 = load i32, ptr %i, align 4
-  %arrayidx39 = getelementptr inbounds i32, ptr addrspace(1) %83, i32 %84
-  store i32 %call38, ptr addrspace(1) %arrayidx39, align 4
-  br label %while.end
-
-if.else40:                                        ; preds = %if.else33
-  %MergedCandidate41 = getelementptr inbounds %struct.InsertionChoice, ptr %choiceB, i32 0, i32 1
-  %Min42 = getelementptr inbounds %struct.BoundingBox, ptr %MergedCandidate41, i32 0, i32 0
-  %85 = load <4 x float>, ptr %Min42, align 16
-  %86 = load ptr addrspace(1), ptr %NodeChild_Min.addr, align 4
-  %87 = load i32, ptr %child_b, align 4
-  %arrayidx43 = getelementptr inbounds <4 x float>, ptr addrspace(1) %86, i32 %87
-  store <4 x float> %85, ptr addrspace(1) %arrayidx43, align 16
-  %MergedCandidate44 = getelementptr inbounds %struct.InsertionChoice, ptr %choiceB, i32 0, i32 1
-  %Max45 = getelementptr inbounds %struct.BoundingBox, ptr %MergedCandidate44, i32 0, i32 1
-  %88 = load <4 x float>, ptr %Max45, align 16
-  %89 = load ptr addrspace(1), ptr %NodeChild_Max.addr, align 4
-  %90 = load i32, ptr %child_b, align 4
-  %arrayidx46 = getelementptr inbounds <4 x float>, ptr addrspace(1) %89, i32 %90
-  store <4 x float> %88, ptr addrspace(1) %arrayidx46, align 16
-  %91 = load ptr addrspace(1), ptr %NodeChild_Index.addr, align 4
-  %92 = load i32, ptr %child_b, align 4
-  %arrayidx47 = getelementptr inbounds i32, ptr addrspace(1) %91, i32 %92
-  %93 = load i32, ptr addrspace(1) %arrayidx47, align 4
-  store i32 %93, ptr %nodeIndex, align 4
-  %94 = load ptr addrspace(1), ptr %NodeChild_LeafCount.addr, align 4
-  %95 = load i32, ptr %child_b, align 4
-  %arrayidx48 = getelementptr inbounds i32, ptr addrspace(1) %94, i32 %95
-  %96 = load i32, ptr addrspace(1) %arrayidx48, align 4
-  %add49 = add nsw i32 %96, 1
-  %97 = load ptr addrspace(1), ptr %NodeChild_LeafCount.addr, align 4
-  %98 = load i32, ptr %child_b, align 4
-  %arrayidx50 = getelementptr inbounds i32, ptr addrspace(1) %97, i32 %98
-  store i32 %add49, ptr addrspace(1) %arrayidx50, align 4
-  br label %if.end51
-
-if.end51:                                         ; preds = %if.else40
-  br label %if.end52
-
-if.end52:                                         ; preds = %if.end51, %if.end32
-  br label %while.body
-
-while.end:                                        ; preds = %if.then36, %if.then22
-  br label %for.inc
-
-for.inc:                                          ; preds = %while.end, %if.then
-  %99 = load i32, ptr %i, align 4
-  %inc = add nsw i32 %99, 1
-  store i32 %inc, ptr %i, align 4
-  br label %for.cond
-
-for.end:                                          ; preds = %for.cond
-  ret void
-}
-
-attributes #0 = { convergent norecurse nounwind "no-builtins" "no-trapping-math"="true" "stack-protector-buffer-size"="0" "stackrealign" }
-attributes #1 = { nocallback nofree nounwind willreturn memory(argmem: readwrite) }
-attributes #2 = { convergent norecurse nounwind "no-builtins" "no-trapping-math"="true" "stack-protector-buffer-size"="0" "stackrealign" "uniform-work-group-size"="true" }
-attributes #3 = { nocallback nofree nosync nounwind speculatable willreturn memory(none) }
-attributes #4 = { convergent nounwind willreturn memory(none) "no-builtins" "no-trapping-math"="true" "stack-protector-buffer-size"="0" "stackrealign" }
-attributes #5 = { convergent nobuiltin nounwind "no-builtins" }
-attributes #6 = { convergent nobuiltin nounwind willreturn memory(none) "no-builtins" }
-
-!llvm.module.flags = !{!0}
-!opencl.ocl.version = !{!1}
-!opencl.spir.version = !{!1}
-!llvm.ident = !{!2}
-
-!0 = !{i32 1, !"wchar_size", i32 4}
-!1 = !{i32 1, i32 2}
-!2 = !{!"clang version 17.0.0 (https://github.com/llvm/llvm-project fc78ebad051ac3e7564efc1a38a5e1faa8f30bf1)"}
-!3 = !{i32 1, i32 1}
-!4 = !{!"none", !"none"}
-!5 = !{!"struct tree_counts*", !"struct metanode*"}
-!6 = !{!"", !""}
-!7 = !{i32 1, i32 1, i32 1}
-!8 = !{i32 1, i32 1, i32 1, i32 1, i32 1, i32 1, i32 1, i32 1, i32 1, i32 1}
-!9 = !{!"none", !"none", !"none", !"none", !"none", !"none", !"none", !"none", !"none", !"none"}
-!10 = !{!"struct tree_counts*", !"struct BoundingBox*", !"int*", !"float4*", !"float4*", !"int*", !"int*", !"uint*", !"struct metanode*", !"int*"}
-!11 = !{!"struct tree_counts*", !"struct BoundingBox*", !"int*", !"float __attribute__((ext_vector_type(4)))*", !"float __attribute__((ext_vector_type(4)))*", !"int*", !"int*", !"uint*", !"struct metanode*", !"int*"}
-!12 = !{!"", !"", !"", !"", !"", !"", !"", !"", !"", !""}
+; SPIR-V
+; Version: 1.0
+; Generator: Google Clspv; 0
+; Bound: 644
+; Schema: 0
+               OpCapability Shader
+               OpCapability Int64
+               OpExtension "SPV_KHR_storage_buffer_storage_class"
+               OpExtension "SPV_KHR_non_semantic_info"
+        %275 = OpExtInstImport "GLSL.std.450"
+        %595 = OpExtInstImport "NonSemantic.ClspvReflection.5"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %40 "Init"
+               OpEntryPoint GLCompute %50 "Add"
+               OpExecutionMode %40 LocalSize 1 1 1
+               OpExecutionMode %50 LocalSize 1 1 1
+               OpSource OpenCL_C 120
+        %596 = OpString "Init"
+        %599 = OpString "counts"
+        %602 = OpString "metanodes"
+        %605 = OpString "Add"
+        %609 = OpString "counts_ref"
+        %612 = OpString "bounds_arr"
+        %615 = OpString "numBounds"
+        %618 = OpString "NodeChild_Min"
+        %622 = OpString "NodeChild_Max"
+        %625 = OpString "NodeChild_Index"
+        %629 = OpString "NodeChild_LeafCount"
+        %633 = OpString "leaves"
+        %637 = OpString "metanodes"
+        %640 = OpString "result"
+               OpMemberDecorate %_struct_2 0 Offset 0
+               OpMemberDecorate %_struct_2 1 Offset 4
+               OpDecorate %_runtimearr__struct_2 ArrayStride 8
+               OpMemberDecorate %_struct_4 0 Offset 0
+               OpDecorate %_struct_4 Block
+               OpMemberDecorate %_struct_8 0 Offset 0
+               OpMemberDecorate %_struct_8 1 Offset 4
+               OpMemberDecorate %_struct_8 2 Offset 8
+               OpMemberDecorate %_struct_8 3 Offset 12
+               OpDecorate %_runtimearr__struct_8 ArrayStride 16
+               OpMemberDecorate %_struct_10 0 Offset 0
+               OpDecorate %_struct_10 Block
+               OpDecorate %_runtimearr_ulong ArrayStride 8
+               OpMemberDecorate %_struct_15 0 Offset 0
+               OpDecorate %_struct_15 Block
+               OpMemberDecorate %_struct_19 0 Offset 0
+               OpMemberDecorate %_struct_19 1 Offset 16
+               OpDecorate %_runtimearr__struct_19 ArrayStride 32
+               OpMemberDecorate %_struct_21 0 Offset 0
+               OpDecorate %_struct_21 Block
+               OpDecorate %_runtimearr_uint ArrayStride 4
+               OpMemberDecorate %_struct_25 0 Offset 0
+               OpDecorate %_struct_25 Block
+               OpDecorate %_runtimearr_v4float ArrayStride 16
+               OpMemberDecorate %_struct_29 0 Offset 0
+               OpDecorate %_struct_29 Block
+               OpDecorate %6 DescriptorSet 0
+               OpDecorate %6 Binding 0
+               OpDecorate %12 DescriptorSet 0
+               OpDecorate %12 Binding 1
+               OpDecorate %17 DescriptorSet 0
+               OpDecorate %17 Binding 0
+               OpDecorate %23 DescriptorSet 0
+               OpDecorate %23 Binding 1
+               OpDecorate %27 DescriptorSet 0
+               OpDecorate %27 Binding 2
+               OpDecorate %31 DescriptorSet 0
+               OpDecorate %31 Binding 3
+               OpDecorate %32 DescriptorSet 0
+               OpDecorate %32 Binding 4
+               OpDecorate %33 DescriptorSet 0
+               OpDecorate %33 Binding 5
+               OpDecorate %34 DescriptorSet 0
+               OpDecorate %34 Binding 6
+               OpDecorate %35 DescriptorSet 0
+               OpDecorate %35 Binding 7
+               OpDecorate %36 DescriptorSet 0
+               OpDecorate %36 Binding 8
+               OpDecorate %37 DescriptorSet 0
+               OpDecorate %37 Binding 9
+               OpDecorate %270 NoContraction
+               OpDecorate %274 NoContraction
+               OpDecorate %292 NoContraction
+               OpDecorate %296 NoContraction
+               OpDecorate %307 NoContraction
+               OpDecorate %311 NoContraction
+               OpDecorate %314 NoContraction
+               OpDecorate %368 NoContraction
+               OpDecorate %372 NoContraction
+               OpDecorate %380 NoContraction
+               OpDecorate %384 NoContraction
+               OpDecorate %387 NoContraction
+       %uint = OpTypeInt 32 0
+  %_struct_2 = OpTypeStruct %uint %uint
+%_runtimearr__struct_2 = OpTypeRuntimeArray %_struct_2
+  %_struct_4 = OpTypeStruct %_runtimearr__struct_2
+%_ptr_StorageBuffer__struct_4 = OpTypePointer StorageBuffer %_struct_4
+      %float = OpTypeFloat 32
+  %_struct_8 = OpTypeStruct %uint %uint %uint %float
+%_runtimearr__struct_8 = OpTypeRuntimeArray %_struct_8
+ %_struct_10 = OpTypeStruct %_runtimearr__struct_8
+%_ptr_StorageBuffer__struct_10 = OpTypePointer StorageBuffer %_struct_10
+      %ulong = OpTypeInt 64 0
+%_runtimearr_ulong = OpTypeRuntimeArray %ulong
+ %_struct_15 = OpTypeStruct %_runtimearr_ulong
+%_ptr_StorageBuffer__struct_15 = OpTypePointer StorageBuffer %_struct_15
+    %v4float = OpTypeVector %float 4
+ %_struct_19 = OpTypeStruct %v4float %v4float
+%_runtimearr__struct_19 = OpTypeRuntimeArray %_struct_19
+ %_struct_21 = OpTypeStruct %_runtimearr__struct_19
+%_ptr_StorageBuffer__struct_21 = OpTypePointer StorageBuffer %_struct_21
+%_runtimearr_uint = OpTypeRuntimeArray %uint
+ %_struct_25 = OpTypeStruct %_runtimearr_uint
+%_ptr_StorageBuffer__struct_25 = OpTypePointer StorageBuffer %_struct_25
+%_runtimearr_v4float = OpTypeRuntimeArray %v4float
+ %_struct_29 = OpTypeStruct %_runtimearr_v4float
+%_ptr_StorageBuffer__struct_29 = OpTypePointer StorageBuffer %_struct_29
+       %void = OpTypeVoid
+         %39 = OpTypeFunction %void
+%_ptr_StorageBuffer_uint = OpTypePointer StorageBuffer %uint
+     %uint_0 = OpConstant %uint 0
+     %uint_1 = OpConstant %uint 1
+%uint_4294967295 = OpConstant %uint 4294967295
+%_ptr_StorageBuffer_ulong = OpTypePointer StorageBuffer %ulong
+       %bool = OpTypeBool
+   %ulong_32 = OpConstant %ulong 32
+%_ptr_StorageBuffer_v4float = OpTypePointer StorageBuffer %v4float
+%_ptr_StorageBuffer__struct_19 = OpTypePointer StorageBuffer %_struct_19
+    %v4ulong = OpTypeVector %ulong 4
+         %91 = OpUndef %v4ulong
+    %v2ulong = OpTypeVector %ulong 2
+      %false = OpConstantFalse %bool
+     %v4uint = OpTypeVector %uint 4
+     %uint_2 = OpConstant %uint 2
+%_struct_315 = OpTypeStruct %uint %uint
+     %uint_4 = OpConstant %uint 4
+     %uint_8 = OpConstant %uint 8
+    %uint_16 = OpConstant %uint 16
+%uint_1431655765 = OpConstant %uint 1431655765
+%uint_858993459 = OpConstant %uint 858993459
+%uint_252645135 = OpConstant %uint 252645135
+    %uint_63 = OpConstant %uint 63
+%ulong_18446744069414584320 = OpConstant %ulong 18446744069414584320
+%uint_2147483647 = OpConstant %uint 2147483647
+%uint_2147483648 = OpConstant %uint 2147483648
+%ulong_4294967295 = OpConstant %ulong 4294967295
+    %uint_31 = OpConstant %uint 31
+        %593 = OpUndef %uint
+       %true = OpConstantTrue %bool
+    %uint_10 = OpConstant %uint 10
+     %uint_3 = OpConstant %uint 3
+     %uint_5 = OpConstant %uint 5
+     %uint_6 = OpConstant %uint 6
+     %uint_7 = OpConstant %uint 7
+     %uint_9 = OpConstant %uint 9
+          %6 = OpVariable %_ptr_StorageBuffer__struct_4 StorageBuffer
+         %12 = OpVariable %_ptr_StorageBuffer__struct_10 StorageBuffer
+         %17 = OpVariable %_ptr_StorageBuffer__struct_15 StorageBuffer
+         %23 = OpVariable %_ptr_StorageBuffer__struct_21 StorageBuffer
+         %27 = OpVariable %_ptr_StorageBuffer__struct_25 StorageBuffer
+         %31 = OpVariable %_ptr_StorageBuffer__struct_29 StorageBuffer
+         %32 = OpVariable %_ptr_StorageBuffer__struct_29 StorageBuffer
+         %33 = OpVariable %_ptr_StorageBuffer__struct_25 StorageBuffer
+         %34 = OpVariable %_ptr_StorageBuffer__struct_25 StorageBuffer
+         %35 = OpVariable %_ptr_StorageBuffer__struct_25 StorageBuffer
+         %36 = OpVariable %_ptr_StorageBuffer__struct_10 StorageBuffer
+         %37 = OpVariable %_ptr_StorageBuffer__struct_25 StorageBuffer
+         %40 = OpFunction %void None %39
+         %41 = OpLabel
+         %44 = OpAccessChain %_ptr_StorageBuffer_uint %6 %uint_0 %uint_0 %uint_0
+               OpStore %44 %uint_1
+         %46 = OpAccessChain %_ptr_StorageBuffer_uint %6 %uint_0 %uint_0 %uint_1
+               OpStore %46 %uint_0
+         %47 = OpAccessChain %_ptr_StorageBuffer_uint %12 %uint_0 %uint_0 %uint_0
+               OpStore %47 %uint_4294967295
+         %49 = OpAccessChain %_ptr_StorageBuffer_uint %12 %uint_0 %uint_0 %uint_1
+               OpStore %49 %uint_4294967295
+               OpReturn
+               OpFunctionEnd
+         %50 = OpFunction %void None %39
+         %51 = OpLabel
+         %53 = OpAccessChain %_ptr_StorageBuffer_ulong %17 %uint_0 %uint_0
+         %54 = OpAccessChain %_ptr_StorageBuffer_uint %27 %uint_0 %uint_0
+         %55 = OpLoad %uint %54
+         %57 = OpSGreaterThan %bool %55 %uint_0
+               OpSelectionMerge %592 None
+               OpBranchConditional %57 %60 %592
+         %60 = OpLabel
+         %61 = OpPhi %uint %587 %586 %uint_0 %51
+         %62 = OpLoad %ulong %53
+         %64 = OpShiftRightLogical %ulong %62 %ulong_32
+         %65 = OpUConvert %uint %64
+         %66 = OpIAdd %uint %61 %uint_0
+         %68 = OpAccessChain %_ptr_StorageBuffer_v4float %23 %uint_0 %66 %uint_0
+         %69 = OpLoad %v4float %68
+         %70 = OpIAdd %uint %61 %uint_0
+         %72 = OpAccessChain %_ptr_StorageBuffer__struct_19 %23 %uint_0 %70
+         %73 = OpLoad %_struct_19 %72
+         %74 = OpCompositeExtract %v4float %73 0
+         %75 = OpCompositeExtract %float %74 0
+         %76 = OpCompositeExtract %float %74 1
+         %77 = OpCompositeExtract %float %74 2
+         %78 = OpCompositeExtract %float %74 3
+         %79 = OpCompositeExtract %v4float %73 1
+         %80 = OpCompositeExtract %float %79 0
+         %81 = OpCompositeExtract %float %79 1
+         %82 = OpCompositeExtract %float %79 2
+         %83 = OpCompositeExtract %float %79 3
+         %84 = OpBitcast %uint %75
+         %85 = OpUConvert %ulong %84
+         %86 = OpBitcast %uint %76
+         %87 = OpUConvert %ulong %86
+         %88 = OpShiftLeftLogical %ulong %87 %ulong_32
+         %89 = OpBitwiseOr %ulong %85 %88
+         %92 = OpCompositeInsert %v4ulong %89 %91 0
+         %93 = OpBitcast %uint %77
+         %94 = OpUConvert %ulong %93
+         %95 = OpBitcast %uint %78
+         %96 = OpUConvert %ulong %95
+         %97 = OpShiftLeftLogical %ulong %96 %ulong_32
+         %98 = OpBitwiseOr %ulong %94 %97
+         %99 = OpCompositeInsert %v4ulong %98 %92 1
+        %100 = OpBitcast %uint %80
+        %101 = OpUConvert %ulong %100
+        %102 = OpBitcast %uint %81
+        %103 = OpUConvert %ulong %102
+        %104 = OpShiftLeftLogical %ulong %103 %ulong_32
+        %105 = OpBitwiseOr %ulong %101 %104
+        %106 = OpCompositeInsert %v4ulong %105 %99 2
+        %107 = OpBitcast %uint %82
+        %108 = OpUConvert %ulong %107
+        %109 = OpBitcast %uint %83
+        %110 = OpUConvert %ulong %109
+        %111 = OpShiftLeftLogical %ulong %110 %ulong_32
+        %112 = OpBitwiseOr %ulong %108 %111
+        %113 = OpCompositeInsert %v4ulong %112 %106 3
+        %115 = OpVectorShuffle %v2ulong %113 %91 0 1
+        %116 = OpVectorShuffle %v2ulong %113 %91 2 3
+        %118 = OpSelect %v2ulong %false %115 %116
+        %120 = OpBitcast %v4uint %118
+        %121 = OpCompositeExtract %uint %120 0
+        %122 = OpIAdd %uint %61 %uint_0
+        %123 = OpAccessChain %_ptr_StorageBuffer__struct_19 %23 %uint_0 %122
+        %124 = OpLoad %_struct_19 %123
+        %125 = OpCompositeExtract %v4float %124 0
+        %126 = OpCompositeExtract %float %125 0
+        %127 = OpCompositeExtract %float %125 1
+        %128 = OpCompositeExtract %float %125 2
+        %129 = OpCompositeExtract %float %125 3
+        %130 = OpCompositeExtract %v4float %124 1
+        %131 = OpCompositeExtract %float %130 0
+        %132 = OpCompositeExtract %float %130 1
+        %133 = OpCompositeExtract %float %130 2
+        %134 = OpCompositeExtract %float %130 3
+        %135 = OpBitcast %uint %126
+        %136 = OpUConvert %ulong %135
+        %137 = OpBitcast %uint %127
+        %138 = OpUConvert %ulong %137
+        %139 = OpShiftLeftLogical %ulong %138 %ulong_32
+        %140 = OpBitwiseOr %ulong %136 %139
+        %141 = OpCompositeInsert %v4ulong %140 %91 0
+        %142 = OpBitcast %uint %128
+        %143 = OpUConvert %ulong %142
+        %144 = OpBitcast %uint %129
+        %145 = OpUConvert %ulong %144
+        %146 = OpShiftLeftLogical %ulong %145 %ulong_32
+        %147 = OpBitwiseOr %ulong %143 %146
+        %148 = OpCompositeInsert %v4ulong %147 %141 1
+        %149 = OpBitcast %uint %131
+        %150 = OpUConvert %ulong %149
+        %151 = OpBitcast %uint %132
+        %152 = OpUConvert %ulong %151
+        %153 = OpShiftLeftLogical %ulong %152 %ulong_32
+        %154 = OpBitwiseOr %ulong %150 %153
+        %155 = OpCompositeInsert %v4ulong %154 %148 2
+        %156 = OpBitcast %uint %133
+        %157 = OpUConvert %ulong %156
+        %158 = OpBitcast %uint %134
+        %159 = OpUConvert %ulong %158
+        %160 = OpShiftLeftLogical %ulong %159 %ulong_32
+        %161 = OpBitwiseOr %ulong %157 %160
+        %162 = OpCompositeInsert %v4ulong %161 %155 3
+        %163 = OpVectorShuffle %v2ulong %162 %91 0 1
+        %164 = OpVectorShuffle %v2ulong %162 %91 2 3
+        %165 = OpSelect %v2ulong %false %163 %164
+        %166 = OpBitcast %v4uint %165
+        %167 = OpCompositeExtract %uint %166 1
+        %168 = OpIAdd %uint %61 %uint_0
+        %169 = OpAccessChain %_ptr_StorageBuffer__struct_19 %23 %uint_0 %168
+        %170 = OpLoad %_struct_19 %169
+        %171 = OpCompositeExtract %v4float %170 0
+        %172 = OpCompositeExtract %float %171 0
+        %173 = OpCompositeExtract %float %171 1
+        %174 = OpCompositeExtract %float %171 2
+        %175 = OpCompositeExtract %float %171 3
+        %176 = OpCompositeExtract %v4float %170 1
+        %177 = OpCompositeExtract %float %176 0
+        %178 = OpCompositeExtract %float %176 1
+        %179 = OpCompositeExtract %float %176 2
+        %180 = OpCompositeExtract %float %176 3
+        %181 = OpBitcast %uint %172
+        %182 = OpUConvert %ulong %181
+        %183 = OpBitcast %uint %173
+        %184 = OpUConvert %ulong %183
+        %185 = OpShiftLeftLogical %ulong %184 %ulong_32
+        %186 = OpBitwiseOr %ulong %182 %185
+        %187 = OpCompositeInsert %v4ulong %186 %91 0
+        %188 = OpBitcast %uint %174
+        %189 = OpUConvert %ulong %188
+        %190 = OpBitcast %uint %175
+        %191 = OpUConvert %ulong %190
+        %192 = OpShiftLeftLogical %ulong %191 %ulong_32
+        %193 = OpBitwiseOr %ulong %189 %192
+        %194 = OpCompositeInsert %v4ulong %193 %187 1
+        %195 = OpBitcast %uint %177
+        %196 = OpUConvert %ulong %195
+        %197 = OpBitcast %uint %178
+        %198 = OpUConvert %ulong %197
+        %199 = OpShiftLeftLogical %ulong %198 %ulong_32
+        %200 = OpBitwiseOr %ulong %196 %199
+        %201 = OpCompositeInsert %v4ulong %200 %194 2
+        %202 = OpBitcast %uint %179
+        %203 = OpUConvert %ulong %202
+        %204 = OpBitcast %uint %180
+        %205 = OpUConvert %ulong %204
+        %206 = OpShiftLeftLogical %ulong %205 %ulong_32
+        %207 = OpBitwiseOr %ulong %203 %206
+        %208 = OpCompositeInsert %v4ulong %207 %201 3
+        %209 = OpVectorShuffle %v2ulong %208 %91 0 1
+        %210 = OpVectorShuffle %v2ulong %208 %91 2 3
+        %211 = OpSelect %v2ulong %false %209 %210
+        %212 = OpBitcast %v4uint %211
+        %213 = OpCompositeExtract %uint %212 2
+        %214 = OpIAdd %uint %61 %uint_0
+        %215 = OpAccessChain %_ptr_StorageBuffer__struct_19 %23 %uint_0 %214
+        %216 = OpLoad %_struct_19 %215
+        %217 = OpCompositeExtract %v4float %216 0
+        %218 = OpCompositeExtract %float %217 0
+        %219 = OpCompositeExtract %float %217 1
+        %220 = OpCompositeExtract %float %217 2
+        %221 = OpCompositeExtract %float %217 3
+        %222 = OpCompositeExtract %v4float %216 1
+        %223 = OpCompositeExtract %float %222 0
+        %224 = OpCompositeExtract %float %222 1
+        %225 = OpCompositeExtract %float %222 2
+        %226 = OpCompositeExtract %float %222 3
+        %227 = OpBitcast %uint %218
+        %228 = OpUConvert %ulong %227
+        %229 = OpBitcast %uint %219
+        %230 = OpUConvert %ulong %229
+        %231 = OpShiftLeftLogical %ulong %230 %ulong_32
+        %232 = OpBitwiseOr %ulong %228 %231
+        %233 = OpCompositeInsert %v4ulong %232 %91 0
+        %234 = OpBitcast %uint %220
+        %235 = OpUConvert %ulong %234
+        %236 = OpBitcast %uint %221
+        %237 = OpUConvert %ulong %236
+        %238 = OpShiftLeftLogical %ulong %237 %ulong_32
+        %239 = OpBitwiseOr %ulong %235 %238
+        %240 = OpCompositeInsert %v4ulong %239 %233 1
+        %241 = OpBitcast %uint %223
+        %242 = OpUConvert %ulong %241
+        %243 = OpBitcast %uint %224
+        %244 = OpUConvert %ulong %243
+        %245 = OpShiftLeftLogical %ulong %244 %ulong_32
+        %246 = OpBitwiseOr %ulong %242 %245
+        %247 = OpCompositeInsert %v4ulong %246 %240 2
+        %248 = OpBitcast %uint %225
+        %249 = OpUConvert %ulong %248
+        %250 = OpBitcast %uint %226
+        %251 = OpUConvert %ulong %250
+        %252 = OpShiftLeftLogical %ulong %251 %ulong_32
+        %253 = OpBitwiseOr %ulong %249 %252
+        %254 = OpCompositeInsert %v4ulong %253 %247 3
+        %255 = OpVectorShuffle %v2ulong %254 %91 0 1
+        %256 = OpVectorShuffle %v2ulong %254 %91 2 3
+        %257 = OpSelect %v2ulong %false %255 %256
+        %258 = OpBitcast %v4uint %257
+        %259 = OpCompositeExtract %uint %258 3
+        %260 = OpCompositeConstruct %v4uint %121 %167 %213 %259
+        %261 = OpBitcast %v4float %260
+        %263 = OpSGreaterThanEqual %bool %65 %uint_2
+               OpLoopMerge %590 %586 None
+               OpBranch %266
+        %266 = OpLabel
+               OpSelectionMerge %567 None
+               OpBranchConditional %263 %269 %567
+        %269 = OpLabel
+        %270 = OpFSub %v4float %261 %69
+        %271 = OpCompositeExtract %float %270 0
+        %272 = OpCompositeExtract %float %270 1
+        %273 = OpCompositeExtract %float %270 2
+        %274 = OpFMul %float %272 %273
+        %276 = OpExtInst %float %275 Fma %271 %272 %274
+        %277 = OpExtInst %float %275 Fma %271 %273 %276
+               OpBranch %279
+        %279 = OpLabel
+        %280 = OpPhi %uint %468 %467 %uint_0 %269
+        %281 = OpShiftLeftLogical %uint %280 %uint_1
+        %282 = OpBitwiseOr %uint %281 %uint_1
+        %283 = OpAccessChain %_ptr_StorageBuffer_v4float %31 %uint_0 %281
+        %284 = OpLoad %v4float %283
+        %285 = OpAccessChain %_ptr_StorageBuffer_v4float %32 %uint_0 %281
+        %286 = OpLoad %v4float %285
+        %287 = OpAccessChain %_ptr_StorageBuffer_uint %33 %uint_0 %281
+        %288 = OpLoad %uint %287
+        %289 = OpAccessChain %_ptr_StorageBuffer_uint %34 %uint_0 %281
+        %290 = OpExtInst %v4float %275 FMin %284 %69
+        %291 = OpExtInst %v4float %275 FMax %286 %261
+        %292 = OpFSub %v4float %291 %290
+        %293 = OpCompositeExtract %float %292 0
+        %294 = OpCompositeExtract %float %292 1
+        %295 = OpCompositeExtract %float %292 2
+        %296 = OpFMul %float %294 %295
+        %297 = OpExtInst %float %275 Fma %293 %294 %296
+        %298 = OpExtInst %float %275 Fma %293 %295 %297
+        %299 = OpSGreaterThanEqual %bool %288 %uint_0
+               OpLoopMerge %471 %467 None
+               OpBranch %302
+        %302 = OpLabel
+               OpSelectionMerge %357 None
+               OpBranchConditional %299 %305 %357
+        %305 = OpLabel
+        %306 = OpLoad %uint %289
+        %307 = OpFSub %v4float %286 %284
+        %308 = OpCompositeExtract %float %307 0
+        %309 = OpCompositeExtract %float %307 1
+        %310 = OpCompositeExtract %float %307 2
+        %311 = OpFMul %float %309 %310
+        %312 = OpExtInst %float %275 Fma %308 %309 %311
+        %313 = OpExtInst %float %275 Fma %308 %310 %312
+        %314 = OpFSub %float %298 %313
+        %316 = OpISubBorrow %_struct_315 %306 %uint_1
+        %317 = OpCompositeExtract %uint %316 0
+        %318 = OpCompositeExtract %uint %316 1
+        %319 = OpIEqual %bool %318 %uint_0
+        %320 = OpSelect %uint %319 %317 %uint_0
+        %321 = OpShiftRightArithmetic %uint %320 %uint_1
+        %322 = OpBitwiseOr %uint %321 %320
+        %323 = OpShiftRightArithmetic %uint %322 %uint_2
+        %324 = OpBitwiseOr %uint %323 %322
+        %326 = OpShiftRightArithmetic %uint %324 %uint_4
+        %327 = OpBitwiseOr %uint %326 %324
+        %329 = OpShiftRightArithmetic %uint %327 %uint_8
+        %330 = OpBitwiseOr %uint %329 %327
+        %332 = OpShiftRightArithmetic %uint %330 %uint_16
+        %333 = OpBitwiseOr %uint %332 %330
+        %334 = OpShiftRightLogical %uint %333 %uint_1
+        %336 = OpBitwiseAnd %uint %334 %uint_1431655765
+        %337 = OpISub %uint %333 %336
+        %338 = OpShiftRightLogical %uint %337 %uint_2
+        %340 = OpBitwiseAnd %uint %338 %uint_858993459
+        %341 = OpBitwiseAnd %uint %337 %uint_858993459
+        %342 = OpIAdd %uint %340 %341
+        %343 = OpShiftRightLogical %uint %342 %uint_4
+        %344 = OpIAdd %uint %343 %342
+        %346 = OpBitwiseAnd %uint %344 %uint_252645135
+        %347 = OpShiftRightLogical %uint %346 %uint_8
+        %348 = OpIAdd %uint %347 %346
+        %349 = OpShiftRightLogical %uint %348 %uint_16
+        %350 = OpIAdd %uint %349 %348
+        %352 = OpBitwiseAnd %uint %350 %uint_63
+        %353 = OpConvertSToF %float %352
+        %354 = OpExtInst %float %275 FMax %277 %314
+        %355 = OpExtInst %float %275 Fma %353 %354 %314
+               OpBranch %357
+        %357 = OpLabel
+        %358 = OpPhi %float %355 %305 %298 %302
+        %359 = OpAccessChain %_ptr_StorageBuffer_v4float %31 %uint_0 %282
+        %360 = OpLoad %v4float %359
+        %361 = OpAccessChain %_ptr_StorageBuffer_v4float %32 %uint_0 %282
+        %362 = OpLoad %v4float %361
+        %363 = OpAccessChain %_ptr_StorageBuffer_uint %33 %uint_0 %282
+        %364 = OpLoad %uint %363
+        %365 = OpAccessChain %_ptr_StorageBuffer_uint %34 %uint_0 %282
+        %366 = OpExtInst %v4float %275 FMin %360 %69
+        %367 = OpExtInst %v4float %275 FMax %362 %261
+        %368 = OpFSub %v4float %367 %366
+        %369 = OpCompositeExtract %float %368 0
+        %370 = OpCompositeExtract %float %368 1
+        %371 = OpCompositeExtract %float %368 2
+        %372 = OpFMul %float %370 %371
+        %373 = OpExtInst %float %275 Fma %369 %370 %372
+        %374 = OpExtInst %float %275 Fma %369 %371 %373
+        %375 = OpSGreaterThan %bool %364 %uint_4294967295
+               OpSelectionMerge %422 None
+               OpBranchConditional %375 %378 %422
+        %378 = OpLabel
+        %379 = OpLoad %uint %365
+        %380 = OpFSub %v4float %362 %360
+        %381 = OpCompositeExtract %float %380 0
+        %382 = OpCompositeExtract %float %380 1
+        %383 = OpCompositeExtract %float %380 2
+        %384 = OpFMul %float %382 %383
+        %385 = OpExtInst %float %275 Fma %381 %382 %384
+        %386 = OpExtInst %float %275 Fma %381 %383 %385
+        %387 = OpFSub %float %374 %386
+        %388 = OpISubBorrow %_struct_315 %379 %uint_1
+        %389 = OpCompositeExtract %uint %388 0
+        %390 = OpCompositeExtract %uint %388 1
+        %391 = OpIEqual %bool %390 %uint_0
+        %392 = OpSelect %uint %391 %389 %uint_0
+        %393 = OpShiftRightArithmetic %uint %392 %uint_1
+        %394 = OpBitwiseOr %uint %393 %392
+        %395 = OpShiftRightArithmetic %uint %394 %uint_2
+        %396 = OpBitwiseOr %uint %395 %394
+        %397 = OpShiftRightArithmetic %uint %396 %uint_4
+        %398 = OpBitwiseOr %uint %397 %396
+        %399 = OpShiftRightArithmetic %uint %398 %uint_8
+        %400 = OpBitwiseOr %uint %399 %398
+        %401 = OpShiftRightArithmetic %uint %400 %uint_16
+        %402 = OpBitwiseOr %uint %401 %400
+        %403 = OpShiftRightLogical %uint %402 %uint_1
+        %404 = OpBitwiseAnd %uint %403 %uint_1431655765
+        %405 = OpISub %uint %402 %404
+        %406 = OpShiftRightLogical %uint %405 %uint_2
+        %407 = OpBitwiseAnd %uint %406 %uint_858993459
+        %408 = OpBitwiseAnd %uint %405 %uint_858993459
+        %409 = OpIAdd %uint %407 %408
+        %410 = OpShiftRightLogical %uint %409 %uint_4
+        %411 = OpIAdd %uint %410 %409
+        %412 = OpBitwiseAnd %uint %411 %uint_252645135
+        %413 = OpShiftRightLogical %uint %412 %uint_8
+        %414 = OpIAdd %uint %413 %412
+        %415 = OpShiftRightLogical %uint %414 %uint_16
+        %416 = OpIAdd %uint %415 %414
+        %417 = OpBitwiseAnd %uint %416 %uint_63
+        %418 = OpConvertSToF %float %417
+        %419 = OpExtInst %float %275 FMax %277 %387
+        %420 = OpExtInst %float %275 Fma %418 %419 %387
+               OpBranch %422
+        %422 = OpLabel
+        %423 = OpPhi %float %420 %378 %374 %357
+        %424 = OpFOrdLessThanEqual %bool %358 %423
+               OpSelectionMerge %440 None
+               OpBranchConditional %424 %427 %440
+        %427 = OpLabel
+               OpSelectionMerge %435 None
+               OpBranchConditional %299 %430 %435
+        %430 = OpLabel
+               OpStore %283 %290
+               OpStore %285 %291
+        %431 = OpLoad %uint %287
+        %432 = OpLoad %uint %289
+        %433 = OpIAdd %uint %432 %uint_1
+               OpStore %289 %433
+               OpBranch %435
+        %435 = OpLabel
+        %436 = OpPhi %uint %431 %430 %593 %427
+        %437 = OpPhi %bool %false %430 %true %427
+        %438 = OpPhi %bool %true %430 %false %427
+               OpBranch %440
+        %440 = OpLabel
+        %441 = OpPhi %uint %436 %435 %593 %422
+        %442 = OpPhi %bool %437 %435 %false %422
+        %443 = OpPhi %bool %438 %435 %false %422
+        %444 = OpPhi %bool %false %435 %true %422
+               OpSelectionMerge %460 None
+               OpBranchConditional %444 %447 %460
+        %447 = OpLabel
+               OpSelectionMerge %455 None
+               OpBranchConditional %299 %450 %455
+        %450 = OpLabel
+               OpStore %359 %366
+               OpStore %361 %367
+        %451 = OpLoad %uint %363
+        %452 = OpLoad %uint %365
+        %453 = OpIAdd %uint %452 %uint_1
+               OpStore %365 %453
+               OpBranch %455
+        %455 = OpLabel
+        %456 = OpPhi %uint %451 %450 %593 %447
+        %457 = OpPhi %bool %false %450 %true %447
+        %458 = OpPhi %bool %true %450 %443 %447
+               OpBranch %460
+        %460 = OpLabel
+        %461 = OpPhi %uint %456 %455 %441 %440
+        %462 = OpPhi %bool %457 %455 %false %440
+        %463 = OpPhi %bool %458 %455 %443 %440
+               OpBranchConditional %463 %465 %467
+        %465 = OpLabel
+               OpBranch %467
+        %467 = OpLabel
+        %468 = OpPhi %uint %461 %465 %593 %460
+        %469 = OpPhi %bool %false %465 %true %460
+               OpBranchConditional %469 %471 %279
+        %471 = OpLabel
+               OpSelectionMerge %520 None
+               OpBranchConditional %442 %474 %520
+        %474 = OpLabel
+        %475 = OpLoad %ulong %53
+        %476 = OpUConvert %uint %475
+        %478 = OpBitwiseAnd %ulong %475 %ulong_18446744069414584320
+        %479 = OpIAdd %uint %476 %uint_1
+        %480 = OpUConvert %ulong %479
+        %481 = OpBitwiseOr %ulong %478 %480
+               OpStore %53 %481
+        %482 = OpAccessChain %_ptr_StorageBuffer_uint %36 %uint_0 %476 %uint_0
+               OpStore %482 %280
+        %483 = OpAccessChain %_ptr_StorageBuffer_uint %36 %uint_0 %476 %uint_1
+               OpStore %483 %uint_0
+        %484 = OpAccessChain %_ptr_StorageBuffer_uint %36 %uint_0 %476 %uint_2
+               OpStore %484 %uint_0
+        %485 = OpLoad %v4float %283
+        %486 = OpAccessChain %_ptr_StorageBuffer_v4float %31 %uint_0 %476
+               OpStore %486 %485
+        %487 = OpLoad %v4float %285
+        %488 = OpAccessChain %_ptr_StorageBuffer_v4float %32 %uint_0 %476
+               OpStore %488 %487
+        %489 = OpLoad %uint %287
+        %490 = OpAccessChain %_ptr_StorageBuffer_uint %33 %uint_0 %476
+               OpStore %490 %489
+        %491 = OpLoad %uint %289
+        %492 = OpAccessChain %_ptr_StorageBuffer_uint %34 %uint_0 %476
+               OpStore %492 %491
+        %493 = OpShiftLeftLogical %uint %476 %uint_1
+        %494 = OpBitwiseOr %uint %493 %uint_1
+        %495 = OpLoad %ulong %53
+        %496 = OpShiftRightLogical %ulong %495 %ulong_32
+        %497 = OpUConvert %uint %496
+        %499 = OpBitwiseAnd %uint %476 %uint_2147483647
+        %501 = OpBitwiseOr %uint %476 %uint_2147483648
+        %502 = OpAccessChain %_ptr_StorageBuffer_uint %35 %uint_0 %497
+               OpStore %502 %501
+        %503 = OpIAdd %uint %497 %uint_1
+        %504 = OpUConvert %ulong %503
+        %505 = OpShiftLeftLogical %ulong %504 %ulong_32
+        %507 = OpBitwiseAnd %ulong %495 %ulong_4294967295
+        %508 = OpBitwiseOr %ulong %505 %507
+               OpStore %53 %508
+        %509 = OpBitwiseXor %uint %497 %uint_4294967295
+        %510 = OpAccessChain %_ptr_StorageBuffer_uint %33 %uint_0 %494
+               OpStore %510 %509
+        %511 = OpAccessChain %_ptr_StorageBuffer_v4float %31 %uint_0 %494
+               OpStore %511 %69
+        %512 = OpAccessChain %_ptr_StorageBuffer_v4float %32 %uint_0 %494
+               OpStore %512 %261
+        %513 = OpAccessChain %_ptr_StorageBuffer_uint %34 %uint_0 %494
+               OpStore %513 %uint_1
+        %514 = OpAccessChain %_ptr_StorageBuffer_uint %33 %uint_0 %493
+        %515 = OpLoad %uint %514
+        %516 = OpBitwiseXor %uint %515 %uint_4294967295
+        %517 = OpAccessChain %_ptr_StorageBuffer_uint %35 %uint_0 %516
+               OpStore %517 %499
+               OpStore %287 %476
+               OpStore %283 %290
+               OpStore %285 %291
+               OpStore %289 %uint_2
+        %518 = OpAccessChain %_ptr_StorageBuffer_uint %37 %uint_0 %61
+               OpStore %518 %497
+               OpBranch %520
+        %520 = OpLabel
+               OpSelectionMerge %565 None
+               OpBranchConditional %462 %523 %565
+        %523 = OpLabel
+        %524 = OpLoad %ulong %53
+        %525 = OpUConvert %uint %524
+        %526 = OpBitwiseAnd %ulong %524 %ulong_18446744069414584320
+        %527 = OpIAdd %uint %525 %uint_1
+        %528 = OpUConvert %ulong %527
+        %529 = OpBitwiseOr %ulong %526 %528
+               OpStore %53 %529
+        %530 = OpAccessChain %_ptr_StorageBuffer_uint %36 %uint_0 %525 %uint_0
+               OpStore %530 %280
+        %531 = OpAccessChain %_ptr_StorageBuffer_uint %36 %uint_0 %525 %uint_1
+               OpStore %531 %uint_1
+        %532 = OpAccessChain %_ptr_StorageBuffer_uint %36 %uint_0 %525 %uint_2
+               OpStore %532 %uint_0
+        %533 = OpLoad %v4float %359
+        %534 = OpAccessChain %_ptr_StorageBuffer_v4float %31 %uint_0 %525
+               OpStore %534 %533
+        %535 = OpLoad %v4float %361
+        %536 = OpAccessChain %_ptr_StorageBuffer_v4float %32 %uint_0 %525
+               OpStore %536 %535
+        %537 = OpLoad %uint %363
+        %538 = OpAccessChain %_ptr_StorageBuffer_uint %33 %uint_0 %525
+               OpStore %538 %537
+        %539 = OpLoad %uint %365
+        %540 = OpAccessChain %_ptr_StorageBuffer_uint %34 %uint_0 %525
+               OpStore %540 %539
+        %541 = OpShiftLeftLogical %uint %525 %uint_1
+        %542 = OpBitwiseOr %uint %541 %uint_1
+        %543 = OpLoad %ulong %53
+        %544 = OpShiftRightLogical %ulong %543 %ulong_32
+        %545 = OpUConvert %uint %544
+        %546 = OpBitwiseAnd %uint %525 %uint_2147483647
+        %547 = OpBitwiseOr %uint %525 %uint_2147483648
+        %548 = OpAccessChain %_ptr_StorageBuffer_uint %35 %uint_0 %545
+               OpStore %548 %547
+        %549 = OpIAdd %uint %545 %uint_1
+        %550 = OpUConvert %ulong %549
+        %551 = OpShiftLeftLogical %ulong %550 %ulong_32
+        %552 = OpBitwiseAnd %ulong %543 %ulong_4294967295
+        %553 = OpBitwiseOr %ulong %551 %552
+               OpStore %53 %553
+        %554 = OpBitwiseXor %uint %545 %uint_4294967295
+        %555 = OpAccessChain %_ptr_StorageBuffer_uint %33 %uint_0 %542
+               OpStore %555 %554
+        %556 = OpAccessChain %_ptr_StorageBuffer_v4float %31 %uint_0 %542
+               OpStore %556 %69
+        %557 = OpAccessChain %_ptr_StorageBuffer_v4float %32 %uint_0 %542
+               OpStore %557 %261
+        %558 = OpAccessChain %_ptr_StorageBuffer_uint %34 %uint_0 %542
+               OpStore %558 %uint_1
+        %559 = OpAccessChain %_ptr_StorageBuffer_uint %33 %uint_0 %541
+        %560 = OpLoad %uint %559
+        %561 = OpBitwiseXor %uint %560 %uint_4294967295
+        %562 = OpAccessChain %_ptr_StorageBuffer_uint %35 %uint_0 %561
+               OpStore %562 %546
+               OpStore %363 %525
+               OpStore %359 %366
+               OpStore %361 %367
+               OpStore %365 %uint_2
+        %563 = OpAccessChain %_ptr_StorageBuffer_uint %37 %uint_0 %61
+               OpStore %563 %545
+               OpBranch %565
+        %565 = OpLabel
+               OpBranch %567
+        %567 = OpLabel
+        %568 = OpPhi %bool %false %565 %true %266
+               OpBranchConditional %568 %570 %586
+        %570 = OpLabel
+        %572 = OpShiftLeftLogical %uint %65 %uint_31
+        %573 = OpAccessChain %_ptr_StorageBuffer_uint %35 %uint_0 %65
+               OpStore %573 %572
+        %574 = OpIAdd %uint %65 %uint_1
+        %575 = OpUConvert %ulong %574
+        %576 = OpShiftLeftLogical %ulong %575 %ulong_32
+        %577 = OpBitwiseAnd %ulong %62 %ulong_4294967295
+        %578 = OpBitwiseOr %ulong %576 %577
+               OpStore %53 %578
+        %579 = OpAccessChain %_ptr_StorageBuffer_v4float %31 %uint_0 %65
+               OpStore %579 %69
+        %580 = OpAccessChain %_ptr_StorageBuffer_v4float %32 %uint_0 %65
+               OpStore %580 %261
+        %581 = OpBitwiseXor %uint %65 %uint_4294967295
+        %582 = OpAccessChain %_ptr_StorageBuffer_uint %33 %uint_0 %65
+               OpStore %582 %581
+        %583 = OpAccessChain %_ptr_StorageBuffer_uint %34 %uint_0 %65
+               OpStore %583 %uint_1
+        %584 = OpAccessChain %_ptr_StorageBuffer_uint %37 %uint_0 %61
+               OpStore %584 %65
+               OpBranch %586
+        %586 = OpLabel
+        %587 = OpIAdd %uint %61 %uint_1
+        %588 = OpSGreaterThanEqual %bool %587 %55
+               OpBranchConditional %588 %590 %60
+        %590 = OpLabel
+               OpBranch %592
+        %592 = OpLabel
+               OpReturn
+               OpFunctionEnd
+        %597 = OpExtInst %void %595 Kernel %40 %596 %uint_2
+        %598 = OpExtInst %void %595 PropertyRequiredWorkgroupSize %597 %uint_1 %uint_1 %uint_1
+        %600 = OpExtInst %void %595 ArgumentInfo %599
+        %601 = OpExtInst %void %595 ArgumentStorageBuffer %597 %uint_0 %uint_0 %uint_0 %600
+        %603 = OpExtInst %void %595 ArgumentInfo %602
+        %604 = OpExtInst %void %595 ArgumentStorageBuffer %597 %uint_1 %uint_0 %uint_1 %603
+        %607 = OpExtInst %void %595 Kernel %50 %605 %uint_10
+        %608 = OpExtInst %void %595 PropertyRequiredWorkgroupSize %607 %uint_1 %uint_1 %uint_1
+        %610 = OpExtInst %void %595 ArgumentInfo %609
+        %611 = OpExtInst %void %595 ArgumentStorageBuffer %607 %uint_0 %uint_0 %uint_0 %610
+        %613 = OpExtInst %void %595 ArgumentInfo %612
+        %614 = OpExtInst %void %595 ArgumentStorageBuffer %607 %uint_1 %uint_0 %uint_1 %613
+        %616 = OpExtInst %void %595 ArgumentInfo %615
+        %617 = OpExtInst %void %595 ArgumentStorageBuffer %607 %uint_2 %uint_0 %uint_2 %616
+        %619 = OpExtInst %void %595 ArgumentInfo %618
+        %621 = OpExtInst %void %595 ArgumentStorageBuffer %607 %uint_3 %uint_0 %uint_3 %619
+        %623 = OpExtInst %void %595 ArgumentInfo %622
+        %624 = OpExtInst %void %595 ArgumentStorageBuffer %607 %uint_4 %uint_0 %uint_4 %623
+        %626 = OpExtInst %void %595 ArgumentInfo %625
+        %628 = OpExtInst %void %595 ArgumentStorageBuffer %607 %uint_5 %uint_0 %uint_5 %626
+        %630 = OpExtInst %void %595 ArgumentInfo %629
+        %632 = OpExtInst %void %595 ArgumentStorageBuffer %607 %uint_6 %uint_0 %uint_6 %630
+        %634 = OpExtInst %void %595 ArgumentInfo %633
+        %636 = OpExtInst %void %595 ArgumentStorageBuffer %607 %uint_7 %uint_0 %uint_7 %634
+        %638 = OpExtInst %void %595 ArgumentInfo %637
+        %639 = OpExtInst %void %595 ArgumentStorageBuffer %607 %uint_8 %uint_0 %uint_8 %638
+        %641 = OpExtInst %void %595 ArgumentInfo %640
+        %643 = OpExtInst %void %595 ArgumentStorageBuffer %607 %uint_9 %uint_0 %uint_9 %641
