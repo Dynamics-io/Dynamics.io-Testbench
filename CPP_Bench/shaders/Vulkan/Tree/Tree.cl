@@ -103,6 +103,7 @@ int InsertLeafIntoEmptySlot(
 	global unsigned int* leaves
 )
 {
+	/*
 	int leafIndex = AddLeaf(nodeIndex, childIndex, counts, leaves);
 	int child = Node_GetChildIndex(nodeIndex, childIndex);
 	
@@ -112,6 +113,8 @@ int InsertLeafIntoEmptySlot(
 	NodeChild_LeafCount[child] = 1;
 	
 	return leafIndex;
+	*/
+	return 0;
 }
 
 float ComputeBoundsMetric_2(float4 min, float4 max)
