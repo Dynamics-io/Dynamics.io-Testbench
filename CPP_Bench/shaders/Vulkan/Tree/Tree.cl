@@ -132,8 +132,8 @@ float ComputeBoundsMetric_1(struct BoundingBox bounds)
 struct BoundingBox CreateMerged(float4 minA, float4 maxA, float4 minB, float4 maxB)
 {
 	struct BoundingBox merged;
-	merged.Min = min(minA, minB);
-	merged.Max = max(maxA, maxB);
+	//merged.Min = min(minA, minB);
+	//merged.Max = max(maxA, maxB);
 	return merged;
 }
 
