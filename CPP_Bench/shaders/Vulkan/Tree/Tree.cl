@@ -213,7 +213,7 @@ int MergeLeafNodes(
 	//It's a leaf node.
     //Create a new internal node with the new leaf and the old leaf as children.
     //this is the only place where a new level could potentially be created.
-	
+	/*
 	int newNodeIndex = AllocateNode(counts);
 	int newNode = newNodeIndex;
 	
@@ -248,7 +248,8 @@ int MergeLeafNodes(
 	NodeChild_Max[childInParent] = merged.Max;
 	NodeChild_LeafCount[childInParent] = 2;
 	
-	return leafIndex;
+	return leafIndex;*/
+	return 0;
 }
 
 __attribute__((reqd_work_group_size(1, 1, 1)))
