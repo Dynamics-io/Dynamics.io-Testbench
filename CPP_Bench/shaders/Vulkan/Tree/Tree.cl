@@ -178,7 +178,7 @@ struct InsertionChoice ComputeBestInsertionChoice(
 		//Estimate the cost of child node expansions as max(SAH(newLeafBounds), costChange) * log2(child.LeafCount).
         //We're assuming that the remaining tree is balanced and that each level will expand by at least SAH(newLeafBounds). 
         //This might not be anywhere close to correct, but it's not a bad estimate.
-		result.CostChange = newCost - ComputeBoundsMetric(NodeChild_Min, NodeChild_Max);
+		result.CostChange = newCost - ComputeBoundsMetric_2(NodeChild_Min, NodeChild_Max);
 		result.CostChange = result.CostChange + GetContainingPowerOf2(NodeChild_LeafCount) * max(newLeafCost, result.CostChange);
 		result.Choice = TRAVERSE;
 	}
@@ -290,7 +290,7 @@ kernel void Add(
 		
 		//Assumption: Index 0 is always the root if it exists, and an empty tree will have a 'root' with a child count of 0.
 		int nodeIndex = 0;
-		float newLeafCost = ComputeBoundsMetric(bounds);
+		float newLeafCost = ComputeBoundsMetric_1(bounds);
 		while(true)
 		{
 			//Which child should the leaf belong to?
@@ -327,7 +327,7 @@ kernel void Add(
 						nodeIndex,
 						0,
 						choiceA.MergedCandidate,
-						counts,
+						counts_ref,
 						metanodes,
 						NodeChild_Min,
 						NodeChild_Max,
@@ -354,7 +354,7 @@ kernel void Add(
 						nodeIndex,
 						1,
 						choiceB.MergedCandidate,
-						counts,
+						counts_ref,
 						metanodes,
 						NodeChild_Min,
 						NodeChild_Max,
