@@ -158,7 +158,7 @@ int LeadingZeros(int x)
 
 int GetContainingPowerOf2(int i)
 {
-	int signed_ = i == 0 ? 1 : i;
+	int signed_ = 0;//i == 0 ? 1 : i;
 	return (int)(32 - LeadingZeros(signed_ - 1));
 
 }
