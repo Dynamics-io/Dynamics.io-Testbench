@@ -137,13 +137,17 @@ EXPORTED void IComputeProgram_Dispose(void* handle)
 
 EXPORTED void* IComputeProgram_ProgramInfo_New(char* program_name, int size, IComputeProgram::FileType type)
 {
-	return new IComputeProgram::ProgramInfo(std::string(program_name, size), type);
+	char tmp[100] = { 0 };
+	memcpy(tmp, program_name, size);
+	std::string p_name = std::string(program_name, size);
+	return new IComputeProgram::ProgramInfo(p_name, type);
 }
 
 EXPORTED void IComputeProgram_ProgramInfo_AddKernel(void* handle, char* name, int size)
 {
 	IComputeProgram::ProgramInfo* instance = (IComputeProgram::ProgramInfo*)handle;
-	instance->AddKernel(std::string(name, size));
+	std::string k_name = std::string(name, size);
+	instance->AddKernel(k_name);
 }
 
 

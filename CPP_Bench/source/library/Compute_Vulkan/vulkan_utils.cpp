@@ -8,6 +8,8 @@ std::vector<char> Utilities::readFile(const std::string& filename)
 {
     std::ifstream file(filename, std::ios::ate | std::ios::binary);
 
+    printf("VK Utilities::readFile: %s\n", filename.c_str());
+
     if (!file.is_open()) {
         printf("Failed to open file: %s\n", filename.c_str());
         throw std::runtime_error("Failed to open file!");

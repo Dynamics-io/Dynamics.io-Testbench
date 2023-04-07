@@ -32,6 +32,7 @@ namespace Dynamics.Compute
             public IntPtr device;
             [MarshalAs(UnmanagedType.ByValArray, SizeConst = 1000)]
             public char[] program_dir;
+            public int program_dir_size;
 
             public object Device
             {
@@ -43,8 +44,13 @@ namespace Dynamics.Compute
 
             public void SetProgramDir(string dir)
             {
+                program_dir_size = dir.Length;
                 program_dir = new char[1000];
                 dir.ToCharArray().CopyTo(program_dir, 0);
+                program_dir[dir.Length] = '\0';
+
+                //program_dir = dir.ToCharArray();// new char[1000];
+                //dir.ToCharArray().CopyTo(program_dir, 0);
             }
 
             public string ProgramDir { get { return new string(program_dir); } }

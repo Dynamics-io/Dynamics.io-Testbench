@@ -36,7 +36,8 @@ int Encode(int index)
 
 unsigned int Leaf_New(int nodeIndex, int childIndex)
 {
-	return ((unsigned int)nodeIndex & 0x7FFFFFFF) | ((unsigned int)childIndex << 31);
+	//return ((unsigned int)nodeIndex & 0x7FFFFFFF) | ((unsigned int)childIndex << 31);
+	return 0;
 }
 
 int Leaf_NodeIndex(unsigned int leaf)

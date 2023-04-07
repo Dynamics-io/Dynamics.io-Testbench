@@ -56,9 +56,19 @@ public unsafe struct Metanode
     /// The local cost change is unioned with the refine flags. They're never used simultaneously.
     /// This will be overwritten right after use, so don't expect anything meaningful here outside of refinement scheduling's scope.
     /// </summary>
-    [FieldOffset(8)]
+    [FieldOffset(12)]
     public float LocalCostChange;
 
+    public static int Size()
+    {
+        return Marshal.SizeOf(typeof(Metanode));
+    }
+
+    public override string ToString()
+    {
+        return String.Format("Metanode:(Parent: {0}, IndexInParent: {1}, RefineFlag: {2}, LocalCostChange:{3})",
+            Parent, IndexInParent, RefineFlag, LocalCostChange);
+    }
 }
 
 /// <summary>

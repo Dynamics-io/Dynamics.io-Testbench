@@ -579,10 +579,11 @@ int ComputeKernel::Execute(uint32_t x, uint32_t y, uint32_t z)
 	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
 
-
+	vkQueueWaitIdle(*mComputeQueue);
 	if (vkBeginCommandBuffer(*mComputeCmdBuffer, &beginInfo) != VK_SUCCESS) {
 		throw std::runtime_error("Failed to begin recording command buffer!");
 	}
+	printf("ComputeKernel::Execute: Start execute '%s'\n", mName);
 
 	vkCmdBindPipeline(*mComputeCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, mComputePipeline);
 
@@ -612,7 +613,9 @@ int ComputeKernel::Execute(uint32_t x, uint32_t y, uint32_t z)
 	if (vkQueueSubmit(*mComputeQueue, 1, &submitInfo, nullptr) != VK_SUCCESS) {
 		throw std::runtime_error("Failed to submit compute command buffer!");
 	}
+	printf("ComputeKernel::Execute: Finish execute submit '%s'\n", mName);
 	vkQueueWaitIdle(*mComputeQueue);
+	printf("ComputeKernel::Execute: Finish execute wait '%s'\n", mName);
 
 	return 0;
 }
@@ -804,10 +807,13 @@ int ComputeBuffer::SetData(void* src_data) {
 	);*/
 
 	void* maped_data;
+
+	printf("ComputeBuffer::SetData: Start.\n");
+	vkQueueWaitIdle(*mTransferQueue);
 	Utilities::FlushToBuffer(*mLogicalDevice, stagingBufferMemory, mSize, maped_data, src_data, true);
 
 	Utilities::CopyBuffer(*mTransferQueue, *mTransferCmdBuffer, stagingBuffer, mBuffer, mSize);
-
+	printf("ComputeBuffer::SetData: Finish.\n");
 	//vkDestroyBuffer(*mLogicalDevice, stagingBuffer, nullptr);
 	//vkFreeMemory(*mLogicalDevice, stagingBufferMemory, nullptr);
 
@@ -829,13 +835,15 @@ int ComputeBuffer::GetData(void* outData) {
 		stagingBufferMemory
 	);*/
 
+	printf("ComputeBuffer::GetData: Start.'\n");
+	vkQueueWaitIdle(*mTransferQueue);
 	Utilities::CopyBuffer(*mTransferQueue, *mTransferCmdBuffer, mBuffer, stagingBuffer, mSize);
 
 	void* maped_data;
 	vkMapMemory(*mLogicalDevice, stagingBufferMemory, 0, mSize, 0, &maped_data);
 	memcpy(outData, maped_data, static_cast<uint32_t>(mSize));
 	vkUnmapMemory(*mLogicalDevice, stagingBufferMemory);
-
+	printf("ComputeBuffer::GetData: Finish.'\n");
 
 	//vkDestroyBuffer(*mLogicalDevice, stagingBuffer, nullptr);
 	//vkFreeMemory(*mLogicalDevice, stagingBufferMemory, nullptr);

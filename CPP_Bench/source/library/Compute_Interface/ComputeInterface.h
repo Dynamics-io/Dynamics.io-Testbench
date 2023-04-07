@@ -25,9 +25,12 @@ namespace Dynamics_IO_Testbench {
 				Platform platform;
 				void* device;
 				char program_dir[1000];
+				int program_dir_size;
 
 				void SetProgramDir(std::string dir) {
-					memcpy(program_dir, dir.data(), dir.size());
+					program_dir_size = dir.size();
+					memcpy(program_dir, dir.data(), program_dir_size);
+					program_dir[program_dir_size] = '\0';
 				}
 			};
 

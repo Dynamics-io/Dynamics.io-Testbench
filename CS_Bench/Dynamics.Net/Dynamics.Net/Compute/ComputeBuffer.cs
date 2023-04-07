@@ -30,7 +30,7 @@ namespace Dynamics.Compute
         {
         }
 
-        public int SetData<T>(T[] data)
+        public int SetData(object data)
         {
             GCHandle pinnedArray = GCHandle.Alloc(data, GCHandleType.Pinned);
             IntPtr pointer = pinnedArray.AddrOfPinnedObject();
@@ -42,7 +42,7 @@ namespace Dynamics.Compute
             return res;
         }
 
-        public int GetData<T>(T[] data)
+        public int GetData(object data)
         {
             GCHandle pinnedArray = GCHandle.Alloc(data, GCHandleType.Pinned);
             IntPtr pointer = pinnedArray.AddrOfPinnedObject();

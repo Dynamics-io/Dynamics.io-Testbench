@@ -75,10 +75,10 @@ namespace Dynamics.Compute
         public class ProgramInfo : NativeObject
         {
             [DllImport(Settings.DLL)]
-            private static extern IntPtr IComputeProgram_ProgramInfo_New(char[] program_name, int size, ComputeProgram.FileType type);
+            private static extern IntPtr IComputeProgram_ProgramInfo_New(string program_name, int size, ComputeProgram.FileType type);
 
             [DllImport(Settings.DLL)]
-            private static extern void IComputeProgram_ProgramInfo_AddKernel(IntPtr handle, char[] name, int size);
+            private static extern void IComputeProgram_ProgramInfo_AddKernel(IntPtr handle, string name, int size);
 
             public ProgramInfo(nint hdl) : base(hdl)
             {
@@ -86,12 +86,19 @@ namespace Dynamics.Compute
 
             public ProgramInfo(string program_name, FileType type) : base()
             {
-                SetHandle(IComputeProgram_ProgramInfo_New(program_name.ToCharArray(), program_name.Length, type));
+                char[] name_arr = new char[program_name.Length];
+                program_name.ToCharArray().CopyTo(name_arr, 0);
+                for (int i = 0; i < name_arr.Length; i++)
+                {
+                    Console.Write("{0} ", (byte)name_arr[i]);
+                }
+                Console.WriteLine();
+                SetHandle(IComputeProgram_ProgramInfo_New(program_name, program_name.Length, type));
             }
 
             public void AddKernel(string name)
             {
-                IComputeProgram_ProgramInfo_AddKernel(handle, name.ToCharArray(), name.Length);
+                IComputeProgram_ProgramInfo_AddKernel(handle, name, name.Length);
             }
         }
         internal ComputeProgram(IntPtr hdl) :

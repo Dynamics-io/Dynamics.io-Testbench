@@ -418,6 +418,7 @@ GameObject:
   - component: {fileID: 1869387658}
   - component: {fileID: 1869387657}
   - component: {fileID: 1869387660}
+  - component: {fileID: 1869387661}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -502,12 +503,35 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f2c84f5c49006904489dd3c8c830eadb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  DATA_SIZE: 32
   tree:
     Nodes: []
     Metanodes: []
     Leaves: []
     NodeCount: 0
     LeafCount: 0
+  Cubes:
+  - {fileID: 2079664993}
+  - {fileID: 1560413101}
+  - {fileID: 1947070961}
+  - {fileID: 1621825456}
+--- !u!114 &1869387661
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1869387656}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 935ab989a8c29fd47b0d4fae574f222f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Nodes: []
+  Metanodes: []
+  Leaves: []
+  NodeCount: 0
+  LeafCount: 0
   Cubes:
   - {fileID: 2079664993}
   - {fileID: 1560413101}

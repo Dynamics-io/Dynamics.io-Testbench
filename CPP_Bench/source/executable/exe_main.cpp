@@ -141,10 +141,6 @@ int Vulkan_test()
 	//return 0;
 	//testConstructor();
 
-	int b_size = sizeof(bool);
-	printf("bool size: %i\n", b_size);
-	return 0;
-
 
 	std::vector<Vulkan_Device_Info> devices = ComputeInterface::GetSupportedDevices_Vulkan();
 
