@@ -133,16 +133,20 @@ struct BoundingBox CreateMerged(float4 minA, float4 maxA, float4 minB, float4 ma
 {
 	struct BoundingBox merged;
 	
-	merged.Min.x = min(minA.x, minB.x);
-	merged.Min.y = min(minA.y, minB.y);
-	merged.Min.z = min(minA.z, minB.z);
+	float4 min_ = (float4)(0,0,0,0);
+	float4 max_ = (float4)(0,0,0,0);
 	
-	merged.Max.x = max(maxA.x, maxB.x);
-	merged.Max.y = max(maxA.y, maxB.y);
-	merged.Max.z = max(maxA.z, maxB.z);
+	min_.x = min(minA.x, minB.x);
+	min_.y = min(minA.y, minB.y);
+	min_.z = min(minA.z, minB.z);
 	
-	//merged.Min = min(minA, minB);
-	//merged.Max = max(maxA, maxB);
+	max_.x = max(maxA.x, maxB.x);
+	max_.y = max(maxA.y, maxB.y);
+	max_.z = max(maxA.z, maxB.z);
+	
+	merged.Min = min_;
+	merged.Max = max_;
+	
 	return merged;
 }
 
