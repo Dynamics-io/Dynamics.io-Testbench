@@ -4,7 +4,7 @@
 struct tree_counts {
 	int NodeCount;
 	int LeafCount;
-} tree_counts;
+};
 
 struct metanode {
 	int Parent;
@@ -36,7 +36,7 @@ int Encode(int index)
 
 unsigned int Leaf_New(int nodeIndex, int childIndex)
 {
-	return ((unsigned int)nodeIndex & 0x7FFF_FFFF) | ((unsigned int)childIndex << 31);
+	return ((unsigned int)nodeIndex & 0x7FFFFFFF) | ((unsigned int)childIndex << 31);
 }
 
 int Leaf_NodeIndex(unsigned int leaf)
@@ -49,7 +49,7 @@ int Leaf_ChildIndex(unsigned int leaf)
 	return (int)((leaf & 0x80000000) >> 31); 
 }
 
-int AllocateNode(struct tree_counts* counts)
+int AllocateNode(global struct tree_counts* counts)
 {
 	struct tree_counts tmp = counts[0];
 	int count = tmp.NodeCount;
@@ -58,7 +58,7 @@ int AllocateNode(struct tree_counts* counts)
 	return count;
 }
 
-int IncrementLeaves(struct tree_counts* counts)
+int IncrementLeaves(global struct tree_counts* counts)
 {
 	struct tree_counts cnts = counts[0];
 	int count = cnts.LeafCount;
@@ -67,7 +67,7 @@ int IncrementLeaves(struct tree_counts* counts)
 	return count;
 }
 
-int AddLeaf(int nodeIndex, int childIndex, struct tree_counts* counts, unsigned int* leaves)
+int AddLeaf(int nodeIndex, int childIndex, global struct tree_counts* counts, global unsigned int* leaves)
 {
 	struct tree_counts cnts = counts[0];
 	int count = cnts.LeafCount;
@@ -82,8 +82,8 @@ kernel void Init(global struct tree_counts* counts, global struct metanode* meta
 	counts[0].NodeCount = 1;
 	counts[0].LeafCount = 0;
 	
-	metanode[0].Parent = -1;
-	metanode[0].IndexInParent = -1;
+	metanodes[0].Parent = -1;
+	metanodes[0].IndexInParent = -1;
 }
 
 
@@ -93,13 +93,13 @@ int InsertLeafIntoEmptySlot(
 	int nodeIndex, 
 	int childIndex, 
 	
-	float4* NodeChild_Min,
-	float4* NodeChild_Max,
-	int* NodeChild_Index,
-	int* NodeChild_LeafCount,
+	global float4* NodeChild_Min,
+	global float4* NodeChild_Max,
+	global int* NodeChild_Index,
+	global int* NodeChild_LeafCount,
 	
-	struct tree_counts* counts, 
-	unsigned int* leaves
+	global struct tree_counts* counts, 
+	global unsigned int* leaves
 )
 {
 	int leafIndex = AddLeaf(nodeIndex, childIndex, counts, leaves);
@@ -172,14 +172,14 @@ struct InsertionChoice ComputeBestInsertionChoice(
 {
 	struct InsertionChoice result;
 	result.MergedCandidate = CreateMerged(NodeChild_Min, NodeChild_Max, bounds.Min, bounds.Max);
-	float newCost = ComputeBoundsMetric(result.MergedCandidate);
+	float newCost = ComputeBoundsMetric_1(result.MergedCandidate);
 	if (NodeChild_Index >= 0)
 	{
 		//Estimate the cost of child node expansions as max(SAH(newLeafBounds), costChange) * log2(child.LeafCount).
         //We're assuming that the remaining tree is balanced and that each level will expand by at least SAH(newLeafBounds). 
         //This might not be anywhere close to correct, but it's not a bad estimate.
 		result.CostChange = newCost - ComputeBoundsMetric(NodeChild_Min, NodeChild_Max);
-		result.CostChange = result.CostChange + GetContainingPowerOf2(NodeChild_LeafCount) * max(newLeafCost, costChange);
+		result.CostChange = result.CostChange + GetContainingPowerOf2(NodeChild_LeafCount) * max(newLeafCost, result.CostChange);
 		result.Choice = TRAVERSE;
 	}
 	else
@@ -196,15 +196,15 @@ int MergeLeafNodes(
 	int parentIndex, 
 	int indexInParent, 
 	struct BoundingBox merged,
-	struct tree_counts* counts,
-	struct metanode* metanodes,
+	global struct tree_counts* counts,
+	global struct metanode* metanodes,
 	
-	float4* NodeChild_Min,
-	float4* NodeChild_Max,
-	int* NodeChild_Index,
-	int* NodeChild_LeafCount,
+	global float4* NodeChild_Min,
+	global float4* NodeChild_Max,
+	global int* NodeChild_Index,
+	global int* NodeChild_LeafCount,
 	
-	unsigned int* leaves
+	global unsigned int* leaves
 )
 {
 	//It's a leaf node.
@@ -258,6 +258,7 @@ kernel void Add(
 	global int* NodeChild_Index,
 	global int* NodeChild_LeafCount,
 	global unsigned int* leaves,
+	global struct metanode* metanodes,
 	global int* result
 )
 {
@@ -304,7 +305,7 @@ kernel void Add(
 				NodeChild_Min[child_a],
 				NodeChild_Max[child_a],
 				NodeChild_Index[child_a],
-				NodeChild_LeafCount[child_a],
+				NodeChild_LeafCount[child_a]
 			);
 			
 			
@@ -314,7 +315,7 @@ kernel void Add(
 				NodeChild_Min[child_b],
 				NodeChild_Max[child_b],
 				NodeChild_Index[child_b],
-				NodeChild_LeafCount[child_b],
+				NodeChild_LeafCount[child_b]
 			);
 			
 			if (choiceA.CostChange <= choiceB.CostChange)
@@ -326,6 +327,8 @@ kernel void Add(
 						nodeIndex,
 						0,
 						choiceA.MergedCandidate,
+						counts,
+						metanodes,
 						NodeChild_Min,
 						NodeChild_Max,
 						NodeChild_Index,
@@ -351,6 +354,8 @@ kernel void Add(
 						nodeIndex,
 						1,
 						choiceB.MergedCandidate,
+						counts,
+						metanodes,
 						NodeChild_Min,
 						NodeChild_Max,
 						NodeChild_Index,
