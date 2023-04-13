@@ -90,11 +90,11 @@ partial struct TestTree
 
             if (costChangeA <= costChangeB)
             {
-                Debug.LogFormat("Choice A: {0} - {1}, {2}", choiceA.ToString(), costChangeA, mergedA.ToString());
-                Debug.DrawLine(mergedA.Min, mergedA.Max, Color.red, 5000);
+                //Debug.LogFormat("Choice A: {0} - {1}, {2}", choiceA.ToString(), costChangeA, mergedA.ToString());
+                //Debug.DrawLine(mergedA.Min, mergedA.Max, Color.red, 5000);
                 if (choiceA == BestInsertionChoice.NewInternal)
                 {
-                    Debug.Log("MergeLeafNodes on A");
+                    //Debug.Log("MergeLeafNodes on A");
                     return MergeLeafNodes(bounds, nodeIndex, 0, mergedA);
                 }
                 else
@@ -107,16 +107,16 @@ partial struct TestTree
             }
             else
             {
-                Debug.LogFormat("Choice B: {0} - {1}, {2}", choiceB.ToString(), costChangeB, mergedB.ToString());
-                Debug.DrawLine(mergedB.Min, mergedB.Max, Color.blue, 5000);
+                //Debug.LogFormat("Choice B: {0} - {1}, {2}", choiceB.ToString(), costChangeB, mergedB.ToString());
+                //Debug.DrawLine(mergedB.Min, mergedB.Max, Color.blue, 5000);
                 if (choiceB == BestInsertionChoice.NewInternal)
                 {
-                    Debug.Log("MergeLeafNodes on B");
+                    //Debug.Log("MergeLeafNodes on B");
                     return MergeLeafNodes(bounds, nodeIndex, 1, mergedB);
                 }
                 else
                 {
-                    Debug.LogFormat("Traverse B");
+                    //Debug.LogFormat("Traverse B");
                     b.Min = mergedB.Min;
                     b.Max = mergedB.Max;
                     nodeIndex = b.Index;

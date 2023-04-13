@@ -20,6 +20,11 @@ namespace Dynamics
 
         public NativeObject(IntPtr hdl)
         {
+            if (hdl == IntPtr.Zero)
+            {
+                throw new Exception("Native Object must be created with valid handle.");
+            }
+
             handle = hdl;
         }
 

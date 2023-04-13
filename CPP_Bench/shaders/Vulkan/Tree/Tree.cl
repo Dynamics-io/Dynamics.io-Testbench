@@ -36,8 +36,7 @@ int Encode(int index)
 
 unsigned int Leaf_New(int nodeIndex, int childIndex)
 {
-	//return ((unsigned int)nodeIndex & 0x7FFFFFFF) | ((unsigned int)childIndex << 31);
-	return 0;
+	return ((unsigned int)nodeIndex & 0x7FFFFFFF) | ((unsigned int)childIndex << 31);
 }
 
 int Leaf_NodeIndex(unsigned int leaf)
@@ -103,7 +102,7 @@ int InsertLeafIntoEmptySlot(
 	global unsigned int* leaves
 )
 {
-	/*
+	
 	int leafIndex = AddLeaf(nodeIndex, childIndex, counts, leaves);
 	int child = Node_GetChildIndex(nodeIndex, childIndex);
 	
@@ -113,8 +112,7 @@ int InsertLeafIntoEmptySlot(
 	NodeChild_LeafCount[child] = 1;
 	
 	return leafIndex;
-	*/
-	return 0;
+
 }
 
 float ComputeBoundsMetric_2(float4 min, float4 max)
@@ -231,7 +229,7 @@ int MergeLeafNodes(
 	//It's a leaf node.
     //Create a new internal node with the new leaf and the old leaf as children.
     //this is the only place where a new level could potentially be created.
-	/*
+	
 	int newNodeIndex = AllocateNode(counts);
 	int newNode = newNodeIndex;
 	
@@ -266,8 +264,7 @@ int MergeLeafNodes(
 	NodeChild_Max[childInParent] = merged.Max;
 	NodeChild_LeafCount[childInParent] = 2;
 	
-	return leafIndex;*/
-	return 0;
+	return leafIndex;
 }
 
 __attribute__((reqd_work_group_size(1, 1, 1)))

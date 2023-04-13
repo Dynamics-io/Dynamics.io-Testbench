@@ -11,6 +11,7 @@ public class Tree_Tests : MonoBehaviour
     public int DATA_SIZE = 32;
     public TestTree tree;
 
+    public int BoundsToProcess;
     public Transform[] Cubes;
 
     // Start is called before the first frame update
@@ -25,6 +26,11 @@ public class Tree_Tests : MonoBehaviour
     void Update()
     {
         
+    }
+
+    public void Init(int num)
+    {
+        tree = new TestTree(num);
     }
 
     BoundingBox GetCubeBounds(Transform obj)
@@ -45,15 +51,25 @@ public class Tree_Tests : MonoBehaviour
         return new BoundingBox(min, max);
     }
 
-    void DoTreeInsertTest1()
+    public void DoTreeInsertTest1()
     {
         tree = new TestTree(10);
 
-        for (int i = 0; i < Cubes.Length; i++)
+        for (int i = 0; i < Mathf.Min(BoundsToProcess, Cubes.Length); i++)
         {
             BoundingBox bounds = GetCubeBounds(Cubes[i]);
             int leafInd = tree.Add(bounds);
             Debug.LogFormat("New Leaf: {0}", leafInd);
+        }
+
+    }
+
+    public void DoTreeInsertTest2(BoundingBox[] bounds)
+    {
+        for (int i = 0; i < bounds.Length; i++)
+        {
+            int leafInd = tree.Add(bounds[i]);
+            //Debug.LogFormat("New Leaf: {0}", leafInd);
         }
 
     }

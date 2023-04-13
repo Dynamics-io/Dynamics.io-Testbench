@@ -7,7 +7,7 @@ using UnityEngine;
 
 [Serializable]
 [StructLayout(LayoutKind.Explicit)]
-public struct NodeChild
+public struct NodeChild : IEquatable<NodeChild>
 {
     [FieldOffset(0)]
     public Vector3 Min;
@@ -17,6 +17,15 @@ public struct NodeChild
     public Vector3 Max;
     [FieldOffset(28)]
     public int LeafCount;
+
+    public bool Equals(NodeChild other)
+    {
+        return 
+            Index == other.Index && 
+            LeafCount == other.LeafCount &&
+            Vector3.Distance(Min, other.Min) <= 0.0001f &&
+            Vector3.Distance(Max, other.Max) <= 0.0001f;
+    }
 }
 
 //Note that the format of this node implies that we don't explicitly test against the root bounding box during normal execution.
@@ -28,12 +37,17 @@ public struct NodeChild
 /// </summary>
 [Serializable]
 [StructLayout(LayoutKind.Explicit)]
-public unsafe struct Node
+public unsafe struct Node : IEquatable<Node>
 {
     [FieldOffset(0)]
     public NodeChild A;
     [FieldOffset(32)]
     public NodeChild B;
+
+    public bool Equals(Node other)
+    {
+        return A.Equals(other.A) && B.Equals(other.B);
+    }
 }
 
 //Node metadata isn't required or used during collision testing, so it is stored separately.
@@ -43,7 +57,7 @@ public unsafe struct Node
 /// </summary>
 [Serializable]
 [StructLayout(LayoutKind.Explicit)]
-public unsafe struct Metanode
+public unsafe struct Metanode : IEquatable<Metanode>
 {
     [FieldOffset(0)]
     public int Parent;
@@ -64,6 +78,15 @@ public unsafe struct Metanode
         return Marshal.SizeOf(typeof(Metanode));
     }
 
+    public bool Equals(Metanode other)
+    {
+        return 
+            Parent == other.Parent && 
+            IndexInParent == other.IndexInParent && 
+            RefineFlag == other.RefineFlag && 
+            LocalCostChange == other.LocalCostChange;
+    }
+
     public override string ToString()
     {
         return String.Format("Metanode:(Parent: {0}, IndexInParent: {1}, RefineFlag: {2}, LocalCostChange:{3})",
@@ -76,7 +99,7 @@ public unsafe struct Metanode
 /// </summary>
 /// <remarks>The identity of a leaf is implicit in its position within the leaf array.</remarks>
 [Serializable]
-public struct Leaf
+public struct Leaf : IEquatable<Leaf>
 {
     public int Node_Index;
     public int Child_Index;
@@ -101,11 +124,26 @@ public struct Leaf
     uint packed;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public Leaf(uint pcked)
+    {
+        Node_Index = 0;
+        Child_Index = 0;
+        packed = pcked;
+        Node_Index = NodeIndex;
+        Child_Index = ChildIndex;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public Leaf(int nodeIndex, int childIndex)
     {
         Debug.Assert((childIndex & ~1) == 0, "Binary trees can't have children in slots other than 0 and 1!");
         packed = ((uint)nodeIndex & 0x7FFF_FFFF) | ((uint)childIndex << 31);
         Node_Index = nodeIndex;
         Child_Index = childIndex;
+    }
+
+    public bool Equals(Leaf other)
+    {
+        return packed == other.packed;
     }
 }

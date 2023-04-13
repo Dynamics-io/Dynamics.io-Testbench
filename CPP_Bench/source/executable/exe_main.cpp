@@ -28,9 +28,9 @@ public:
 
 int main()
 {
-	Vulkan_test();
+	//Vulkan_test();
 	//DirectX_test();
-	//OpenCL_test();
+	OpenCL_test();
 
 	return 0;
 }
@@ -247,15 +247,13 @@ int OpenCL_test()
 	ComputeInterface::ControllerInfo controllerInfo;
 	controllerInfo.platform = platf;
 	controllerInfo.device = &dev;
-	controllerInfo.SetProgramDir("C:/Users/jdrurka1/source/repos/Dynamics-io/Dynamics.io-Testbench/CPP_Bench/shaders/OpenCL");
+	controllerInfo.SetProgramDir("C:/Users/jdrurka1/source/repos/Dynamics-io/Dynamics.io-Testbench/CPP_Bench/shaders/OpenCL/Tree");
 
 	IComputeController* controller = ComputeInterface::GetComputeController(ComputeInterface::OpenCL, controllerInfo);
 
-	return 0;
+	std::string kernel_name = "Init";
 
-	std::string kernel_name = "work";
-
-	IComputeProgram::ProgramInfo p_info("test_cl_spv", IComputeProgram::FileType::Binary);
+	IComputeProgram::ProgramInfo p_info("Tree", IComputeProgram::FileType::Text);
 	p_info.AddKernel(kernel_name);
 
 	IComputeProgram* program = controller->AddProgram(p_info);
@@ -276,6 +274,8 @@ int OpenCL_test()
 	}
 
 	printf("Finished building program '%s'.\n", p_info.Name().c_str());
+
+	return 0;
 
 	int Data[DATA_SIZE] = { 0 };
 

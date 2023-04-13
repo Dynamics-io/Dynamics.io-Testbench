@@ -43,16 +43,16 @@ public unsafe partial struct TestTree
 
     int AllocateNode()
     {
-        Debug.Assert(Nodes.Length > NodeCount && Metanodes.Length > NodeCount,
-            "Any attempt to allocate a node should not overrun the allocated nodes. For all operations that allocate nodes, capacity should be preallocated.");
-        Debug.LogFormat("New node allocated: {0}", NodeCount);
+        /*Debug.Assert(Nodes.Length > NodeCount && Metanodes.Length > NodeCount,
+            "Any attempt to allocate a node should not overrun the allocated nodes. For all operations that allocate nodes, capacity should be preallocated.");*/
+        //Debug.LogFormat("New node allocated: {0}", NodeCount);
         return NodeCount++;
     }
 
     int AddLeaf(int nodeIndex, int childIndex)
     {
-        Debug.Assert(LeafCount < Leaves.Length,
-            "Any attempt to allocate a leaf should not overrun the allocated leaves. For all operations that allocate leaves, capacity should be preallocated.");
+        /*Debug.Assert(LeafCount < Leaves.Length,
+            "Any attempt to allocate a leaf should not overrun the allocated leaves. For all operations that allocate leaves, capacity should be preallocated.");*/
         Leaves[LeafCount] = new Leaf(nodeIndex, childIndex);
         return LeafCount++;
     }
@@ -69,7 +69,7 @@ public unsafe partial struct TestTree
         rootMetanode.Parent = -1;
         rootMetanode.IndexInParent = -1;
         rootInited = true;
-        Debug.Log("Root node initialized.");
+        //Debug.Log("Root node initialized.");
     }
 
     public void Resize(int targetLeafSlotCount)

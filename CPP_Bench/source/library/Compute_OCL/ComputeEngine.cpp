@@ -332,6 +332,7 @@ ComputeProgram::ComputeProgram(ComputeContext* context_obj, cl_context context, 
 int ComputeProgram::Set_Source(const char* source)
 {
    cl_int err;
+   printf("%s\n", source);
    program = clCreateProgramWithSource(m_context, 1, (const char **)&source, NULL, &err);
    mInitialized = true;
    return err;
@@ -340,7 +341,12 @@ int ComputeProgram::Set_Source(const char* source)
 int ComputeProgram::Set_Binary(const void* binary, size_t length)
 {
     cl_int err;
+#if CL_TARGET_OPENCL_VERSION >= 210
     program = clCreateProgramWithIL(m_context, binary, length, &err);
+#else
+    cl_device_id dvc = mContextObj->Get_CL_Device_ID();
+    program = clCreateProgramWithBinary(m_context, 1, &dvc, &length, (const unsigned char**)&binary, NULL, &err)
+#endif
     printf("clCreateProgramWithIL: res %i\n", err);
     mInitialized = true;
     return err;
@@ -390,6 +396,7 @@ void ComputeProgram::AddConstant(std::string name, std::string value)
 
 int ComputeProgram::Build(char* errorStr, size_t e_size)
 {
+    args += "-cl-std=CL3.0 ";
     if (ComputeEngine::GetAppDir() != "")
     {
         std::string inc_dir = ComputeEngine::GetAppDir();
@@ -401,6 +408,10 @@ int ComputeProgram::Build(char* errorStr, size_t e_size)
 
    size_t ret_e_size;
    int res = clGetProgramBuildInfo(program, mContextObj->Get_CL_Device_ID(), CL_PROGRAM_BUILD_LOG, e_size, errorStr, &ret_e_size);
+
+   if (build_res != 0) {
+       printf("Build error: %s\n", errorStr);
+   }
 
    return build_res;
 }
@@ -444,11 +455,9 @@ ComputeKernel::ComputeKernel(ComputeProgram* program_obj, char* name, cl_command
 
    //kernels = new cl_kernel[numKernels];
    //command_queue = new cl_command_queue[numKernels];
-
-
    
    printf("ComputeKernel(): Create kernel %s\n", name);
-   kernel = clCreateKernel(m_program, "work", &err);
+   kernel = clCreateKernel(m_program, name, &err);
 
    if (err != 0)
    {
@@ -469,14 +478,18 @@ int ComputeKernel::SetBuffer(ComputeBuffer* buffer, int arg)
 int ComputeKernel::Execute(cl_uint work_dim, size_t* global_work_size)
 {
    cl_command_queue c_q = command_queue;
+   printf("Enqueue kernel.\n");
    int res = clEnqueueNDRangeKernel(c_q, kernel, work_dim, NULL, global_work_size, NULL, 0, NULL, NULL);
-
+   printf("Finish enqueue kernel.\n");
+   
    if (res != 0)
    {
        printf("ComputeKernel.Execute: Failed to enqueue Kernel: %i\n", res);
    }
 
+   printf("clFinish.\n");
    res = clFinish(command_queue);
+   printf("Finished clFinish.\n");
 
    if (res != 0)
    {

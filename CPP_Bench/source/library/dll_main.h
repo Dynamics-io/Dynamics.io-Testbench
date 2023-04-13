@@ -15,8 +15,17 @@ EXPORTED void* ComputeInterface_GetComputeController(ComputeInterface::Compute_S
 EXPORTED void ComputeInterface_DisposePlatform(ComputeInterface::Compute_SDK implementation);
 
 EXPORTED int ComputeInterface_GetSupportedDevicesSize_Vulkan();
-
 EXPORTED int ComputeInterface_GetSupportedDevices_Vulkan(Vulkan_Device_Info* out_devices);
+
+EXPORTED int ComputeInterface_GetSupportedPlatformsSize_OpenCL();
+EXPORTED int ComputeInterface_GetSupportedPlatforms_OpenCL(Platform* out_platforms);
+
+EXPORTED void ComputeInterface_GetSupportedDevices_SetPlatform_OpenCL(Platform platform);
+EXPORTED int ComputeInterface_GetSupportedDevicesSize_OpenCL();
+EXPORTED int ComputeInterface_GetSupportedDevices_OpenCL(OpenCL_Device_Info* out_devices);
+
+EXPORTED int ComputeInterface_GetSupportedDevicesSize_DirectX();
+EXPORTED int ComputeInterface_GetSupportedDevices_DirectX(DirectX_Device_Info* out_devices);
 
 
 EXPORTED void* IComputeController_AddProgram(void* handle, IComputeProgram::ProgramInfo info);

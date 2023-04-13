@@ -2,9 +2,6 @@
 
 #include "Compute_Interface/PlatformStructures.h"
 
-#define CL_TARGET_OPENCL_VERSION 300
-#define CL_HPP_TARGET_OPENCL_VERSION 300
-
 #include "OCL_forwardDeclarations.h"
 //#include "CL/cl.h"
 #include "Compute_OCL/CL_SDK/cl.h"

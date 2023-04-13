@@ -17,6 +17,23 @@ namespace Dynamics.Compute
         [DllImport(Settings.DLL)]
         private static extern int ComputeInterface_GetSupportedDevices_Vulkan([In, Out] Vulkan_Device_Info[] out_devices);
 
+        [DllImport(Settings.DLL)]
+        private static extern int ComputeInterface_GetSupportedPlatformsSize_OpenCL();
+        [DllImport(Settings.DLL)]
+        private static extern int ComputeInterface_GetSupportedPlatforms_OpenCL([In, Out] Platform[] out_platforms);
+
+        [DllImport(Settings.DLL)]
+        private static extern void ComputeInterface_GetSupportedDevices_SetPlatform_OpenCL(Platform platform);
+        [DllImport(Settings.DLL)]
+        private static extern int ComputeInterface_GetSupportedDevicesSize_OpenCL();
+        [DllImport(Settings.DLL)]
+        private static extern int ComputeInterface_GetSupportedDevices_OpenCL([In, Out] OpenCL_Device_Info[] out_devices);
+
+        [DllImport(Settings.DLL)]
+        private static extern int ComputeInterface_GetSupportedDevicesSize_DirectX();
+        [DllImport(Settings.DLL)]
+        private static extern int ComputeInterface_GetSupportedDevices_DirectX([In, Out] DirectX_Device_Info[] out_devices);
+
         public enum Compute_SDK
         {
             OpenCL,
@@ -74,6 +91,37 @@ namespace Dynamics.Compute
 
             Vulkan_Device_Info[] devices = new Vulkan_Device_Info[num];
             ComputeInterface_GetSupportedDevices_Vulkan(devices);
+
+            return devices;
+        }
+
+        public static Platform[] Get_Supported_Platforms_OpenCL()
+        {
+            int num = ComputeInterface_GetSupportedPlatformsSize_OpenCL();
+
+            Platform[] platforms = new Platform[num];
+            ComputeInterface_GetSupportedPlatforms_OpenCL(platforms);
+
+            return platforms;
+        }
+
+        public static OpenCL_Device_Info[] Get_Supported_Devices_OpenCL(Platform platform)
+        {
+            ComputeInterface_GetSupportedDevices_SetPlatform_OpenCL(platform);
+            int num = ComputeInterface_GetSupportedDevicesSize_OpenCL();
+
+            OpenCL_Device_Info[] devices = new OpenCL_Device_Info[num];
+            ComputeInterface_GetSupportedDevices_OpenCL(devices);
+
+            return devices;
+        }
+
+        public static DirectX_Device_Info[] Get_Supported_Devices_DirectX()
+        {
+            int num = ComputeInterface_GetSupportedDevicesSize_DirectX();
+
+            DirectX_Device_Info[] devices = new DirectX_Device_Info[num];
+            ComputeInterface_GetSupportedDevices_DirectX(devices);
 
             return devices;
         }

@@ -75,7 +75,7 @@ IComputeController* ComputeInterface::GetComputeController_OCL(ControllerInfo in
     //compute_test test;
     //test.Run(info.platform, info.device);
 
-    return nullptr;
+    //return nullptr;
 
     IComputeController* controller = ComputeController_OCL::New();
 

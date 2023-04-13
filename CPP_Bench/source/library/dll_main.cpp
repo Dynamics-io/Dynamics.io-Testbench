@@ -6,7 +6,10 @@
 #define PHYSICS_DT 0.0005f // fixed dt of 0.5 ms
 
 std::vector<Platform> platforms;
-std::vector<Vulkan_Device_Info> devices;
+Platform current_platform;
+std::vector<Vulkan_Device_Info> vk_devices;
+std::vector<OpenCL_Device_Info> ocl_devices;
+std::vector<DirectX_Device_Info> dx_devices;
 
 
 EXPORTED void* ComputeInterface_GetComputeController(ComputeInterface::Compute_SDK implementation, ComputeInterface::ControllerInfo info)
@@ -21,20 +24,69 @@ EXPORTED void ComputeInterface_DisposePlatform(ComputeInterface::Compute_SDK imp
 
 EXPORTED int ComputeInterface_GetSupportedDevicesSize_Vulkan()
 {
-	devices = ComputeInterface::GetSupportedDevices_Vulkan();
-	return devices.size();
+	vk_devices = ComputeInterface::GetSupportedDevices_Vulkan();
+	return vk_devices.size();
 }
 
 EXPORTED int ComputeInterface_GetSupportedDevices_Vulkan(Vulkan_Device_Info* out_devices)
 {
-	for (int i = 0; i < devices.size(); i++) {
-		out_devices[i] = devices[i];
+	for (int i = 0; i < vk_devices.size(); i++) {
+		out_devices[i] = vk_devices[i];
 	}
-	return devices.size();
+	return vk_devices.size();
 
 	//out_devices = devices.data();
 	//return devices.size();
 }
+
+EXPORTED int ComputeInterface_GetSupportedPlatformsSize_OpenCL()
+{
+	platforms = ComputeInterface::GetSupportedPlatforms_OpenCL();
+	return platforms.size();
+}
+
+EXPORTED int ComputeInterface_GetSupportedPlatforms_OpenCL(Platform* out_platforms)
+{
+	for (int i = 0; i < platforms.size(); i++) {
+		out_platforms[i] = platforms[i];
+	}
+	return platforms.size();
+}
+
+EXPORTED void ComputeInterface_GetSupportedDevices_SetPlatform_OpenCL(Platform platform)
+{
+	current_platform = platform;
+}
+
+EXPORTED int ComputeInterface_GetSupportedDevicesSize_OpenCL()
+{
+	ocl_devices = ComputeInterface::GetSupportedDevices_OpenCL(current_platform);
+	return ocl_devices.size();
+}
+
+EXPORTED int ComputeInterface_GetSupportedDevices_OpenCL(OpenCL_Device_Info* out_devices)
+{
+	for (int i = 0; i < ocl_devices.size(); i++) {
+		out_devices[i] = ocl_devices[i];
+	}
+	return ocl_devices.size();
+}
+
+EXPORTED int ComputeInterface_GetSupportedDevicesSize_DirectX()
+{
+	dx_devices = ComputeInterface::GetSupportedDevices_DirectX();
+	return dx_devices.size();
+}
+
+EXPORTED int ComputeInterface_GetSupportedDevices_DirectX(DirectX_Device_Info* out_devices)
+{
+	for (int i = 0; i < dx_devices.size(); i++) {
+		out_devices[i] = dx_devices[i];
+	}
+	return dx_devices.size();
+}
+
+
 
 
 EXPORTED void* IComputeController_AddProgram(void* handle, IComputeProgram::ProgramInfo info)

@@ -31,6 +31,8 @@ namespace Dynamics.Compute
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
     public struct OpenCL_Device_Info
     {
+        IntPtr cl_device;
+
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 1000)]
         char[] vendor;
         ushort vendor_size;

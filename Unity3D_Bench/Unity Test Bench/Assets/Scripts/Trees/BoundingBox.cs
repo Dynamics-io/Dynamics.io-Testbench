@@ -177,6 +177,30 @@ public struct BoundingBox
 
 }
 
+[Serializable]
+[StructLayout(LayoutKind.Sequential)]
+public struct BoundingBox_CL
+{
+    public Vector4 Min;
+    public Vector4 Max;
+
+    public BoundingBox_CL(Vector3 min, Vector3 max)
+    {
+        this.Min = min;
+        this.Max = max;
+    }
+
+    public static int Size()
+    {
+        return Marshal.SizeOf(typeof(BoundingBox_CL));
+    }
+
+    public override string ToString()
+    {
+        return String.Format("BoundingBox({0}, {1})", Min, Max);
+    }
+}
+
 /// <summary>
 /// The current containment state of two objects.
 /// </summary>
