@@ -199,27 +199,33 @@ std::vector<OpenCL_Device_Info> ComputeInterface::GetSupportedDevices_OpenCL(Pla
         info.cl_device = device_ids[i];
 
         ZeroMemory(Info, INFO_SIZE);
+        n_size = 0;
         clGetDeviceInfo(device_ids[i], CL_DEVICE_VENDOR, INFO_SIZE, Info, &n_size);
         strcpy(info.vendor, Info);
         info.vendor_size = n_size;
 
         ZeroMemory(Info, INFO_SIZE);
+        n_size = 0;
         clGetDeviceInfo(device_ids[i], CL_DEVICE_NAME, INFO_SIZE, Info, &n_size);
         strcpy(info.name, Info);
         info.name_size = n_size;
 
         cl_uint freq;
+        n_size = 0;
         clGetDeviceInfo(device_ids[i], CL_DEVICE_MAX_CLOCK_FREQUENCY, sizeof(cl_uint), &freq, &n_size);
         info.clock_frequency = freq;
 
         cl_uint nm_unts;
+        n_size = 0;
         clGetDeviceInfo(device_ids[i], CL_DEVICE_MAX_COMPUTE_UNITS, sizeof(cl_uint), &nm_unts, &n_size);
         info.num_compute_units = nm_unts;
 
         cl_int num_dim;
+        n_size = 0;
         clGetDeviceInfo(device_ids[i], CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS, sizeof(cl_uint), &num_dim, &n_size);
 
         size_t* sizes = new size_t[num_dim];
+        n_size = 0;
         clGetDeviceInfo(device_ids[i], CL_DEVICE_MAX_WORK_ITEM_SIZES, sizeof(size_t) * num_dim, sizes, &n_size);
         info.max_work_size = 1;
         for (int w = 0; w < 2; w++)
@@ -229,9 +235,22 @@ std::vector<OpenCL_Device_Info> ComputeInterface::GetSupportedDevices_OpenCL(Pla
         delete[] sizes;
 
         size_t work_g_size;
+        n_size = 0;
         clGetDeviceInfo(device_ids[i], CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(size_t), &work_g_size, &n_size);
         info.group_size = work_g_size;
 
+        cl_device_local_mem_type local_mem_type;
+        n_size = 0;
+        clGetDeviceInfo(device_ids[i], CL_DEVICE_LOCAL_MEM_TYPE, sizeof(cl_device_local_mem_type), &local_mem_type, &n_size);
+        printf("Device Local Memory Type: %u\n", local_mem_type);
+
+        cl_ulong local_mem_size;
+        n_size = 0;
+        clGetDeviceInfo(device_ids[i], CL_DEVICE_LOCAL_MEM_SIZE, sizeof(cl_ulong), &local_mem_size, &n_size);
+        printf("Device local memory size: %llu\n", local_mem_size);
+        info.local_memory_size = (unsigned int)local_mem_size;
+
+        n_size = 0;
         clGetDeviceInfo(device_ids[i], CL_DEVICE_TYPE, sizeof(cl_device_type), &type, &n_size);
         info.is_type_default = (type & CL_DEVICE_TYPE_DEFAULT) == CL_DEVICE_TYPE_DEFAULT;
         info.is_type_CPU = (type & CL_DEVICE_TYPE_CPU) == CL_DEVICE_TYPE_CPU;

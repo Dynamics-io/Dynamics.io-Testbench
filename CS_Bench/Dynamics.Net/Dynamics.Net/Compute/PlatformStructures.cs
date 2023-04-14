@@ -41,19 +41,20 @@ namespace Dynamics.Compute
         char[] name;
         ushort name_size;
 
-        uint clock_frequency;
-        uint num_compute_units;
-        ulong mem_size;
-        uint max_work_size;
-        uint group_size;
-        byte is_type_default;
-        byte is_type_CPU;
-        byte is_type_GPU;
-        byte is_type_Accelerator;
+        public uint clock_frequency;
+        public uint num_compute_units;
+        public ulong mem_size;
+        public uint max_work_size;
+        public uint group_size;
+        public uint local_memory_size;
+        public byte is_type_default;
+        public byte is_type_CPU;
+        public byte is_type_GPU;
+        public byte is_type_Accelerator;
 
-        public string Name { get { return new string(name).Substring(0, name_size); } }
+        public string Name { get { return new string(name).Substring(0, name_size - 1); } }
 
-        public string Vendor { get { return new string(vendor).Substring(0, vendor_size); } }
+        public string Vendor { get { return new string(vendor).Substring(0, vendor_size - 1); } }
     };
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]

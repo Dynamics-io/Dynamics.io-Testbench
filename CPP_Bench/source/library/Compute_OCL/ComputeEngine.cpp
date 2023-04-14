@@ -193,19 +193,23 @@ void ComputeEngine::Dispose() {
 
 ComputeBuffer* ComputeContext::GetBuffer(ComputeBuffer::Buffer_Type type, size_t size)
 {
-    cl_mem_flags flags;
+    cl_mem_flags flags = 0;
+    cl_mem_flags flags_staging = 0;
 
     switch (type)
     {
     case ComputeBuffer::Buffer_Type::READ:
-        flags = CL_MEM_READ_ONLY;
+        flags_staging = CL_MEM_ALLOC_HOST_PTR | CL_MEM_HOST_WRITE_ONLY;
+        flags = CL_MEM_HOST_NO_ACCESS | CL_MEM_READ_ONLY;
         break;
 
     case ComputeBuffer::Buffer_Type::Write:
-        flags = CL_MEM_WRITE_ONLY;
+        flags_staging = CL_MEM_ALLOC_HOST_PTR | CL_MEM_HOST_READ_ONLY;
+        flags = CL_MEM_HOST_NO_ACCESS | CL_MEM_WRITE_ONLY;
         break;
 
     case ComputeBuffer::Buffer_Type::Read_Write:
+        flags_staging = CL_MEM_ALLOC_HOST_PTR;
         flags = CL_MEM_READ_WRITE;
         break;
 
@@ -213,7 +217,7 @@ ComputeBuffer* ComputeContext::GetBuffer(ComputeBuffer::Buffer_Type type, size_t
         return NULL;
     }
 
-    mBuffers.emplace_back(ComputeBuffer(context, command_queue, numContexts, flags, size));
+    mBuffers.emplace_back(ComputeBuffer(context, command_queue, numContexts, flags, flags_staging, size));
     auto& buf = mBuffers.back();
     //buf.mCanCallDispose = true;
     return &buf;
@@ -334,6 +338,7 @@ int ComputeProgram::Set_Source(const char* source)
    cl_int err;
    printf("%s\n", source);
    program = clCreateProgramWithSource(m_context, 1, (const char **)&source, NULL, &err);
+   args += "-cl-std=CL2.0 ";
    mInitialized = true;
    return err;
 }
@@ -343,6 +348,7 @@ int ComputeProgram::Set_Binary(const void* binary, size_t length)
     cl_int err;
 #if CL_TARGET_OPENCL_VERSION >= 210
     program = clCreateProgramWithIL(m_context, binary, length, &err);
+    args += "-x spir -spir-std=1.4 ";
 #else
     cl_device_id dvc = mContextObj->Get_CL_Device_ID();
     program = clCreateProgramWithBinary(m_context, 1, &dvc, &length, (const unsigned char**)&binary, NULL, &err)
@@ -396,11 +402,10 @@ void ComputeProgram::AddConstant(std::string name, std::string value)
 
 int ComputeProgram::Build(char* errorStr, size_t e_size)
 {
-    args += "-cl-std=CL3.0 ";
     if (ComputeEngine::GetAppDir() != "")
     {
         std::string inc_dir = ComputeEngine::GetAppDir();
-        args += "-I " + inc_dir;
+        args += "-I \"" + inc_dir + "\" ";
     }
    cl_int build_res = clBuildProgram(program, 0, NULL, args.c_str(), NULL, NULL);
 
@@ -512,7 +517,7 @@ void ComputeKernel::Dispose()
 
 
 
-ComputeBuffer::ComputeBuffer(cl_context contexts, cl_command_queue queue, int numContext, cl_mem_flags type, size_t length)
+ComputeBuffer::ComputeBuffer(cl_context contexts, cl_command_queue queue, int numContext, cl_mem_flags type, cl_mem_flags type_staging, size_t length)
 {
    num = numContext;
    //buffer = new cl_mem[numContext];
@@ -526,19 +531,36 @@ ComputeBuffer::ComputeBuffer(cl_context contexts, cl_command_queue queue, int nu
 
 
    buffer = clCreateBuffer(context, type, length, NULL, &err);
+   buffer_staging = clCreateBuffer(context, type_staging, length, NULL, &err);
 
    mInitialized = true;
 }
 
 int ComputeBuffer::SetData(void* data)
 {
-   int res = clEnqueueWriteBuffer(command_queue, buffer, CL_TRUE, 0, size, data, 0, NULL, NULL);
+   cl_int res = clEnqueueWriteBuffer(command_queue, buffer_staging, CL_TRUE, 0, size, data, 0, NULL, NULL);
+
+   if (res != 0)
+   {
+       return res;
+   }
+
+   res = clEnqueueCopyBuffer(command_queue, buffer_staging, buffer, 0, 0, size, 0, NULL, NULL);
+
    return res;
 }
 
 int ComputeBuffer::GetData(void* outData)
 {
-   int res = clEnqueueReadBuffer(command_queue, buffer, CL_TRUE, 0, size, outData, 0, NULL, NULL);
+    cl_int res = clEnqueueCopyBuffer(command_queue, buffer, buffer_staging, 0, 0, size, 0, NULL, NULL);
+
+    if (res != 0)
+    {
+        return res;
+    }
+
+    res = clEnqueueReadBuffer(command_queue, buffer_staging, CL_TRUE, 0, size, outData, 0, NULL, NULL);
+
    return res;
 }
 
@@ -548,6 +570,7 @@ void ComputeBuffer::Dispose()
         return;
 
     clReleaseMemObject(buffer);
+    clReleaseMemObject(buffer_staging);
 
     mDestroyed = true;
     mInitialized = false;

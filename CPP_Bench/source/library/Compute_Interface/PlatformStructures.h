@@ -33,6 +33,7 @@ namespace Dynamics_IO_Testbench {
             unsigned long mem_size;
             unsigned int max_work_size;
             unsigned int group_size;
+            unsigned int local_memory_size;
             bool is_type_default;
             bool is_type_CPU;
             bool is_type_GPU;

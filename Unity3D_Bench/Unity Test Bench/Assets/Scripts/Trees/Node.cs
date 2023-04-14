@@ -70,8 +70,10 @@ public unsafe struct Metanode : IEquatable<Metanode>
     /// The local cost change is unioned with the refine flags. They're never used simultaneously.
     /// This will be overwritten right after use, so don't expect anything meaningful here outside of refinement scheduling's scope.
     /// </summary>
+    //[FieldOffset(12)]
+    //public float LocalCostChange;
     [FieldOffset(12)]
-    public float LocalCostChange;
+    public int padding;
 
     public static int Size()
     {
@@ -80,17 +82,17 @@ public unsafe struct Metanode : IEquatable<Metanode>
 
     public bool Equals(Metanode other)
     {
-        return 
-            Parent == other.Parent && 
-            IndexInParent == other.IndexInParent && 
-            RefineFlag == other.RefineFlag && 
-            LocalCostChange == other.LocalCostChange;
+        return
+            Parent == other.Parent &&
+            IndexInParent == other.IndexInParent &&
+            RefineFlag == other.RefineFlag;// && 
+            //LocalCostChange == other.LocalCostChange;
     }
 
     public override string ToString()
     {
-        return String.Format("Metanode:(Parent: {0}, IndexInParent: {1}, RefineFlag: {2}, LocalCostChange:{3})",
-            Parent, IndexInParent, RefineFlag, LocalCostChange);
+        return String.Format("Metanode:(Parent: {0}, IndexInParent: {1}, RefineFlag: {2})",
+            Parent, IndexInParent, RefineFlag);
     }
 }
 

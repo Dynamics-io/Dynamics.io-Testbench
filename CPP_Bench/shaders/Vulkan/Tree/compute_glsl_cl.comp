@@ -1,7 +1,7 @@
 #version 450
 
 struct Data{
-	vec4 values;
+	ivec4 values;
 };
 
 layout(std140, binding = 0) readonly buffer SSBO_In{
@@ -20,7 +20,7 @@ void main()
 	uint buffer_index = index / 4;
 	uint access_index = index % 4;
 	
-	float val = in_data[buffer_index].values[access_index];
+	int val = in_data[buffer_index].values[access_index];
 	
 	out_data[buffer_index].values[access_index] = val * val;
 	//out_data[buffer_index].values = vec4(4, 4, 4, 4);

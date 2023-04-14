@@ -17,6 +17,9 @@ public class CL_Tree_Testing : MonoBehaviour
         public int NodeCount;
         public int LeafCount;
 
+        public int padding1;
+        public int padding2;
+
         public static int Size()
         {
             return Marshal.SizeOf(typeof(tree_counts));
@@ -79,13 +82,21 @@ public class CL_Tree_Testing : MonoBehaviour
     ComputeBuffer result_buffer;
 
 
+    ComputeBuffer p_NodeChild_Min_buffer;
+    ComputeBuffer p_NodeChild_Max_buffer;
+    ComputeBuffer p_NodeChild_Index_buffer;
+    ComputeBuffer p_NodeChild_LeafCount_buffer;
+
+    ComputeBuffer p_leaves_buffer;
+
+
     string kernel_tree_init = "Init";
     string kernel_tree_add = "Add";
 
     // Start is called before the first frame update
     void Start()
     {
-        //DoComputeTest();
+        DoComputeTest();
         //return;
 
         //Init(Cubes.Length);
@@ -119,17 +130,17 @@ public class CL_Tree_Testing : MonoBehaviour
     {
         Debug.LogFormat("starting...");
 
-        object[] device_info = GetDevice_OpenCL();
+        object[] device_info = GetDevice_Vulkan();
 
         ComputeInterface.ControllerInfo controllerInfo = default;
-        controllerInfo.platform = (Platform)device_info[0];
+        controllerInfo.platform = device_info[0] == null ? default : (Platform)device_info[0];
         controllerInfo.Device = device_info[1];
-        controllerInfo.SetProgramDir("C:/Users/jdrurka1/source/repos/Dynamics-io/Dynamics.io-Testbench/CPP_Bench/shaders/OpenCL/Tree");
-        controller = ComputeInterface.GetComputeController(ComputeInterface.Compute_SDK.OpenCL, controllerInfo);
+        controllerInfo.SetProgramDir("C:/Users/jdrurka1/source/repos/Dynamics-io/Dynamics.io-Testbench/CPP_Bench/shaders/Vulkan/Tree");
+        controller = ComputeInterface.GetComputeController(ComputeInterface.Compute_SDK.VULKAN, controllerInfo);
 
-        ComputeProgram.ProgramInfo p_info = new ComputeProgram.ProgramInfo("Tree", ComputeProgram.FileType.Text);
+        ComputeProgram.ProgramInfo p_info = new ComputeProgram.ProgramInfo("Tree", ComputeProgram.FileType.Binary);
         p_info.AddKernel(kernel_tree_init);
-        p_info.AddKernel(kernel_tree_add);
+        //p_info.AddKernel(kernel_tree_add);
 
 
         program = controller.AddProgram(p_info);
@@ -152,6 +163,19 @@ public class CL_Tree_Testing : MonoBehaviour
         Debug.Log("Tree program initialized.");
     }
 
+    public int GetLocalMemorySizeEstimate(int num)
+    {
+        int sum = 0;
+
+        sum += num * 2 * sizeof(float) * 4; // p_NodeChild_Min_buffer
+        sum += num * 2 * sizeof(float) * 4; // p_NodeChild_Max_buffer
+        sum += num * 2 * sizeof(int); // p_NodeChild_Index_buffer
+        sum += num * 2 * sizeof(int); // p_NodeChild_LeafCount_buffer
+        sum += num * sizeof(uint); // p_leaves_buffer
+
+        return sum;
+    }
+
     public void Init_Buffers(int num)
     {
         counts_buffer = controller.NewReadWriteBuffer(1, tree_counts.Size());
@@ -168,19 +192,30 @@ public class CL_Tree_Testing : MonoBehaviour
 
         result_buffer = controller.NewReadWriteBuffer(num, sizeof(int));
 
+
+        // Private buffers.
+        p_NodeChild_Min_buffer = controller.NewReadWriteBuffer(num * 2, sizeof(float) * 4);
+        p_NodeChild_Max_buffer = controller.NewReadWriteBuffer(num * 2, sizeof(float) * 4);
+        p_NodeChild_Index_buffer = controller.NewReadWriteBuffer(num * 2, sizeof(int));
+        p_NodeChild_LeafCount_buffer = controller.NewReadWriteBuffer(num * 2, sizeof(int));
+        p_leaves_buffer = controller.NewReadWriteBuffer(num, sizeof(uint));
+
+
         ComputeProgram.BindIndex ind = default;
 
         // Bind Init kernel buffers
 
         ind.ParameterIndex = 0;
+        ind.GlobalIndex = 0;
         program.KernelSetBuffer(kernel_tree_init, counts_buffer, ind);
         ind.ParameterIndex = 1;
+        ind.GlobalIndex = 1;
         program.KernelSetBuffer(kernel_tree_init, metanodes_buffer, ind);
 
 
         // Bind Add kernel buffers
 
-        ind.ParameterIndex = 0;
+        /*ind.ParameterIndex = 0;
         program.KernelSetBuffer(kernel_tree_add, counts_buffer, ind);
         ind.ParameterIndex = 1;
         program.KernelSetBuffer(kernel_tree_add, boundingBox_add_buffer, ind);
@@ -199,7 +234,18 @@ public class CL_Tree_Testing : MonoBehaviour
         ind.ParameterIndex = 8;
         program.KernelSetBuffer(kernel_tree_add, metanodes_buffer, ind);
         ind.ParameterIndex = 9;
-        program.KernelSetBuffer(kernel_tree_add, result_buffer, ind);
+        program.KernelSetBuffer(kernel_tree_add, result_buffer, ind);*/
+
+        /*ind.ParameterIndex = 10;
+        program.KernelSetBuffer(kernel_tree_add, p_NodeChild_Min_buffer, ind);
+        ind.ParameterIndex = 11;
+        program.KernelSetBuffer(kernel_tree_add, p_NodeChild_Max_buffer, ind);
+        ind.ParameterIndex = 12;
+        program.KernelSetBuffer(kernel_tree_add, p_NodeChild_Index_buffer, ind);
+        ind.ParameterIndex = 13;
+        program.KernelSetBuffer(kernel_tree_add, p_NodeChild_LeafCount_buffer, ind);
+        ind.ParameterIndex = 14;
+        program.KernelSetBuffer(kernel_tree_add, p_leaves_buffer, ind);*/
 
         int res = program.FinishBuild();
 
@@ -316,29 +362,35 @@ public class CL_Tree_Testing : MonoBehaviour
         Debug.LogFormat("starting...");
 
         object[] device_info = GetDevice_OpenCL();
+        //object[] device_info = GetDevice_Vulkan();
 
         ComputeInterface.ControllerInfo controllerInfo = default;
-        controllerInfo.platform = (Platform)device_info[0];
+        controllerInfo.platform = device_info[0] == null ? default : (Platform)device_info[0];
         controllerInfo.Device = device_info[1];
-        controllerInfo.SetProgramDir("C:/Users/jdrurka1/source/repos/Dynamics-io/Dynamics.io-Testbench/CPP_Bench/shaders/OpenCL/Tree");
+        controllerInfo.SetProgramDir("C:/Users/jdrurka1/source/repos/Dynamics-io/Dynamics.io-Testbench/CPP_Bench/shaders/Vulkan/Tree");
         controller = ComputeInterface.GetComputeController(ComputeInterface.Compute_SDK.OpenCL, controllerInfo);
 
         Debug.Log("Created controller");
 
+        string kernel_csmain = "CSMain";
         string kernel_name1 = "work";
         string kernel_name2 = "work2";
         string kernel_name3 = "work3";
         string kernel_name4 = "work4";
         string kernel_name5 = "work5";
+        string kernel_name6 = "work6";
 
-        string cur_kernel = kernel_name5;
+        string cur_kernel = kernel_csmain;
 
-        ComputeProgram.ProgramInfo p_info = new ComputeProgram.ProgramInfo("test_cl", ComputeProgram.FileType.Text);
-        p_info.AddKernel(kernel_name1);
+        ComputeProgram.ProgramInfo p_info = new ComputeProgram.ProgramInfo("compute_glsl_cl", ComputeProgram.FileType.Binary);
+        /*p_info.AddKernel(kernel_name1);
         p_info.AddKernel(kernel_name2);
         p_info.AddKernel(kernel_name3);
         p_info.AddKernel(kernel_name4);
         p_info.AddKernel(kernel_name5);
+        p_info.AddKernel(kernel_name6);*/
+
+        p_info.AddKernel(kernel_csmain);
 
         Debug.Log("Create Program Info.");
 
@@ -353,25 +405,42 @@ public class CL_Tree_Testing : MonoBehaviour
         for (int i = 0; i < DATA_SIZE; i++)
             Data[i] = i + 1;
 
-        ComputeBuffer in_Buffer = controller.NewReadWriteBuffer(DATA_SIZE, sizeof(int));
+        ComputeBuffer in_Buffer1 = controller.NewReadWriteBuffer(DATA_SIZE, sizeof(int));
+        ComputeBuffer in_Buffer2 = controller.NewReadWriteBuffer(DATA_SIZE, sizeof(int));
         //ComputeBuffer out_Buffer = controller.NewWriteBuffer(DATA_SIZE, sizeof(int));
+
+        ComputeBuffer p_Buffer = controller.NewReadWriteBuffer(DATA_SIZE, sizeof(int));
+        ComputeBuffer p_Buffer2 = controller.NewReadWriteBuffer(DATA_SIZE, sizeof(int));
 
         ComputeProgram.BindIndex ind = default;
 
         ind.GlobalIndex = 0;
-        program.KernelSetBuffer(cur_kernel, in_Buffer, ind);
+        ind.ParameterIndex = 0;
+        program.KernelSetBuffer(cur_kernel, in_Buffer1, ind);
+        ind.GlobalIndex = 1;
+        ind.ParameterIndex = 1;
+        program.KernelSetBuffer(cur_kernel, in_Buffer2, ind);
+        ind.GlobalIndex = 2;
+        ind.ParameterIndex = 2;
+        //program.KernelSetBuffer(cur_kernel, p_Buffer, ind);
+        ind.GlobalIndex = 3;
+        ind.ParameterIndex = 3;
+        //program.KernelSetBuffer(cur_kernel, p_Buffer2, ind);
 
         program.FinishBuild();
 
-        in_Buffer.SetData(Data);
+        in_Buffer1.SetData(Data);
+        in_Buffer2.SetData(Data);
 
         program.RunKernel(cur_kernel, DATA_SIZE, 0, 0);
 
-        in_Buffer.GetData(Data);
+        in_Buffer1.GetData(Data);
+        int[] Data2 = new int[DATA_SIZE];
+        in_Buffer2.GetData(Data2);
 
         for (int i = 0; i < DATA_SIZE; i++)
         {
-            Debug.LogFormat("res '{0}': {1}", i, Data[i]);
+            Debug.LogFormat("res '{0}': {1} - {2}", i, Data[i], Data2[i]);
         }
 
         ComputeInterface.DisposePlatform(ComputeInterface.Compute_SDK.OpenCL);
@@ -409,7 +478,7 @@ public class CL_Tree_Testing : MonoBehaviour
                 //OpenCL_Device_Info info = d.OpenCL_Info;
                 //printf("\t%s - %s: Frequency: %u, threads: %u, Memory: %lu, Work Size: %u \n", info.vendor, info.name, info.clock_frequency, info.num_compute_units * info.group_size, info.mem_size, info.max_work_size);
                 //printf("\t%s - %s\n", info.vendor, info.name);
-                Debug.LogFormat("Device: {0}", info.Name);
+                Debug.LogFormat("D3vice: {0}, Local Mem: {1}", info.Name, info.local_memory_size);
             }
         }
 

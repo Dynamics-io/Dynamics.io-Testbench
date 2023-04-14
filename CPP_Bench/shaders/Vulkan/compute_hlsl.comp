@@ -1,0 +1,12 @@
+StructuredBuffer<float> BufferIn : register(u0);
+RWStructuredBuffer<float> BufferOut : register(u0);
+
+[numthreads(16, 1, 1)]
+void CSMain( uint3 dispatchThreadID : SV_DispatchThreadID )
+{
+	uint id = dispatchThreadID.x;
+	
+	float in_val = BufferIn[id];
+	
+    BufferOut[id] = in_val + in_val;
+}

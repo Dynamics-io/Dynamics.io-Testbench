@@ -24,6 +24,7 @@ namespace Dynamics_IO_Testbench {
             {
                 cl_context context;
                 cl_mem buffer;
+                cl_mem buffer_staging;
                 cl_command_queue command_queue;
                 int num;
                 size_t size;
@@ -41,7 +42,7 @@ namespace Dynamics_IO_Testbench {
                 };
 
 
-                ComputeBuffer(cl_context context, cl_command_queue queue, int numContext, cl_mem_flags type, size_t length);
+                ComputeBuffer(cl_context context, cl_command_queue queue, int numContext, cl_mem_flags type, cl_mem_flags type_staging, size_t length);
 
                 cl_mem* Get_CL_Mem()
                 {

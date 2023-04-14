@@ -1,16 +1,20 @@
 #define NEW_INTERNAL 0
 #define TRAVERSE 1
+#define MAX_NODES 2
+#define MAX_LEAVES 2
 
 struct tree_counts {
 	int NodeCount;
 	int LeafCount;
+	int padding1;
+	int padding2;
 };
 
 struct metanode {
 	int Parent;
 	int IndexInParent;
 	int RefineFlag;
-	float LocalCostChange;
+	int padding;
 };
 
 struct BoundingBox{
@@ -24,15 +28,24 @@ struct InsertionChoice{
 	float CostChange;
 };
 
-global struct tree_counts* g_counts;
-global struct metanode* g_metanodes;
+//global struct tree_counts* g_counts;
+//global struct metanode* g_metanodes;
 
-global float4* g_NodeChild_Min;
-global float4* g_NodeChild_Max;
-global int* g_NodeChild_Index;
-global int* g_NodeChild_LeafCount;
+//global float4* g_NodeChild_Min;
+//global float4* g_NodeChild_Max;
+//global int* g_NodeChild_Index;
+//global int* g_NodeChild_LeafCount;
 
-global unsigned int* g_leaves;
+//global unsigned int* g_leaves;
+
+__local struct tree_counts* p_counts;
+
+__local float4* p_NodeChild_Min;
+__local float4* p_NodeChild_Max;
+__local int* p_NodeChild_Index;
+__local int* p_NodeChild_LeafCount;
+
+__local uint* p_leaves;
 
 int Node_GetChildIndex(int index, int child)
 {
@@ -54,12 +67,12 @@ int Encode(int index)
 	return -1 - index;
 }
 
-unsigned int Leaf_New(int nodeIndex, int childIndex)
+uint Leaf_New(int nodeIndex, int childIndex)
 {
 	return ((unsigned int)nodeIndex & 0x7FFFFFFF) | ((unsigned int)childIndex << 31);
 }
 
-int Leaf_NodeIndex(unsigned int leaf)
+int Leaf_NodeIndex(uint leaf)
 {
 	return (int)(leaf & 0x7FFFFFFF); 
 }
@@ -91,7 +104,7 @@ int AddLeaf(int nodeIndex, int childIndex)
 {
 	struct tree_counts cnts = g_counts[0];
 	int count = cnts.LeafCount;
-	g_leaves[count] = Leaf_New(nodeIndex, childIndex);
+	p_leaves[count] = Leaf_New(nodeIndex, childIndex);
 	cnts.LeafCount = count + 1;
 	g_counts[0] = cnts;
 	return count;
@@ -121,10 +134,10 @@ int InsertLeafIntoEmptySlot(
 	int leafIndex = AddLeaf(nodeIndex, childIndex);
 	int child = Node_GetChildIndex(nodeIndex, childIndex);
 	
-	g_NodeChild_Min[child] = leafBox.Min;
-	g_NodeChild_Max[child] = leafBox.Max;
-	g_NodeChild_Index[child] = Encode(leafIndex);
-	g_NodeChild_LeafCount[child] = 1;
+	p_NodeChild_Min[child] = leafBox.Min;
+	p_NodeChild_Max[child] = leafBox.Max;
+	p_NodeChild_Index[child] = Encode(leafIndex);
+	p_NodeChild_LeafCount[child] = 1;
 	
 	return leafIndex;
 
@@ -181,8 +194,6 @@ int LeadingZeros(int x)
 	x += x >> 8;
 	x += x >> 16;
 	return numIntBits - (x & 0x0000003f); //subtract # of 1s from 32
-	
-	return 0;
 }
 
 int GetContainingPowerOf2(int i)
@@ -246,29 +257,29 @@ int MergeLeafNodes(
 	//The first child of the new node is the old leaf. Insert its bounding box.
 	int parentNode = parentIndex;
 	int childInParent = Node_GetChildIndex(parentNode, indexInParent);
-	g_NodeChild_Min[Node_A(newNode)] = g_NodeChild_Min[childInParent];
-	g_NodeChild_Max[Node_A(newNode)] = g_NodeChild_Max[childInParent];
-	g_NodeChild_Index[Node_A(newNode)] = g_NodeChild_Index[childInParent];
-	g_NodeChild_LeafCount[Node_A(newNode)] = g_NodeChild_LeafCount[childInParent];
+	p_NodeChild_Min[Node_A(newNode)] = p_NodeChild_Min[childInParent];
+	p_NodeChild_Max[Node_A(newNode)] = p_NodeChild_Max[childInParent];
+	p_NodeChild_Index[Node_A(newNode)] = p_NodeChild_Index[childInParent];
+	p_NodeChild_LeafCount[Node_A(newNode)] = p_NodeChild_LeafCount[childInParent];
 	
 	// Insert the new leaf into the second child slot
 	int b = Node_GetChildIndex(newNode, 1);
 	int leafIndex = AddLeaf(newNodeIndex, 1);
-	g_NodeChild_Index[b] = Encode(leafIndex);
-	g_NodeChild_Min[b] = newLeafBounds.Min;
-	g_NodeChild_Max[b] = newLeafBounds.Max;
-	g_NodeChild_LeafCount[b] = 1;
+	p_NodeChild_Index[b] = Encode(leafIndex);
+	p_NodeChild_Min[b] = newLeafBounds.Min;
+	p_NodeChild_Max[b] = newLeafBounds.Max;
+	p_NodeChild_LeafCount[b] = 1;
 	
 	//Update the old leaf node with the new index information.
 	int new_a = Node_GetChildIndex(newNode, 0);
-	int oldLeafIndex = Encode(g_NodeChild_Index[new_a]);
-	g_leaves[oldLeafIndex] = Leaf_New(newNodeIndex, 0);
+	int oldLeafIndex = Encode(p_NodeChild_Index[new_a]);
+	p_leaves[oldLeafIndex] = Leaf_New(newNodeIndex, 0);
 	
 	//Update the original node's child pointer and bounding box.
-	g_NodeChild_Index[childInParent] = newNodeIndex;
-	g_NodeChild_Min[childInParent] = merged.Min;
-	g_NodeChild_Max[childInParent] = merged.Max;
-	g_NodeChild_LeafCount[childInParent] = 2;
+	p_NodeChild_Index[childInParent] = newNodeIndex;
+	p_NodeChild_Min[childInParent] = merged.Min;
+	p_NodeChild_Max[childInParent] = merged.Max;
+	p_NodeChild_LeafCount[childInParent] = 2;
 	
 	return leafIndex;
 }
@@ -305,20 +316,20 @@ int DoAdd(struct BoundingBox bounds)
 		struct InsertionChoice choiceA = ComputeBestInsertionChoice(
 			bounds,
 			newLeafCost,
-			g_NodeChild_Min[child_a],
-			g_NodeChild_Max[child_a],
-			g_NodeChild_Index[child_a],
-			g_NodeChild_LeafCount[child_a]
+			p_NodeChild_Min[child_a],
+			p_NodeChild_Max[child_a],
+			p_NodeChild_Index[child_a],
+			p_NodeChild_LeafCount[child_a]
 		);
 		
 		
 		struct InsertionChoice choiceB = ComputeBestInsertionChoice(
 			bounds,
 			newLeafCost,
-			g_NodeChild_Min[child_b],
-			g_NodeChild_Max[child_b],
-			g_NodeChild_Index[child_b],
-			g_NodeChild_LeafCount[child_b]
+			p_NodeChild_Min[child_b],
+			p_NodeChild_Max[child_b],
+			p_NodeChild_Index[child_b],
+			p_NodeChild_LeafCount[child_b]
 		);
 		
 		if (choiceA.CostChange <= choiceB.CostChange)
@@ -336,10 +347,10 @@ int DoAdd(struct BoundingBox bounds)
 			else
 			{
 				depth = depth + 1;
-				g_NodeChild_Min[child_a] = choiceA.MergedCandidate.Min;
-				g_NodeChild_Max[child_a] = choiceA.MergedCandidate.Max;
-				nodeIndex = g_NodeChild_Index[child_a];
-				g_NodeChild_LeafCount[child_a] = g_NodeChild_LeafCount[child_a] + 1;
+				p_NodeChild_Min[child_a] = choiceA.MergedCandidate.Min;
+				p_NodeChild_Max[child_a] = choiceA.MergedCandidate.Max;
+				nodeIndex = p_NodeChild_Index[child_a];
+				p_NodeChild_LeafCount[child_a] = p_NodeChild_LeafCount[child_a] + 1;
 				
 				//if (depth >= 99)
 				//	return nodeIndex;
@@ -360,10 +371,10 @@ int DoAdd(struct BoundingBox bounds)
 			else
 			{
 				depth = depth + 1;
-				g_NodeChild_Min[child_b] = choiceB.MergedCandidate.Min;
-				g_NodeChild_Max[child_b] = choiceB.MergedCandidate.Max;
-				nodeIndex = g_NodeChild_Index[child_b];
-				g_NodeChild_LeafCount[child_b] = g_NodeChild_LeafCount[child_b] + 1;
+				p_NodeChild_Min[child_b] = choiceB.MergedCandidate.Min;
+				p_NodeChild_Max[child_b] = choiceB.MergedCandidate.Max;
+				nodeIndex = p_NodeChild_Index[child_b];
+				p_NodeChild_LeafCount[child_b] = p_NodeChild_LeafCount[child_b] + 1;
 				
 				//if (depth >= 99)
 				//	return -300 + -depth;
@@ -382,27 +393,67 @@ __kernel void Add(
 	__global float4* NodeChild_Max,
 	__global int* NodeChild_Index,
 	__global int* NodeChild_LeafCount,
-	__global unsigned int* leaves,
+	__global uint* leaves,
 	__global struct metanode* metanodes,
 	__global int* result
+	
+	//__local struct tree_counts* pCounts_ref,
+	//__local struct BoundingBox* pBounds_arr,
+	//__local float4* pNodeChild_Min,
+	//__local float4* pNodeChild_Max,
+	//__local int* pNodeChild_Index,
+	//__local int* pNodeChild_LeafCount,
+	//__local uint* pLeaves
+	//__local struct metanode* pMetanodes
+	
 )
 {
 	g_counts = counts_ref;
 	g_metanodes = metanodes;
 	
-	g_NodeChild_Min = NodeChild_Min;
-	g_NodeChild_Max = NodeChild_Max;
-	g_NodeChild_Index = NodeChild_Index;
-	g_NodeChild_LeafCount = NodeChild_LeafCount;
+	//g_NodeChild_Min = NodeChild_Min;
+	//g_NodeChild_Max = NodeChild_Max;
+	//g_NodeChild_Index = NodeChild_Index;
+	//g_NodeChild_LeafCount = NodeChild_LeafCount;
 	
-	g_leaves = leaves;
+	//g_leaves = leaves;
 	
+	__local float4 pNodeChild_Min[MAX_NODES * 2];
+	__local float4 pNodeChild_Max[MAX_NODES * 2];
+	__local int pNodeChild_Index[MAX_NODES * 2];
+	__local int pNodeChild_LeafCount[MAX_NODES * 2];
+	__local uint pLeaves[MAX_LEAVES];
+	
+	p_NodeChild_Min = pNodeChild_Min;
+	p_NodeChild_Max = pNodeChild_Max;
+	p_NodeChild_Index = pNodeChild_Index;
+	p_NodeChild_LeafCount = pNodeChild_LeafCount;
+	p_leaves = pLeaves;
 	
 	int boundsCount = numBounds[0];
+	int node_count = g_counts[0].NodeCount;
+	
+	event_t ev_in[5];
+	ev_in[0] = async_work_group_copy (pNodeChild_Min, NodeChild_Min, MAX_NODES * 2, 0);
+	ev_in[1] = async_work_group_copy (pNodeChild_Max, NodeChild_Max, MAX_NODES * 2, 0);
+	ev_in[2] = async_work_group_copy (pNodeChild_Index, NodeChild_Index, MAX_NODES * 2, 0);
+	ev_in[3] = async_work_group_copy (pNodeChild_LeafCount, NodeChild_LeafCount, MAX_NODES * 2, 0);
+	ev_in[4] = async_work_group_copy (pLeaves, leaves, MAX_LEAVES, 0);
+	wait_group_events(5, ev_in);
+	
 	for (int i = 0; i < boundsCount; i++)
 	{		
 		result[i] = DoAdd(bounds_arr[i]);
 	}
+	
+	node_count = g_counts[0].NodeCount;
+	event_t ev_out[5];
+	ev_out[0] = async_work_group_copy (NodeChild_Min, pNodeChild_Min, node_count, 0);
+	ev_out[1] = async_work_group_copy (NodeChild_Max, pNodeChild_Max, node_count, 0);
+	ev_out[2] = async_work_group_copy (NodeChild_Index, pNodeChild_Index, node_count, 0);
+	ev_out[3] = async_work_group_copy (NodeChild_LeafCount, pNodeChild_LeafCount, node_count, 0);
+	ev_out[4] = async_work_group_copy (leaves, pLeaves, g_counts[0].LeafCount, 0);
+	wait_group_events(5, ev_out);
 	
 }
 

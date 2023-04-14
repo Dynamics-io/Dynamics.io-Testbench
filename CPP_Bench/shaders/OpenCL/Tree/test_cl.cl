@@ -86,3 +86,44 @@ __kernel void work5(__global int * ptr) {
 
 	ptr[id] = GetContainingPowerOf2(id);
 }
+
+
+__local int* p_ptr_g;
+__local int* p_ptr2_g;
+
+void DoWork6Loop()
+{
+	for (int i = 0; i < 32; i++){
+		p_ptr_g[i] = GetContainingPowerOf2(i);
+		p_ptr2_g[i] = p_ptr2_g[i] + 5;
+	}
+}
+
+__attribute__((reqd_work_group_size(1, 1, 1)))
+__kernel void work6(__global int * ptr, __global int * ptr2) {
+	__local int p_ptr[32];
+	__local int p_ptr2[32];
+	
+	p_ptr_g = p_ptr;
+	p_ptr2_g = p_ptr2;
+	
+	//__local int p_ptr[32];
+	
+	//size_t id = get_global_id(0);
+
+	event_t ev_in[2];
+	ev_in[0] = async_work_group_copy (p_ptr, ptr, 32, 0);
+	ev_in[1] = async_work_group_copy (p_ptr2, ptr2, 32, 0);
+	wait_group_events(2, &ev_in);
+
+	/*for (int i = 0; i < 32; i++){
+		p_ptr[i] = GetContainingPowerOf2(i);
+		p_ptr2[i] = ptr2[i] + 5;
+	}*/
+	DoWork6Loop();
+	
+	event_t ev_out[2];
+	ev_out[0] = async_work_group_copy (ptr, p_ptr_g, 32, 0);
+	ev_out[1] = async_work_group_copy (ptr2, p_ptr2_g, 32, 0);
+	wait_group_events(2, &ev_out);
+}
