@@ -15,7 +15,7 @@ public class Tree_Compare_Test : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        return;
+        //return;
 
         Debug.LogFormat("Tree size in Local Memory: {0}", CL_Tree.GetLocalMemorySizeEstimate(numEntries));
 

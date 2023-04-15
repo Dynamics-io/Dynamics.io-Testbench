@@ -8,6 +8,8 @@
 #define NEW_INTERNAL 0
 #define TRAVERSE 1
 
+
+
 layout(std140, binding = 7) readonly buffer numBounds_In{
 	ivec4 g_numBounds[ ];
 };
@@ -16,7 +18,7 @@ layout(std140, binding = 8) readonly buffer bounds_arr_In{
 	BoundingBox g_bounds_arr[ ];
 };
 
-layout(std140, binding = 8) buffer bounds_arr_Out{
+layout(std140, binding = 9) buffer g_results_Out{
 	ivec4 g_results[ ];
 };
 
@@ -146,16 +148,34 @@ int MergeLeafNodes(
 
 int DoAdd(BoundingBox bounds)
 {
-	return GetContainingPowerOf2(0);
+	int LeafCount = GetLeafCount();
+	int NodeCount = GetNodeCount();
+	int res = -1;
+	
+	//This is a binary tree, so the only time a node can have less than full children is when it's the root node.
+	//By convention, an empty tree still has a root node with no children, so we do have to handle this case.
+	if (LeafCount < 2)
+	{
+		res = InsertLeafIntoEmptySlot(bounds, 0, LeafCount);
+		return res;
+	}
+	
+	//Assumption: Index 0 is always the root if it exists, and an empty tree will have a 'root' with a child count of 0.
+	int nodeIndex = 0;
+	float newLeafCost = ComputeBoundsMetric_1(bounds);
+	int depth = 0;
+	
+	return res;
 }
 
 layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 void main()
-{
-	int boundsCount = numBounds[0].x;
+{	
+	int boundsCount = g_numBounds[0].x;
 	for (int i = 0; i < boundsCount; i++)
-	{		
-		SetResult(i, DoAdd(bounds_arr[i]));
+	{
+		int res = DoAdd(g_bounds_arr[i]);
+		SetResult(i, res);
 	}
 }
 

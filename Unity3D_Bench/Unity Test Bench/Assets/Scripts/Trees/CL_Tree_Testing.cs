@@ -96,7 +96,7 @@ public class CL_Tree_Testing : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        DoComputeTest();
+        //DoComputeTest();
         //return;
 
         //Init(Cubes.Length);
@@ -140,7 +140,7 @@ public class CL_Tree_Testing : MonoBehaviour
 
         ComputeProgram.ProgramInfo p_info = new ComputeProgram.ProgramInfo("Tree", ComputeProgram.FileType.Binary);
         p_info.AddKernel(kernel_tree_init);
-        //p_info.AddKernel(kernel_tree_add);
+        p_info.AddKernel(kernel_tree_add);
 
 
         program = controller.AddProgram(p_info);
@@ -180,25 +180,25 @@ public class CL_Tree_Testing : MonoBehaviour
     {
         counts_buffer = controller.NewReadWriteBuffer(1, tree_counts.Size());
         metanodes_buffer = controller.NewReadWriteBuffer(num, Metanode.Size());
-        leaves_buffer = controller.NewReadWriteBuffer(num, sizeof(uint));
+        leaves_buffer = controller.NewReadWriteBuffer(Mathf.Max(num, 4), sizeof(uint));
 
         NodeChild_Min_buffer = controller.NewReadWriteBuffer(num * 2, sizeof(float) * 4);
         NodeChild_Max_buffer = controller.NewReadWriteBuffer(num * 2, sizeof(float) * 4);
-        NodeChild_Index_buffer = controller.NewReadWriteBuffer(num * 2, sizeof(int));
-        NodeChild_LeafCount_buffer = controller.NewReadWriteBuffer(num * 2, sizeof(int));
+        NodeChild_Index_buffer = controller.NewReadWriteBuffer(Mathf.Max(num * 2, 4), sizeof(int));
+        NodeChild_LeafCount_buffer = controller.NewReadWriteBuffer(Mathf.Max(num * 2, 4), sizeof(int));
 
         boundingBox_add_buffer = controller.NewReadWriteBuffer(num, BoundingBox_CL.Size());
-        numBoundsAdds = controller.NewReadWriteBuffer(1, sizeof(int));
+        numBoundsAdds = controller.NewReadWriteBuffer(4, sizeof(int));
 
-        result_buffer = controller.NewReadWriteBuffer(num, sizeof(int));
+        result_buffer = controller.NewReadWriteBuffer(Mathf.Max(num, 4), sizeof(int));
 
 
         // Private buffers.
         p_NodeChild_Min_buffer = controller.NewReadWriteBuffer(num * 2, sizeof(float) * 4);
         p_NodeChild_Max_buffer = controller.NewReadWriteBuffer(num * 2, sizeof(float) * 4);
-        p_NodeChild_Index_buffer = controller.NewReadWriteBuffer(num * 2, sizeof(int));
-        p_NodeChild_LeafCount_buffer = controller.NewReadWriteBuffer(num * 2, sizeof(int));
-        p_leaves_buffer = controller.NewReadWriteBuffer(num, sizeof(uint));
+        p_NodeChild_Index_buffer = controller.NewReadWriteBuffer(Mathf.Max(num * 2), sizeof(int));
+        p_NodeChild_LeafCount_buffer = controller.NewReadWriteBuffer(Mathf.Max(num * 2, 4), sizeof(int));
+        p_leaves_buffer = controller.NewReadWriteBuffer(Mathf.Max(num, 4), sizeof(uint));
 
 
         ComputeProgram.BindIndex ind = default;
@@ -215,26 +215,41 @@ public class CL_Tree_Testing : MonoBehaviour
 
         // Bind Add kernel buffers
 
-        /*ind.ParameterIndex = 0;
+        ind.ParameterIndex = 0;
+        ind.GlobalIndex = 0;
         program.KernelSetBuffer(kernel_tree_add, counts_buffer, ind);
-        ind.ParameterIndex = 1;
-        program.KernelSetBuffer(kernel_tree_add, boundingBox_add_buffer, ind);
-        ind.ParameterIndex = 2;
-        program.KernelSetBuffer(kernel_tree_add, numBoundsAdds, ind);
+        ind.ParameterIndex = 8;
+        ind.GlobalIndex = 1;
+        program.KernelSetBuffer(kernel_tree_add, metanodes_buffer, ind);
+
         ind.ParameterIndex = 3;
+        ind.GlobalIndex = 3;
         program.KernelSetBuffer(kernel_tree_add, NodeChild_Min_buffer, ind);
         ind.ParameterIndex = 4;
+        ind.GlobalIndex = 4;
         program.KernelSetBuffer(kernel_tree_add, NodeChild_Max_buffer, ind);
         ind.ParameterIndex = 5;
+        ind.GlobalIndex = 5;
         program.KernelSetBuffer(kernel_tree_add, NodeChild_Index_buffer, ind);
         ind.ParameterIndex = 6;
+        ind.GlobalIndex = 6;
         program.KernelSetBuffer(kernel_tree_add, NodeChild_LeafCount_buffer, ind);
+
         ind.ParameterIndex = 7;
+        ind.GlobalIndex = 2;
         program.KernelSetBuffer(kernel_tree_add, leaves_buffer, ind);
-        ind.ParameterIndex = 8;
-        program.KernelSetBuffer(kernel_tree_add, metanodes_buffer, ind);
+        
+        ind.ParameterIndex = 1;
+        ind.GlobalIndex = 8;
+        program.KernelSetBuffer(kernel_tree_add, boundingBox_add_buffer, ind);
+        ind.ParameterIndex = 2;
+        ind.GlobalIndex = 7;
+        program.KernelSetBuffer(kernel_tree_add, numBoundsAdds, ind);
         ind.ParameterIndex = 9;
-        program.KernelSetBuffer(kernel_tree_add, result_buffer, ind);*/
+        ind.GlobalIndex = 9;
+        program.KernelSetBuffer(kernel_tree_add, result_buffer, ind);
+
+
 
         /*ind.ParameterIndex = 10;
         program.KernelSetBuffer(kernel_tree_add, p_NodeChild_Min_buffer, ind);
@@ -278,7 +293,7 @@ public class CL_Tree_Testing : MonoBehaviour
 
     public double AddBoxes(BoundingBox_CL[] boxAdds)
     {
-        int[] numAdds = { boxAdds.Length };
+        int[] numAdds = { boxAdds.Length, 0, 0, 0 };
 
         boundingBox_add_buffer.SetData(boxAdds);
         numBoundsAdds.SetData(numAdds);
