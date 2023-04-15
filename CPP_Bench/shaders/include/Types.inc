@@ -1,8 +1,8 @@
-#ifndef __TYPES_INC__
-#define __TYPES_INC__
+#ifndef _TYPES_INC_
+#define _TYPES_INC_
 
 
-// OpenCL requires the 'struct' keyword before any instance of a custom struct.
+// OpenCL requires the 'struct' keyword before any variable declaration of a custom struct.
 #ifdef OPENCL
 #define STRUCT struct
 #else
@@ -39,4 +39,4 @@
 
 #endif
 
-#endif //__TYPES_INC__
+#endif //_TYPES_INC_

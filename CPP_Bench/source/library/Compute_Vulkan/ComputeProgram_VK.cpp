@@ -6,11 +6,26 @@
 using namespace Dynamics_IO_Testbench::Compute;
 using namespace Dynamics_IO_Testbench::Compute::VK;
 
+#define DEFAULT_BINARY_FILE_TYPE "spv"
+
 void ComputeProgram_VK::Init(std::string name)
 {
 	m_program_name = name;
 	m_cur_state = ProgramBuildState::Inited;
 	m_program = m_context->Add_Program(name);
+}
+
+int Dynamics_IO_Testbench::Compute::VK::ComputeProgram_VK::Build()
+{
+	// ProgramInfo FileType is ignored because only SPIRV binary files are supported.
+	std::string full_file_path = m_program_directory + m_program_name + "." + DEFAULT_BINARY_FILE_TYPE;
+
+	printf("ComputeController_VK: Reading program from directory: %s\n", m_program_directory.c_str());
+
+	printf("ComputeController_OCL: Adding program binary file: %s\n", full_file_path.c_str());
+	BuildProgramFromBinary(full_file_path, m_kernel_names);
+
+	return 0;
 }
 
 int ComputeProgram_VK::FinishBuild()

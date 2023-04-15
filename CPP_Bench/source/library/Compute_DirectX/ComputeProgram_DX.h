@@ -23,6 +23,12 @@ namespace Dynamics_IO_Testbench {
 
 				void Init(std::string name);
 
+				// Only loading pre-compiled binaries is supported at this time. when
+				// support for building for source is added, this will be implemented.
+				void AddIncludeDirectory(std::string directory) {}
+
+				int Build();
+
 				int FinishBuild();
 
 				int GetKernelID(std::string name);
@@ -48,6 +54,10 @@ namespace Dynamics_IO_Testbench {
 
 				// Non-interface methods:
 
+				void SetKernelNames(std::vector<std::string> kernel_names) {
+					m_kernel_names = kernel_names;
+				}
+
 				// As the name suggests, it uses the kernel name vector to find the individual 
 				// binary files, each named with their entry point.
 				ProgramBuildState BuildProgramFromDirectory(std::vector<std::string> kernels);
@@ -69,6 +79,8 @@ namespace Dynamics_IO_Testbench {
 				ComputeContext* m_context{ nullptr };
 
 				std::string m_program_name{ "" };
+				std::vector<std::string> m_kernel_names; // set before build
+
 				ProgramBuildState m_cur_state{ ProgramBuildState::None };
 				int m_dx_build_res{ 0 };
 				std::string m_build_error{ "" };
@@ -78,7 +90,7 @@ namespace Dynamics_IO_Testbench {
 				std::map<std::string, int> m_kernel_name_to_id;
 
 				// program building
-				std::vector<std::string> m_kernels;
+				std::vector<std::string> m_kernels; // set after build
 				ComputeProgram* m_program{ nullptr };
 
 				bool mDestroyed{ false };

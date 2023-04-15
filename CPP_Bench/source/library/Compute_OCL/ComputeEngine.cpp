@@ -402,9 +402,8 @@ void ComputeProgram::AddConstant(std::string name, std::string value)
 
 int ComputeProgram::Build(char* errorStr, size_t e_size)
 {
-    if (ComputeEngine::GetAppDir() != "")
+    for (std::string inc_dir : mIncludeDirs)
     {
-        std::string inc_dir = ComputeEngine::GetAppDir();
         args += "-I \"" + inc_dir + "\" ";
     }
    cl_int build_res = clBuildProgram(program, 0, NULL, args.c_str(), NULL, NULL);

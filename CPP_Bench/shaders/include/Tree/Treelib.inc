@@ -1,5 +1,5 @@
-#ifndef __TREELIB_INC__
-#define __TREELIB_INC__
+#ifndef _TREELIB_INC_
+#define _TREELIB_INC_
 
 #include "Types.inc"
 
@@ -124,7 +124,7 @@ uint Leaf_New(uint nodeIndex, uint childIndex)
 
 int Leaf_NodeIndex(uint leaf)
 {
-#ifdef defined(VULKAN)
+#if defined(VULKAN)
 	return int(leaf & 0x7FFFFFFF);
 #elif defined(OPENCL)
 	return (int)(leaf & 0x7FFFFFFF);
@@ -135,7 +135,7 @@ int Leaf_NodeIndex(uint leaf)
 
 int Leaf_ChildIndex(uint leaf)
 {
-#ifdef defined(VULKAN)
+#if defined(VULKAN)
 	return int((leaf & 0x80000000) >> 31);
 #elif defined(OPENCL)
 	return (int)((leaf & 0x80000000) >> 31); 
@@ -146,7 +146,7 @@ int Leaf_ChildIndex(uint leaf)
 
 int GetNodeCount()
 {
-#ifdef defined(VULKAN)
+#if defined(VULKAN)
 	return g_counts[0].x;
 #else
 	return g_counts[0].NodeCount;
@@ -155,7 +155,7 @@ int GetNodeCount()
 
 int GetLeafCount()
 {
-#ifdef defined(VULKAN)
+#if defined(VULKAN)
 	return g_counts[0].y;
 #else
 	return g_counts[0].LeafCount;
@@ -164,7 +164,7 @@ int GetLeafCount()
 
 void SetNodeCount(int cnt)
 {
-#ifdef defined(VULKAN)
+#if defined(VULKAN)
 	g_counts[0].x = cnt;
 #else
 	g_counts[0].NodeCount = cnt;
@@ -173,7 +173,7 @@ void SetNodeCount(int cnt)
 
 void SetLeafCount(int cnt)
 {
-#ifdef defined(VULKAN)
+#if defined(VULKAN)
 	g_counts[0].y = cnt;
 #else
 	g_counts[0].LeafCount = cnt;
@@ -182,7 +182,7 @@ void SetLeafCount(int cnt)
 
 void SetLeaf(int index, uint leaf)
 {
-#ifdef defined(VULKAN)
+#if defined(VULKAN)
 	g_leaves[index / 4][index % 4] = leaf;
 #else
 	g_leaves[index] = leaf;
@@ -191,7 +191,7 @@ void SetLeaf(int index, uint leaf)
 
 uint GetLeaf(int index)
 {
-#ifdef defined(VULKAN)
+#if defined(VULKAN)
 	return g_leaves[index / 4][index % 4];
 #else
 	return g_leaves[index];
@@ -200,7 +200,7 @@ uint GetLeaf(int index)
 
 int Get_Metanode_Parent(int index)
 {
-#ifdef defined(VULKAN)
+#if defined(VULKAN)
 	return g_metanodes[index].x;
 #else
 	return g_metanodes[index].Parent
@@ -209,7 +209,7 @@ int Get_Metanode_Parent(int index)
 
 int Get_Metanode_IndexInParent(int index)
 {
-#ifdef defined(VULKAN)
+#if defined(VULKAN)
 	return g_metanodes[index].y;
 #else
 	return g_metanodes[index].IndexInParent;
@@ -218,7 +218,7 @@ int Get_Metanode_IndexInParent(int index)
 
 int Get_Metanode_RefineFlag(int index)
 {
-#ifdef defined(VULKAN)
+#if defined(VULKAN)
 	return g_metanodes[index].z;
 #else
 	return g_metanodes[index].RefineFlag;

@@ -3,10 +3,10 @@
 #extension GL_GOOGLE_include_directive : require
 #extension GL_ARB_separate_shader_objects : require
 
-#include "Treelib.inc"
+#include "Tree/Treelib_Add.inc"
 
-#define NEW_INTERNAL 0
-#define TRAVERSE 1
+//#define NEW_INTERNAL 0
+//#define TRAVERSE 1
 
 
 
@@ -23,7 +23,7 @@ layout(std140, binding = 9) buffer g_results_Out{
 };
 
 
-int InsertLeafIntoEmptySlot(BoundingBox leafBox, int nodeIndex, int childIndex)
+/*int InsertLeafIntoEmptySlot(BoundingBox leafBox, int nodeIndex, int childIndex)
 {
 	int leafIndex = AddLeaf(nodeIndex, childIndex);
 	int child = Node_GetChildIndex(nodeIndex, childIndex);
@@ -132,10 +132,6 @@ InsertionChoice ComputeBestInsertionChoice(
 	return result;
 }
 
-void SetResult(int index, int val){
-	g_results[index / 4][index % 4] = val;
-}
-
 int MergeLeafNodes(
 	BoundingBox newLeafBounds, 
 	int parentIndex, 
@@ -166,6 +162,10 @@ int DoAdd(BoundingBox bounds)
 	int depth = 0;
 	
 	return res;
+}*/
+
+void SetResult(int index, int val){
+	g_results[index / 4][index % 4] = val;
 }
 
 layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;

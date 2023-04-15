@@ -133,10 +133,22 @@ EXPORTED void IComputeController_Dispose(void* handle)
 }
 
 
-EXPORTED void IComputeProgram_Init(void* handle, char* name, int size)
+/*EXPORTED void IComputeProgram_Init(void* handle, char* name, int size)
 {
 	IComputeProgram* instance = (IComputeProgram*)handle;
 	instance->Init(std::string(name, size));
+}*/
+
+EXPORTED void IComputeProgram_AddIncludeDirectory(void* handle, char* name, int size)
+{
+	IComputeProgram* instance = (IComputeProgram*)handle;
+	instance->AddIncludeDirectory(std::string(name, size));
+}
+
+EXPORTED int IComputeProgram_Build(void* handle)
+{
+	IComputeProgram* instance = (IComputeProgram*)handle;
+	return instance->Build();
 }
 
 EXPORTED int IComputeProgram_FinishBuild(void* handle)

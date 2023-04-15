@@ -10,8 +10,14 @@ namespace Dynamics.Compute
 {
     public class ComputeProgram : NativeObject
     {
+        //[DllImport(Settings.DLL)]
+        //private static extern void IComputeProgram_Init(IntPtr handle, string name, int size);
+
         [DllImport(Settings.DLL)]
-        private static extern void IComputeProgram_Init(IntPtr handle, string name, int size);
+        private static extern void IComputeProgram_AddIncludeDirectory(IntPtr handle, string name, int size);
+
+        [DllImport(Settings.DLL)]
+        private static extern int IComputeProgram_Build(IntPtr handle);
 
         [DllImport(Settings.DLL)]
         private static extern int IComputeProgram_FinishBuild(IntPtr handle);
@@ -106,9 +112,19 @@ namespace Dynamics.Compute
         {
         }
 
-        public void Init(string name)
+        /*public void Init(string name)
         {
-            IComputeProgram_Init(handle, name, name.Length);
+            //IComputeProgram_Init(handle, name, name.Length);
+        }*/
+
+        public void AddIncludeDirectory(string name)
+        {
+            IComputeProgram_AddIncludeDirectory(handle, name, name.Length);
+        }
+
+        public int Build()
+        {
+            return IComputeProgram_Build(handle);
         }
 
         public int FinishBuild()

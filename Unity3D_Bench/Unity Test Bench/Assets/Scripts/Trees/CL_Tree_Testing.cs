@@ -130,20 +130,23 @@ public class CL_Tree_Testing : MonoBehaviour
     {
         Debug.LogFormat("starting...");
 
-        object[] device_info = GetDevice_Vulkan();
+        object[] device_info = GetDevice_OpenCL();
+        //object[] device_info = GetDevice_Vulkan();
 
         ComputeInterface.ControllerInfo controllerInfo = default;
         controllerInfo.platform = device_info[0] == null ? default : (Platform)device_info[0];
         controllerInfo.Device = device_info[1];
-        controllerInfo.SetProgramDir("C:/Users/jdrurka1/source/repos/Dynamics-io/Dynamics.io-Testbench/CPP_Bench/shaders/Vulkan/Tree");
-        controller = ComputeInterface.GetComputeController(ComputeInterface.Compute_SDK.VULKAN, controllerInfo);
+        controllerInfo.SetProgramDir("C:/Users/jdrurka1/source/repos/Dynamics-io/Dynamics.io-Testbench/CPP_Bench/shaders/OpenCL/Tree");
+        controller = ComputeInterface.GetComputeController(ComputeInterface.Compute_SDK.OpenCL, controllerInfo);
 
-        ComputeProgram.ProgramInfo p_info = new ComputeProgram.ProgramInfo("Tree", ComputeProgram.FileType.Binary);
+        ComputeProgram.ProgramInfo p_info = new ComputeProgram.ProgramInfo("Tree", ComputeProgram.FileType.Text);
         p_info.AddKernel(kernel_tree_init);
         p_info.AddKernel(kernel_tree_add);
 
 
         program = controller.AddProgram(p_info);
+        program.AddIncludeDirectory("C:\\Users\\jdrurka1\\source\\repos\\Dynamics-io\\Dynamics.io-Testbench\\CPP_Bench\\shaders\\include");
+        program.Build();
 
         if (program.GetState() == ComputeProgram.ProgramBuildState.BuildError)
         {
@@ -412,6 +415,7 @@ public class CL_Tree_Testing : MonoBehaviour
         //return;
 
         program = controller.AddProgram(p_info);
+        program.Build();
         Debug.LogFormat("Create Program '{0}'.", "test_cl");
 
         int DATA_SIZE = 32;

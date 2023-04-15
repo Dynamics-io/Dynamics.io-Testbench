@@ -9,8 +9,6 @@ using namespace Dynamics_IO_Testbench::Compute::OCL;
 
 std::vector<ComputeController_OCL*> ComputeController_OCL::m_controllers;
 
-#define DEFAULT_BINARY_FILE_TYPE "spv"
-#define DEFAULT_TEXT_FILE_TYPE "cl"
 
 void ComputeController_OCL::Init(Platform platform, void* device, std::string program_dir)
 {
@@ -30,14 +28,18 @@ IComputeProgram* ComputeController_OCL::AddProgram(IComputeProgram::ProgramInfo 
 	std::string name = info.Name();
 	std::vector<std::string> kernels = info.Kernels();
 
+	std::string program_dir = m_directory + name = "/";
+
 	ComputeProgram_OCL* program = new ComputeProgram_OCL(m_context);
-
 	program->Init(name);
+	program->SetProgramDirectory(m_directory);
+	program->SetFileType(info.Type());
+	program->SetKernelNames(kernels);
 
 	
-	printf("ComputeController_OCL: Reading program from directory: %s\n", m_directory.c_str());
+	//printf("ComputeController_OCL: Reading program from directory: %s\n", m_directory.c_str());
 	
-	switch (info.Type()) {
+	/*switch (info.Type()) {
 		case IComputeProgram::FileType::Binary:
 		{
 			std::string full_file_path = m_directory + name + "." + DEFAULT_BINARY_FILE_TYPE;
@@ -52,7 +54,7 @@ IComputeProgram* ComputeController_OCL::AddProgram(IComputeProgram::ProgramInfo 
 			program->BuildProgramFromSourceFile(full_file_path, kernels);
 			break;
 		}
-	}
+	}*/
 
 	m_programs[name] = program;
 

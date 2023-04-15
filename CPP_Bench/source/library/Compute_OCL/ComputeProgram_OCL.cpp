@@ -5,6 +5,9 @@
 using namespace Dynamics_IO_Testbench::Compute;
 using namespace Dynamics_IO_Testbench::Compute::OCL;
 
+#define DEFAULT_BINARY_FILE_TYPE "spv"
+#define DEFAULT_TEXT_FILE_TYPE "cl"
+
 void ComputeProgram_OCL::Init(std::string name)
 {
 	m_program_name = name;
@@ -12,6 +15,34 @@ void ComputeProgram_OCL::Init(std::string name)
 	m_builder = new ProgramBuilder(m_context, m_program_name);
 
 	m_cur_state = ProgramBuildState::Inited;
+}
+
+void ComputeProgram_OCL::AddIncludeDirectory(std::string directory)
+{
+	m_builder->GetProgram()->AddIncludeDirector(directory);
+}
+
+int Dynamics_IO_Testbench::Compute::OCL::ComputeProgram_OCL::Build()
+{
+	printf("ComputeController_OCL: Reading program from directory: %s\n", m_program_directory.c_str());
+
+	switch (m_ftype) {
+		case IComputeProgram::FileType::Binary:
+		{
+			std::string full_file_path = m_program_directory + m_program_name + "." + DEFAULT_BINARY_FILE_TYPE;
+			printf("ComputeController_OCL: Adding program binary file: %s\n", full_file_path.c_str());
+			BuildProgramFromBinary(full_file_path, m_kernel_names);
+			break;
+		}
+		case IComputeProgram::FileType::Text:
+		{
+			std::string full_file_path = m_program_directory + m_program_name + "." + DEFAULT_TEXT_FILE_TYPE;
+			printf("ComputeController_OCL: Adding program source file: %s\n", full_file_path.c_str());
+			BuildProgramFromSourceFile(full_file_path, m_kernel_names);
+			break;
+		}
+	}
+	return 0;
 }
 
 int ComputeProgram_OCL::GetKernelID(std::string name)

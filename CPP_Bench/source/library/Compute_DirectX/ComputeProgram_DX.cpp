@@ -13,6 +13,17 @@ void ComputeProgram_DX::Init(std::string name)
 	m_program = m_context->Add_Program(name);
 }
 
+int Dynamics_IO_Testbench::Compute::DX::ComputeProgram_DX::Build()
+{
+	// directory is contained and constructed completely inside ComputeEngine for DirectX. 
+	// TODO: Currently ProgramInfo's FileType is ignored. Add way to support choosing between 
+	// binary files and text files, instead of binary. Also requires getting DirectX's
+	// compiler to actually work.
+	BuildProgramFromDirectory(m_kernel_names);
+
+	return 0;
+}
+
 int ComputeProgram_DX::FinishBuild()
 {
 	return m_program->Buildkernels();

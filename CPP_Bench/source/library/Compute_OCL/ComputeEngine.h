@@ -93,6 +93,8 @@ namespace Dynamics_IO_Testbench {
                 ComputeContext* mContextObj;
                 cl_command_queue command_queue;
 
+                std::vector<std::string> mIncludeDirs;
+
                 bool mInitialized{ false };
                 bool mDestroyed{ false };
                 bool mCanCallDispose{ true };
@@ -113,6 +115,11 @@ namespace Dynamics_IO_Testbench {
                 int Set_Binary_File(std::string file_path);
 
                 void AddConstant(std::string name, std::string value);
+
+                void AddIncludeDirector(std::string dir)
+                {
+                    mIncludeDirs.push_back(dir);
+                }
 
                 int Build(char* errorStr, size_t e_size);
 

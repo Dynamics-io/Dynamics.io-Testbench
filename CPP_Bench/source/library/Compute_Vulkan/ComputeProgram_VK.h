@@ -25,6 +25,12 @@ namespace Dynamics_IO_Testbench {
 
 				void Init(std::string name);
 
+				// Only SPIRV files supported at this time. If/When source file loading
+				// is added, this will be implemented.
+				void AddIncludeDirectory(std::string directory){} 
+
+				int Build();
+
 				int FinishBuild();
 
 				int GetKernelID(std::string name);
@@ -49,6 +55,16 @@ namespace Dynamics_IO_Testbench {
 
 
 				// Non-interface methods:
+
+				void SetProgramDirectory(std::string dir) {
+					m_program_directory = dir;
+				}
+				void SetFileType(FileType ftype) {
+					m_ftype = ftype;
+				}
+				void SetKernelNames(std::vector<std::string> kernel_names) {
+					m_kernel_names = std::vector<std::string>(kernel_names);
+				}
 
 				ProgramBuildState BuildProgramFromBinary(std::string file_path, std::vector<std::string> kernels);
 
@@ -75,6 +91,10 @@ namespace Dynamics_IO_Testbench {
 				ComputeContext* m_context{ nullptr };
 
 				std::string m_program_name{""};
+				std::string m_program_directory;
+				FileType m_ftype;
+				std::vector<std::string> m_kernel_names;
+
 				ProgramBuildState m_cur_state{ProgramBuildState::None};
 				int m_vk_build_res { 0 };
 				std::string m_build_error{""};

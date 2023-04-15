@@ -7,7 +7,6 @@
 using namespace Dynamics_IO_Testbench::Compute;
 using namespace Dynamics_IO_Testbench::Compute::VK;
 
-#define DEFAULT_BINARY_FILE_TYPE "spv"
 
 std::vector<ComputeController_VK*> ComputeController_VK::m_controllers;
 
@@ -36,14 +35,19 @@ IComputeProgram* ComputeController_VK::AddProgram(IComputeProgram::ProgramInfo i
 	m_programs[name] = new ComputeProgram_VK(m_context);
 
 	m_programs[name]->Init(name);
+	m_programs[name]->SetProgramDirectory(m_directory);
+	m_programs[name]->SetFileType(info.Type());
+	m_programs[name]->SetKernelNames(kernels);
 
+
+	// --- BUILD MOVED TO program->Build()
 	// ProgramInfo FileType is ignored because only SPIRV binary files are supported.
-	std::string full_file_path = m_directory + name + "." + DEFAULT_BINARY_FILE_TYPE;
+	//std::string full_file_path = m_directory + name + "." + DEFAULT_BINARY_FILE_TYPE;
 
-	printf("ComputeController_VK: Reading program from directory: %s\n", m_directory.c_str());
+	//printf("ComputeController_VK: Reading program from directory: %s\n", m_directory.c_str());
 
-	printf("ComputeController_OCL: Adding program binary file: %s\n", full_file_path.c_str());
-	m_programs[name]->BuildProgramFromBinary(full_file_path, kernels);
+	//printf("ComputeController_OCL: Adding program binary file: %s\n", full_file_path.c_str());
+	//m_programs[name]->BuildProgramFromBinary(full_file_path, kernels);
 
 	return m_programs[name];
 }

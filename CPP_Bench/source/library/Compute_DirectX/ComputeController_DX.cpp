@@ -34,12 +34,15 @@ IComputeProgram* ComputeController_DX::AddProgram(IComputeProgram::ProgramInfo i
 	m_programs[name] = new ComputeProgram_DX(m_context);
 
 	m_programs[name]->Init(name);
+	m_programs[name]->SetKernelNames(kernels);
 
+
+	// --- BUILD MOVED TO program->Build()
 	// directory is contained and constructed completely inside ComputeEngine for DirectX. 
 	// TODO: Currently ProgramInfo's FileType is ignored. Add way to support choosing between 
 	// binary files and text files, instead of binary. Also requires getting DirectX's
 	// compiler to actually work.
-	m_programs[name]->BuildProgramFromDirectory(kernels);
+	//m_programs[name]->BuildProgramFromDirectory(kernels);
 
 	return m_programs[name];
 }

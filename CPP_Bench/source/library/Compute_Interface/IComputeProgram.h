@@ -56,7 +56,12 @@ namespace Dynamics_IO_Testbench {
 				int RegisterIndex;
 			};
 
-			virtual void Init(std::string name) = 0;
+			// Removed from interface because this is implementation dependent.
+			//virtual void Init(std::string name) = 0;
+
+			virtual void AddIncludeDirectory(std::string directory) = 0;
+
+			virtual int Build() = 0;
 
 			virtual int FinishBuild() = 0;
 

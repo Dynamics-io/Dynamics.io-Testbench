@@ -1,8 +1,9 @@
-#ifndef __TREELIB_INIT_INC__
-#define __TREELIB_INIT_INC__
+#ifndef _TREELIB_INIT_INC_
+#define _TREELIB_INIT_INC_
 
 
+#include "Types.inc"
+#include "Treelib.inc"
 
 
-
-#endif //__TREELIB_INIT_INC__
+#endif //_TREELIB_INIT_INC_

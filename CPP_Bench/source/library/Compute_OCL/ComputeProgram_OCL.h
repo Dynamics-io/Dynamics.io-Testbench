@@ -19,6 +19,10 @@ namespace Dynamics_IO_Testbench {
 
 				void Init(std::string name);
 
+				void AddIncludeDirectory(std::string directory);
+
+				int Build();
+
 				int FinishBuild() { return 0; }
 
 				int GetKernelID(std::string name);
@@ -45,6 +49,17 @@ namespace Dynamics_IO_Testbench {
 
 
 				// Non-interface methods:
+
+				void SetProgramDirectory(std::string dir) {
+					m_program_directory = dir;
+				}
+
+				void SetFileType(FileType ftype) {
+					m_ftype = ftype;
+				}
+				void SetKernelNames(std::vector<std::string> kernel_names) {
+					m_kernel_names = std::vector<std::string>(kernel_names);
+				}
 
 				ProgramBuilder* GetProgramBuilder() { return m_builder; }
 
@@ -75,6 +90,9 @@ namespace Dynamics_IO_Testbench {
 				int InitKernelEntries();
 
 				std::string m_program_name;
+				std::string m_program_directory;
+				FileType m_ftype;
+				std::vector<std::string> m_kernel_names;
 
 				ComputeContext* m_context{ nullptr };
 				ProgramBuilder* m_builder{ nullptr };
