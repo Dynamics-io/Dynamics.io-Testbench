@@ -21,6 +21,8 @@ namespace Dynamics_IO_Testbench {
 
 				void AddIncludeDirectory(std::string directory);
 
+				void AddDefine(std::string name, std::string value);
+
 				int Build();
 
 				int FinishBuild() { return 0; }

@@ -145,6 +145,12 @@ EXPORTED void IComputeProgram_AddIncludeDirectory(void* handle, char* name, int 
 	instance->AddIncludeDirectory(std::string(name, size));
 }
 
+EXPORTED void IComputeProgram_AddDefine(void* handle, char* name, int name_size, char* value, int value_size)
+{
+	IComputeProgram* instance = (IComputeProgram*)handle;
+	instance->AddDefine(std::string(name, name_size), std::string(value, value_size));
+}
+
 EXPORTED int IComputeProgram_Build(void* handle)
 {
 	IComputeProgram* instance = (IComputeProgram*)handle;

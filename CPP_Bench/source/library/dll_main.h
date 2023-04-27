@@ -47,6 +47,8 @@ EXPORTED void IComputeController_Dispose(void* handle);
 
 EXPORTED void IComputeProgram_AddIncludeDirectory(void* handle, char* name, int size);
 
+EXPORTED void IComputeProgram_AddDefine(void* handle, char* name, int name_size, char* value, int value_size);
+
 EXPORTED int IComputeProgram_Build(void* handle);
 
 EXPORTED int IComputeProgram_FinishBuild(void* handle);

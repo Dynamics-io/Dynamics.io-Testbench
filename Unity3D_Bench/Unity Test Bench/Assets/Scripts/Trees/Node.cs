@@ -123,6 +123,12 @@ public struct Leaf : IEquatable<Leaf>
         get { return (int)((packed & 0x80000000) >> 31); }
     }
 
+    public uint Packed
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get { return packed; }
+    }
+
     uint packed;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

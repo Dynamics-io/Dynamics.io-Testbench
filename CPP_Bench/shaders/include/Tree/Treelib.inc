@@ -203,7 +203,7 @@ int Get_Metanode_Parent(int index)
 #if defined(VULKAN)
 	return g_metanodes[index].x;
 #else
-	return g_metanodes[index].Parent
+	return g_metanodes[index].Parent;
 #endif
 }
 
@@ -295,7 +295,7 @@ int Get_NodeChild_Index(int c_index)
 #if defined(VULKAN)
 	return g_NodeChild_Index[c_index / 4][c_index % 4];
 #else
-	return g_NodeChild_Index[c_index] = val;
+	return g_NodeChild_Index[c_index];
 #endif
 }
 

@@ -30,7 +30,7 @@ namespace Dynamics_IO_Testbench {
 
             unsigned int clock_frequency;
             unsigned int num_compute_units;
-            unsigned long mem_size;
+            unsigned long long mem_size;
             unsigned int max_work_size;
             unsigned int group_size;
             unsigned int local_memory_size;

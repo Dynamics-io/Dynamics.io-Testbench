@@ -38,7 +38,7 @@ namespace Dynamics
             return handle;
         }
 
-        public bool Equals(NativeObject? other)
+        public bool Equals(NativeObject other)
         {
             if (other == null)
                 return false;

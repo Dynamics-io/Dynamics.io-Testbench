@@ -12,12 +12,12 @@ if (UNIX)
     add_compile_options(-pthread -fPIC)
 endif ()
 
-find_package(OpenCL REQUIRED)
+#find_package(OpenCL REQUIRED)
 #message(${OpenCL_LIBRARY})
-message(${OpenCL_LIBRARY}/OpenCL.lib)
+#message(${OpenCL_LIBRARY}/OpenCL.lib)
 #message(${Vulkan_LIBRARY})
 #message(${Vulkan_LIBRARY}/Vulkan-1.lib)
-link_directories(${OpenCL_LIBRARY})
+#link_directories(${OpenCL_LIBRARY})
 
 message(${PROJECT_SOURCE_DIR})
 

@@ -22,7 +22,12 @@ void ComputeProgram_OCL::AddIncludeDirectory(std::string directory)
 	m_builder->GetProgram()->AddIncludeDirector(directory);
 }
 
-int Dynamics_IO_Testbench::Compute::OCL::ComputeProgram_OCL::Build()
+void ComputeProgram_OCL::AddDefine(std::string name, std::string value)
+{
+	m_builder->AddConstant(name, value);
+}
+
+int ComputeProgram_OCL::Build()
 {
 	printf("ComputeController_OCL: Reading program from directory: %s\n", m_program_directory.c_str());
 
@@ -282,10 +287,14 @@ IComputeProgram::ProgramBuildState ComputeProgram_OCL::BuildProgramFromSourceFil
 	infile.seekg(0, infile.beg);
 
 	//read file
-	if (length > 0) {
+	if (length > 0 && length < 18446744073709551615) {
 		buffer.resize(length);
 		//buffer.insert(buffer.begin(), std::istreambuf_iterator<char>(infile), std::istreambuf_iterator<char>());
 		infile.read(&buffer[0], length);
+	}
+	else {
+		printf("File not found: %s\n", file_path.c_str());
+		return ProgramBuildState::BuildError;
 	}
 
 	std::string file_res(buffer.begin(), buffer.end());

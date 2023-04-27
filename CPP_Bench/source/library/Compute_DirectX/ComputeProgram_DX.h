@@ -27,6 +27,8 @@ namespace Dynamics_IO_Testbench {
 				// support for building for source is added, this will be implemented.
 				void AddIncludeDirectory(std::string directory) {}
 
+				void AddDefine(std::string name, std::string value) {}
+
 				int Build();
 
 				int FinishBuild();

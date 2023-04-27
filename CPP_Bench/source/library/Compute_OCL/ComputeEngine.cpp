@@ -2,7 +2,7 @@
 
 using namespace Dynamics_IO_Testbench::Compute::OCL;
 
-#pragma comment(lib, "OpenCL.lib")
+//#pragma comment(lib, "OpenCL.lib")
 
 cl_platform_id ComputeEngine::platform_id = 0;
 cl_uint ComputeEngine::num_of_platforms = 0;
@@ -397,7 +397,14 @@ int ComputeProgram::Set_Binary_File(std::string file_path)
 
 void ComputeProgram::AddConstant(std::string name, std::string value)
 {
-   args += "-D" + name + "=" + value + " ";
+   if (value.empty())
+   {
+      args += "-D " + name + " ";
+   }
+   else 
+   {
+      args += "-D " + name + "=" + value + " ";
+   }
 }
 
 int ComputeProgram::Build(char* errorStr, size_t e_size)

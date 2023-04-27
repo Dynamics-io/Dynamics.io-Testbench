@@ -2,7 +2,7 @@
 
 #include "Compute_OCL/ComputeController_OCL.h"
 //#include "Compute_OCL/compute_test.h"
-#pragma comment(lib, "OpenCL.lib")
+//#pragma comment(lib, "OpenCL.lib")
 
 #include "Compute_Vulkan/ComputeController_VK.h"
 #include "Compute_Vulkan/vulkan_utils.h"

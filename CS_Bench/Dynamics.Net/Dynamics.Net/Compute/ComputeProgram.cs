@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection.Metadata;
+//using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
@@ -15,6 +15,9 @@ namespace Dynamics.Compute
 
         [DllImport(Settings.DLL)]
         private static extern void IComputeProgram_AddIncludeDirectory(IntPtr handle, string name, int size);
+
+        [DllImport(Settings.DLL)]
+        private static extern void IComputeProgram_AddDefine(IntPtr handle, string name, int name_size, string value, int value_size);
 
         [DllImport(Settings.DLL)]
         private static extern int IComputeProgram_Build(IntPtr handle);
@@ -86,7 +89,7 @@ namespace Dynamics.Compute
             [DllImport(Settings.DLL)]
             private static extern void IComputeProgram_ProgramInfo_AddKernel(IntPtr handle, string name, int size);
 
-            public ProgramInfo(nint hdl) : base(hdl)
+            public ProgramInfo(IntPtr hdl) : base(hdl)
             {
             }
 
@@ -120,6 +123,11 @@ namespace Dynamics.Compute
         public void AddIncludeDirectory(string name)
         {
             IComputeProgram_AddIncludeDirectory(handle, name, name.Length);
+        }
+
+        public void AddDefine(string name, string value)
+        {
+            IComputeProgram_AddDefine(handle, name, name.Length, value, value.Length);
         }
 
         public int Build()

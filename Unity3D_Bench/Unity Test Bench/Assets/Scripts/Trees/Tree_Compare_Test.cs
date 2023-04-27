@@ -6,7 +6,7 @@ using static CL_Tree_Testing;
 public class Tree_Compare_Test : MonoBehaviour
 {
     public int numEntries;
-    public CL_Tree_Testing CL_Tree;
+    public ComputeTree_Tests CL_Tree;
     public Tree_Tests CSharp_Tree;
 
     BoundingBox[] cshare_bounds;
@@ -17,17 +17,19 @@ public class Tree_Compare_Test : MonoBehaviour
     {
         //return;
 
-        Debug.LogFormat("Tree size in Local Memory: {0}", CL_Tree.GetLocalMemorySizeEstimate(numEntries));
+        
 
         CSharp_Tree.Init(numEntries);
         CL_Tree.Init(numEntries);
 
+        //Debug.LogFormat("Tree size in Local Memory: {0}", CL_Tree.tree.GetLocalMemorySizeEstimate());
+
         //return;
 
-        
+
         CreateBoundingBoxes();
 
-        BenchTest();
+        //BenchTest();
 
         CompareResults();
     }
@@ -69,24 +71,25 @@ public class Tree_Compare_Test : MonoBehaviour
         Debug.LogFormat("CSharp Tree Time: {0}", watch.Elapsed.TotalSeconds);
 
         watch.Restart();
-        double kernel_time = CL_Tree.AddBoxes(cl_bounds);
+        double kernel_time = CL_Tree.DoTreeInsertTest2(cl_bounds);
         watch.Stop();
         Debug.LogFormat("CL Tree Time: {0} (kernel: {1})", watch.Elapsed.TotalSeconds, kernel_time);
     }
 
     void CompareResults()
     {
-        CL_Tree.ExtractInfo(numEntries);
+        CL_Tree.tree.ExtractInfo();
+        CL_Tree.tree.SyncNodes();
 
         // Compare Nodes
-        if (CSharp_Tree.tree.NodeCount != CL_Tree.NodeCount)
+        if (CSharp_Tree.tree.NodeCount != CL_Tree.tree.NodeCount)
         {
             Debug.LogErrorFormat("Node count mis-match!");
             return;
         }
         for (int i = 0; i < numEntries - 1; i++)
         {
-            if (!CSharp_Tree.tree.Nodes[i].Equals(CL_Tree.Nodes[i]))
+            if (!CSharp_Tree.tree.Nodes[i].Equals(CL_Tree.tree.Nodes[i]))
             {
                 Debug.LogErrorFormat("Node mis-match: {0}", i);
                 return;
@@ -96,7 +99,7 @@ public class Tree_Compare_Test : MonoBehaviour
         // Compare Metanodes
         for (int i = 0; i < numEntries - 1; i++)
         {
-            if (!CSharp_Tree.tree.Metanodes[i].Equals(CL_Tree.Metanodes[i]))
+            if (!CSharp_Tree.tree.Metanodes[i].Equals(CL_Tree.tree.Metanodes[i]))
             {
                 Debug.LogErrorFormat("Metanode mis-match: {0}", i);
                 return;
@@ -104,14 +107,14 @@ public class Tree_Compare_Test : MonoBehaviour
         }
 
         // Compare Leaves
-        if (CSharp_Tree.tree.LeafCount != CL_Tree.LeafCount)
+        if (CSharp_Tree.tree.LeafCount != CL_Tree.tree.LeafCount)
         {
             Debug.LogErrorFormat("Leaf count mis-match!");
             return;
         }
         for (int i = 0; i < numEntries; i++)
         {
-            if (!CSharp_Tree.tree.Leaves[i].Equals(CL_Tree.Leaves[i]))
+            if (!CSharp_Tree.tree.Leaves[i].Equals(CL_Tree.tree.Leaves[i]))
             {
                 Debug.LogErrorFormat("Leaf mis-match: {0}", i);
                 return;

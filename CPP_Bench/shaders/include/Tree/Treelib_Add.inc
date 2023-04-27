@@ -32,7 +32,7 @@ float ComputeBoundsMetric_1(STRUCT BoundingBox bounds)
 	return ComputeBoundsMetric_2(bounds.Min, bounds.Max);
 }
 
-BoundingBox CreateMerged(fvector4 minA, fvector4 maxA, fvector4 minB, fvector4 maxB)
+STRUCT BoundingBox CreateMerged(fvector4 minA, fvector4 maxA, fvector4 minB, fvector4 maxB)
 {
 	STRUCT BoundingBox merged;
 	merged.Min = min(minA, minB);
@@ -103,6 +103,54 @@ STRUCT InsertionChoice ComputeBestInsertionChoice(
 	return result;
 }
 
+int MergeLeafNodes(
+	STRUCT BoundingBox newLeafBounds, 
+	int parentIndex, 
+	int indexInParent, 
+	STRUCT BoundingBox merged
+)
+{
+    //It's a leaf node.
+    //Create a new internal node with the new leaf and the old leaf as children.
+    //this is the only place where a new level could potentially be created.
+	
+    int newNodeIndex = AllocateNode();
+	int newNode = newNodeIndex;
+    
+    Set_Metanode_Parent(newNodeIndex, parentIndex);
+	Set_Metanode_IndexInParent(newNodeIndex, indexInParent);
+	Set_Metanode_RefineFlag(newNodeIndex, 0);
+    
+    //The first child of the new node is the old leaf. Insert its bounding box.
+    int parentNode = parentIndex;
+    int childInParent = Node_GetChildIndex(parentNode, indexInParent);
+    Set_NodeChild_Min(Node_A(newNode), Get_NodeChild_Min(childInParent));
+	Set_NodeChild_Max(Node_A(newNode), Get_NodeChild_Max(childInParent));
+	Set_NodeChild_Index(Node_A(newNode), Get_NodeChild_Index(childInParent));
+	Set_NodeChild_LeafCount(Node_A(newNode), Get_NodeChild_LeafCount(childInParent));
+    
+    // Insert the new leaf into the second child slot
+	int b = Node_GetChildIndex(newNode, 1);
+	int leafIndex = AddLeaf(newNodeIndex, 1);
+	Set_NodeChild_Index(b, Encode(leafIndex));
+	Set_NodeChild_Min(b, newLeafBounds.Min);
+	Set_NodeChild_Max(b, newLeafBounds.Max);
+	Set_NodeChild_LeafCount(b, 1);
+    
+    //Update the old leaf node with the new index information.
+	int new_a = Node_GetChildIndex(newNode, 0);
+	int oldLeafIndex = Encode(Get_NodeChild_Index(new_a));
+	SetLeaf(oldLeafIndex, Leaf_New(newNodeIndex, 0));
+    
+    //Update the original node's child pointer and bounding box.
+    Set_NodeChild_Index(childInParent, newNodeIndex);
+	Set_NodeChild_Min(childInParent, merged.Min);
+	Set_NodeChild_Max(childInParent, merged.Max);
+	Set_NodeChild_LeafCount(childInParent, 2);
+    
+    return leafIndex;
+}
+
 int DoAdd(STRUCT BoundingBox bounds)
 {
 	int LeafCount = GetLeafCount();
@@ -121,6 +169,79 @@ int DoAdd(STRUCT BoundingBox bounds)
 	int nodeIndex = 0;
 	float newLeafCost = ComputeBoundsMetric_1(bounds);
 	int depth = 0;
+    while(true)
+    {
+        if (depth > 100)
+			return -4;
+        
+        //Which child should the leaf belong to?
+		//Give the leaf to whichever node had the least cost change.
+        
+        int child_a = Node_GetChildIndex(nodeIndex, 0);
+		int child_b = Node_GetChildIndex(nodeIndex, 1);
+        
+        STRUCT InsertionChoice choiceA = ComputeBestInsertionChoice(
+			bounds,
+			newLeafCost,
+			Get_NodeChild_Min(child_a),
+			Get_NodeChild_Max(child_a),
+			Get_NodeChild_Index(child_a),
+			Get_NodeChild_LeafCount(child_a)
+		);
+        
+        STRUCT InsertionChoice choiceB = ComputeBestInsertionChoice(
+			bounds,
+			newLeafCost,
+			Get_NodeChild_Min(child_b),
+			Get_NodeChild_Max(child_b),
+			Get_NodeChild_Index(child_b),
+			Get_NodeChild_LeafCount(child_b)
+		);
+        
+        if (choiceA.CostChange <= choiceB.CostChange)
+        {
+            if (choiceA.Choice == NEW_INTERNAL)
+            {
+                res = MergeLeafNodes(
+					bounds,
+					nodeIndex,
+					0,
+					choiceA.MergedCandidate
+				);
+				return res;
+            }
+            else
+            {
+                depth = depth + 1;
+				Set_NodeChild_Min(child_a, choiceA.MergedCandidate.Min);
+				Set_NodeChild_Max(child_a, choiceA.MergedCandidate.Max);
+				nodeIndex = Get_NodeChild_Index(child_a);
+				Set_NodeChild_LeafCount(child_a, Get_NodeChild_LeafCount(child_a) + 1);
+            }
+        }
+        else
+        {
+            if (choiceB.Choice == NEW_INTERNAL)
+            {
+                res = MergeLeafNodes(
+					bounds,
+					nodeIndex,
+					1,
+					choiceB.MergedCandidate
+				);
+				return res;
+            }
+            else
+            {
+                depth = depth + 1;
+				Set_NodeChild_Min(child_b, choiceB.MergedCandidate.Min);
+				Set_NodeChild_Max(child_b, choiceB.MergedCandidate.Max);
+				nodeIndex = Get_NodeChild_Index(child_b);
+				Set_NodeChild_LeafCount(child_b, Get_NodeChild_LeafCount(child_b) + 1);
+            }
+        }
+        
+    }
 	
 	return res;
 }

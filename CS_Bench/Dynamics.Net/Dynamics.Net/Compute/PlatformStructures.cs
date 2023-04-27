@@ -52,9 +52,9 @@ namespace Dynamics.Compute
         public byte is_type_GPU;
         public byte is_type_Accelerator;
 
-        public string Name { get { return new string(name).Substring(0, name_size - 1); } }
+        public string Name { get { return new string(name).Substring(0, Math.Max(name_size - 1, 1)); } }
 
-        public string Vendor { get { return new string(vendor).Substring(0, vendor_size - 1); } }
+        public string Vendor { get { return new string(vendor).Substring(0, Math.Max(vendor_size - 1, 1)); } }
     };
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]

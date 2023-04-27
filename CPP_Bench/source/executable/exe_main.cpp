@@ -226,6 +226,10 @@ const char* KernelSource =
 
 int OpenCL_test()
 {
+	printf("OpenCL_Device_Info size: %i\n", sizeof(OpenCL_Device_Info::mem_size));
+
+	return 0;
+
 	std::vector<Platform> platforms = ComputeInterface::GetSupportedPlatforms_OpenCL();
 
 	for (const auto& p : platforms)
